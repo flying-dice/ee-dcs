@@ -49,7 +49,7 @@ local S       = cs.S
 local M       = {}
 
 local function info(msg)
-    env.info(string.format("[dynamic-mission-test] [pilots] %s", tostring(msg)))
+    env.info(string.format("[ee-dcs] [pilots] %s", tostring(msg)))
 end
 
 -- ── Rank / promotion thresholds (PILOT-F8) ─────────────────────────────────────

@@ -1,15 +1,20 @@
-# DCS EECH Map Generator
+# EE&nbsp;-&nbsp;DCS — Campaign Generator
 
-A browser tool that turns a **real-world region** into a **balanced EECH-campaign DCS
-mission**. You pick a DCS theatre, draw a box over any part of the real map, pull in real
-infrastructure from OpenStreetMap, split the map into two sides with a frontline, and the
-tool writes a `.miz` carrying one **trigger zone per keysite** — exactly what the
-[EECH campaign port](../CLAUDE.md) reads at runtime to boot an AI-vs-AI dynamic campaign.
+The **published web app** for building Enemy Engaged: Comanche vs Hokum campaigns for DCS
+World. **This site is how you get mission files** — there's nothing to install and no build
+step: open it, design a theatre on a real-world map, and download a ready-to-play `.miz`.
+
+> **Live site: https://ee-dcs.pages.dev/**
+
+You pick a DCS theatre, draw a box over any part of the real map, pull in real infrastructure
+from OpenStreetMap, split the map into two sides with a frontline, and the app writes a `.miz`
+carrying one **trigger zone per keysite** — exactly what the [EECH campaign port](../CLAUDE.md)
+reads at runtime to boot an AI-vs-AI dynamic campaign.
 
 By default the generated `.miz` **ships the campaign Lua inside it** and wires it to run at
 mission start, so the file is directly playable — open it in DCS and the campaign boots. If
-you'd rather author the scripting yourself, untick **Ship campaign Lua** in step 7 for a
-zones-only mission (see [the loop back to the campaign](#the-loop-back-to-the-campaign)).
+you'd rather author the scripting yourself, untick **Ship campaign Lua** for a zones-only
+mission (see [the loop back to the campaign](#the-loop-back-to-the-campaign)).
 
 ## What you draw (the flow)
 
@@ -76,6 +81,14 @@ npm run preview  # serve the production build
 The app is a static site (relative `base`), so `dist/` can be served from any static host,
 a subfolder, or opened over `file://`.
 
+### Publishing
+
+The delivery model is the **hosted site**: build (`npm run build`) and deploy the resulting
+`dist/` to any static host (GitHub Pages, Netlify, Cloudflare Pages, an S3 bucket, …). Users
+never clone or build — they visit the URL, generate a theatre, and download the `.miz`. The
+campaign Lua is baked into each download, so the hosted site is a complete distribution
+channel on its own. It's live on **Cloudflare Pages** at **https://ee-dcs.pages.dev/**.
+
 ## Architecture
 
 - `src/App.svelte` — owns all designer state and wiring; computes the live preview and
@@ -90,7 +103,7 @@ a subfolder, or opened over `file://`.
   from the UI layer;** the UI only imports from them.
 - `src/theatres/*.geojson` — one baked theatre extraction per DCS map.
 - `src/generated/campaign-bundle.lua` — the EECH campaign bundle, mirrored from the
-  repo-root build output (`../dist/dynamic-mission-test.lua`) by
+  repo-root build output (`../dist/ee-dcs.lua`) by
   `scripts/sync-campaign.mjs`, which runs automatically before `dev`/`build`/`check`.
   Git-ignored and lazy-loaded (its own chunk), it's what `miz.ts` embeds when shipping the
   Lua. Rebuild the campaign (DCS Studio: `lua-cargo build`) to refresh the bytes that ship.
@@ -128,12 +141,12 @@ airbases from the map and boots the full EECH high-level AI (strikes, recon, rea
 chains, ground frontline, helicopter war, logistics, win condition).
 
 **Campaign Lua shipped (default).** The `.miz` embeds the campaign bundle as
-`l10n/DEFAULT/dynamic-mission-test.lua` and sets the mission's initialization script to run
+`l10n/DEFAULT/ee-dcs.lua` and sets the mission's initialization script to run
 it at start (via a `mapResource` ResKey — the same wiring the Mission Editor's
 `DO SCRIPT FILE` mission-init writes). Just open the `.miz` in DCS and start it; the
 campaign runs. You can still open it in the Mission Editor first to tweak zones by hand
 (move, add, recolour, rename) — the campaign re-reads them at runtime.
 
 **Zones-only (unticked).** The `.miz` holds just the zones. Add the campaign yourself —
-the port's `dist/dynamic-mission-test.lua` via a `DO SCRIPT FILE` trigger, or inject it live
+the port's `dist/ee-dcs.lua` via a `DO SCRIPT FILE` trigger, or inject it live
 with the DCS Studio bridge — then start the mission.

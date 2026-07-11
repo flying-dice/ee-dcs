@@ -45,7 +45,7 @@ it is faithful.
 
 ## Module convention
 
-One system per `.lua` module under `Scripts/dynamic-mission-test/`. The module header names the EECH
+One system per `.lua` module under `Scripts/ee-dcs/`. The module header names the EECH
 source file(s) it ports. State lives in the single `campaign_state.S` singleton (every module does
 `local cs = require("campaign_state"); local S = cs.S`) — the only significant exception is imap's
 layers, held module-local. Keep new state in `S` unless there is a strong reason not to.

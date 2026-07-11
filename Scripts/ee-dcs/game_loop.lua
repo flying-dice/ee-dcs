@@ -65,7 +65,7 @@ local STATUS_PERIOD = 2 * 60
 local CAPTURE_CHK   = 60
 
 local function info(msg)
-    env.info(string.format("[dynamic-mission-test] [game_loop] %s", tostring(msg)))
+    env.info(string.format("[ee-dcs] [game_loop] %s", tostring(msg)))
 end
 
 -- ── Admin scheduler ────────────────────────────────────────────────────────────

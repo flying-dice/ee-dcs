@@ -24,7 +24,7 @@ server.
 Build + check clean first (see `dev-loop`), then via the `dcs_eval` MCP tool:
 
 ```
-net.dostring_in('server', 'dofile("C:/Users/jonat/DCSStudio/my-test-mod/dist/dynamic-mission-test.lua")')
+net.dostring_in('server', 'dofile("C:/Users/jonat/DCSStudio/my-test-mod/dist/ee-dcs.lua")')
 ```
 
 Re-injection mid-session is safe (the `_DMT_GEN` generation guard self-cancels old timers). Then

@@ -1,7 +1,12 @@
-# dynamic-mission-test
+# ee-dcs
 
 The Enemy Engaged: Comanche Hokum (EECH) dynamic campaign, ported to Lua and running live
 inside DCS World multiplayer.
+
+> **Getting a mission:** you don't build these by hand. The **Campaign Generator** —
+> published at **https://ee-dcs.pages.dev/** ([source](web/README.md)) — is how missions are
+> distributed: open the site, design a theatre on a real-world map, and download a
+> ready-to-play `.miz` with this campaign baked in.
 
 ## What it is
 
@@ -134,7 +139,7 @@ from the map's airfields (densest cluster) so it still runs on a bare map.
 
 The scenario **warzone data** — unit type names, countries, weapon payloads, reserve counts,
 installation statics, keysite air-defence rings, and a few documented designer theatre knobs — lives in one place:
-`Scripts/dynamic-mission-test/config.lua`. It mirrors EECH's own split between compiled engine
+`Scripts/ee-dcs/config.lua`. It mirrors EECH's own split between compiled engine
 constants (in the C source) and the data files it loads from disk (FORMCOMP.DAT, the WUT tables):
 `config.lua` is the **data layer**.
 
@@ -144,7 +149,7 @@ You can override any subset of it **without editing the script** by setting a gl
 ### Where to put it
 
 Add a **MISSION START → DO SCRIPT** trigger (or a `DO SCRIPT FILE`) that runs *before* the trigger
-that loads `dist/dynamic-mission-test.lua`. It only needs to assign the global:
+that loads `dist/ee-dcs.lua`. It only needs to assign the global:
 
 ```lua
 -- MISSION START, ordered BEFORE the campaign DO SCRIPT FILE trigger
@@ -220,7 +225,7 @@ only; it does not expose engine constants.
 
 ## Modules
 
-22 Lua modules in `Scripts/dynamic-mission-test/`, each headed with the EECH source it ports.
+22 Lua modules in `Scripts/ee-dcs/`, each headed with the EECH source it ports.
 
 | Module | EECH source | Role |
 |---|---|---|
@@ -290,13 +295,13 @@ state does not survive a server restart.
 **Requirements:** DCS World 2.9+ and the **DCS Studio** app running (it hosts the MCP server
 that provides the build, check, and inject tooling — there is no standalone CLI).
 
-1. **Build.** Run `lua-cargo build` (via DCS Studio) → produces `dist/dynamic-mission-test.lua`,
+1. **Build.** Run `lua-cargo build` (via DCS Studio) → produces `dist/ee-dcs.lua`,
    the single bundled file. Must build with 0 warnings; run `check` for static analysis.
 2. **Load it,** either:
    - **Inject** into a running mission — `dcs_eval` runs
-     `net.dostring_in('server', 'dofile("<path>/dist/dynamic-mission-test.lua")')`; or
+     `net.dostring_in('server', 'dofile("<path>/dist/ee-dcs.lua")')`; or
    - **DO SCRIPT FILE** trigger in the mission editor pointing at
-     `dist/dynamic-mission-test.lua`.
+     `dist/ee-dcs.lua`.
 3. **Watch it.** All logging is `env.info()` → `Saved Games/DCS/Logs/dcs.log`. Phase
    transitions, captures, and the final debrief are also broadcast in-game via
    `trigger.action.outText`, and the F-10 map shows ownership, frontline, and task arrows.

@@ -1,6 +1,6 @@
 ---
 name: dev-loop
-description: Use whenever you change any Lua module under Scripts/dynamic-mission-test/ — the mandatory edit→build→check→inject→observe cycle for this EECH→DCS port, including the 0-warnings/no-findings gates, live re-injection, reading dcs.log, the verified-type-name DB guardrail, and the reserve-refund rule for spawner code.
+description: Use whenever you change any Lua module under Scripts/ee-dcs/ — the mandatory edit→build→check→inject→observe cycle for this EECH→DCS port, including the 0-warnings/no-findings gates, live re-injection, reading dcs.log, the verified-type-name DB guardrail, and the reserve-refund rule for spawner code.
 ---
 
 # Dev loop: edit → build → check → inject → observe
@@ -24,13 +24,13 @@ shell commands — they are tools exposed by the **DCS Studio MCP server** at
 
 ## 1. Edit
 
-Edit the modules under `Scripts/dynamic-mission-test/`. One system per module; each module header
+Edit the modules under `Scripts/ee-dcs/`. One system per module; each module header
 names its EECH source file(s) — keep that header accurate (see the `eech-fidelity` skill).
 
 ## 2. Build (mandatory gate)
 
 Run the DCS Studio **build** tool. It transpiles/bundles the 22 modules into
-`dist/dynamic-mission-test.lua`.
+`dist/ee-dcs.lua`.
 
 - **Healthy output: 22 modules, 0 warnings.**
 - Any warning is a stop-the-line failure. Fix it before proceeding — do not inject a warning build.
@@ -52,7 +52,7 @@ With a mission running (see the `live-validation` skill for what that mission mu
 the `dcs_eval` MCP tool:
 
 ```
-net.dostring_in('server', 'dofile("C:/Users/jonat/DCSStudio/my-test-mod/dist/dynamic-mission-test.lua")')
+net.dostring_in('server', 'dofile("C:/Users/jonat/DCSStudio/my-test-mod/dist/ee-dcs.lua")')
 ```
 
 **Re-injection is safe mid-session.** `campaign_state.lua` bumps a global `_DMT_GEN` (generation

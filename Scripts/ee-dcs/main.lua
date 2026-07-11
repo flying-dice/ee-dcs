@@ -1,4 +1,4 @@
--- dynamic-mission-test
+-- ee-dcs
 -- Trigger-script ENTRY POINT (thin shim). The entire EECH-style dynamic campaign lives in
 -- game_loop.lua and its sub-modules; this file only wires the boot sequence:
 --   1. install the spawn-queue interception FIRST (before ANY spawn happens),
@@ -17,17 +17,17 @@ local cs = require("campaign_state")
 -- all coalition.addGroup / addStaticObject calls now enqueue and drain over time.
 require("spawn_queue")
 
-local dynamic_mission_test = {}
-dynamic_mission_test.name    = "dynamic-mission-test"
-dynamic_mission_test.version = "0.2.0"
+local ee_dcs = {}
+ee_dcs.name    = "ee-dcs"
+ee_dcs.version = "0.2.0"
 
 local function info(msg)
-    env.info(string.format("[%s] %s", dynamic_mission_test.name, msg))
+    env.info(string.format("[%s] %s", ee_dcs.name, msg))
 end
 
 -- ── Entry point ─────────────────────────────────────────────────────────────────
-function dynamic_mission_test.start()
-    info("loaded v" .. dynamic_mission_test.version)
+function ee_dcs.start()
+    info("loaded v" .. ee_dcs.version)
     cs.dbg("loop", "main.start(): generation=%d", cs.GENERATION)
 
     -- RESET FIRST: nuke the previous injection's world objects, event handlers, and F-10 marks so
@@ -37,7 +37,7 @@ function dynamic_mission_test.start()
     cs.dbg("loop", "main.start(): reset done; single game_loop.start() follows")
 end
 
-dynamic_mission_test.start()
+ee_dcs.start()
 
 -- Load + validate SCENARIO configuration (config.lua / _G.DMT_CONFIG) AFTER reset.nuke but BEFORE the
 -- game loop and its sub-modules are required (they read config.C at module scope) — so bad author
@@ -56,4 +56,4 @@ game_loop.start()
 cs.dbg("spawn", "main.lua: starting spawn_queue drain")
 require("spawn_queue").schedule_drain()
 
-return dynamic_mission_test
+return ee_dcs

@@ -1,12 +1,12 @@
 # dcs-studio.toml — DCS Studio project manifest
-# Generated for "dynamic-mission-test". Describes the mod, its files, where each installs
+# Generated for "ee-dcs". Describes the mod, its files, where each installs
 # to, and what it depends on. Install destinations use named roots, resolved
 # per-machine at install time:
 #   {SavedGames}  → your DCS "Saved Games" folder
 #   {GameInstall} → your DCS game install directory
 
 [project]
-name = "dynamic-mission-test"
+name = "ee-dcs"
 version = "0.2.0"
 author = "Jonathan Turnock"
 description = "A dynamic mission script mod"
@@ -19,7 +19,7 @@ dcs_min_version = "2.9.0"
 
 # File manifest — tracked project files and their role.
 [[files]]
-path = "Scripts/dynamic-mission-test/main.lua"
+path = "Scripts/ee-dcs/main.lua"
 role = "script"
 
 [[files]]

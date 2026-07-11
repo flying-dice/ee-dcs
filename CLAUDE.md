@@ -1,4 +1,4 @@
-# CLAUDE.md — dynamic-mission-test
+# CLAUDE.md — ee-dcs
 
 ## PRIME DIRECTIVE — align to EECH, never invent fixes (binding, overrides everything below)
 
@@ -43,11 +43,11 @@ injection are all tools exposed by the **DCS Studio MCP server**
 (`http://127.0.0.1:25570/mcp`, see `.mcp.json`). The DCS Studio app must be running for
 these tools to exist in a session.
 
-- **Build** — `lua-cargo build` → bundles `Scripts/dynamic-mission-test/main.lua` and the
-  21 required modules into `dist/dynamic-mission-test.lua`. Must be **0 warnings**.
+- **Build** — `lua-cargo build` → bundles `Scripts/ee-dcs/main.lua` and the
+  21 required modules into `dist/ee-dcs.lua`. Must be **0 warnings**.
 - **Static analysis** — `check` — must report **no findings**.
 - **Live injection** — `dcs_eval` runs
-  `net.dostring_in('server', 'dofile("...dist/dynamic-mission-test.lua")')` in the running
+  `net.dostring_in('server', 'dofile("...dist/ee-dcs.lua")')` in the running
   mission. Re-injection is safe (generation guard, below).
 
 Run build + check after every change; do not commit with warnings or findings.

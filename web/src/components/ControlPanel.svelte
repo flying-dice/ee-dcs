@@ -18,6 +18,8 @@
   import { createEventDispatcher } from 'svelte';
   import { KEYSITE_TYPES } from '../lib/types';
   import type { Terrain, KeysiteType, Side, CountConfig, Keysite } from '../lib/types';
+  import { AIRCRAFT_ROLES, DEFAULT_UNIT_TYPES } from '../lib/units';
+  import type { UnitTypes, AircraftRole } from '../lib/units';
   import type { Mode } from './MapView.svelte';
 
   export let terrains: Terrain[] = [];
@@ -43,6 +45,7 @@
   export let generating = false;
   export let generateResult: string | null = null;
   export let bakeCampaign = true;
+  export let unitTypes: UnitTypes = DEFAULT_UNIT_TYPES;
   export let hint = '';
   export let typeColors: Record<KeysiteType, string> = {} as Record<KeysiteType, string>;
 
@@ -55,6 +58,8 @@
     populate: void;
     shuffle: void;
     setCount: { type: KeysiteType; side: Side; value: number };
+    setUnit: { side: Side; role: AircraftRole; value: string };
+    resetUnits: void;
     removeKeysite: string;
     reset: void;
     generate: void;
@@ -90,6 +95,9 @@
     const value = Number((e.currentTarget as HTMLInputElement).value);
     dispatch('setCount', { type, side, value });
   }
+  function onUnit(side: Side, role: AircraftRole, e: Event): void {
+    dispatch('setUnit', { side, role, value: (e.currentTarget as HTMLInputElement).value });
+  }
 </script>
 
 <aside class="panel island">
@@ -98,10 +106,10 @@
       <span class="mark">◣◤</span>
       <div>
         <h1>ENEMY&nbsp;ENGAGED</h1>
-        <div class="sub">Tactical Situation Generator</div>
+        <div class="sub">Campaign Generator</div>
       </div>
     </div>
-    <p class="tag">Real region &rarr; DCS airfields + open data &rarr; balanced <code>.miz</code></p>
+    <p class="tag">EE&nbsp;-&nbsp;DCS</p>
   </header>
 
   <p class="hint"><span class="caret">&gt;</span> {hint}</p>
@@ -265,6 +273,27 @@
       {#if bakeCampaign}Bundles the EECH campaign — the <code>.miz</code> plays as-is (~1&nbsp;MB).
       {:else}Zones only — you add a mission-init script yourself.{/if}
     </span>
+
+    {#if bakeCampaign}
+      <details class="units">
+        <summary>Aircraft types</summary>
+        <div class="units-grid">
+          <div class="uhead"><span></span><span class="uc fr">BLUE</span><span class="uc ho">RED</span></div>
+          {#each AIRCRAFT_ROLES as r}
+            <div class="urow">
+              <span class="ur">{r.label}</span>
+              <input class="uin" value={unitTypes.blue[r.key]} on:input={(e) => onUnit('blue', r.key, e)} spellcheck="false" />
+              <input class="uin" value={unitTypes.red[r.key]} on:input={(e) => onUnit('red', r.key, e)} spellcheck="false" />
+            </div>
+          {/each}
+        </div>
+        <div class="uactions">
+          <span class="muted">Exact DCS type names — these override the campaign’s defaults in the shipped Lua.</span>
+          <button class="tiny" on:click={() => dispatch('resetUnits')}>reset</button>
+        </div>
+      </details>
+    {/if}
+
     <button class="primary" disabled={!canGenerate} on:click={() => dispatch('generate')}>
       {#if generating}<span class="spinner"></span> Building…{:else}Generate .miz{/if}
     </button>
@@ -534,6 +563,35 @@
   .bake { display: flex; align-items: center; gap: 7px; width: 100%; font-size: 0.78rem; color: var(--ink); cursor: pointer; user-select: none; }
   .bake input { width: auto; margin: 0; accent-color: var(--phosphor); cursor: pointer; }
   .bake-note { margin-top: -2px; }
+
+  /* aircraft-type editor */
+  .units { width: 100%; }
+  .units > summary {
+    cursor: pointer;
+    font-family: var(--font-hud);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--phosphor-dim);
+    padding: 4px 0;
+  }
+  .units > summary:hover { color: var(--phosphor); }
+  .units-grid { display: flex; flex-direction: column; gap: 3px; margin: 6px 0; }
+  .uhead, .urow { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 6px; }
+  .uhead { font-family: var(--font-hud); font-size: 0.62rem; letter-spacing: 0.1em; padding-bottom: 2px; }
+  .uc { text-align: center; }
+  .uc.fr { color: var(--friendly); }
+  .uc.ho { color: var(--hostile); }
+  .ur { font-size: 0.72rem; color: var(--ink); }
+  input.uin {
+    width: 100%;
+    min-width: 0;
+    padding: 3px 5px;
+    font-family: var(--font-hud);
+    font-size: 0.7rem;
+  }
+  .uactions { display: flex; align-items: center; gap: 8px; }
+  .uactions .muted { flex: 1; }
 
   footer { padding: 11px 14px 14px; font-size: 0.73rem; color: var(--muted); line-height: 1.45; }
   .manual-btn {

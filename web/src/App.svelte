@@ -25,6 +25,8 @@
     DEFAULT_COUNTS,
   } from './lib/balance';
   import { buildMiz, filenameFor, keysitesToZones } from './lib/miz';
+  import { DEFAULT_UNIT_TYPES } from './lib/units';
+  import type { UnitTypes, AircraftRole } from './lib/units';
   import type {
     Terrain,
     BBox,
@@ -75,6 +77,7 @@
   let generating = false;
   let generateResult: string | null = null;
   let bakeCampaign = true;
+  let unitTypes: UnitTypes = structuredClone(DEFAULT_UNIT_TYPES);
   let showManual = false;
   // Focus request from the list → MapView pans to + flashes the keysite. The bump
   // counter makes re-clicking the same row re-fire the flash.
@@ -268,6 +271,13 @@
     counts = { ...counts, [detail.type]: { ...counts[detail.type], [detail.side]: v } };
   }
 
+  function onSetUnit(d: { side: Side; role: AircraftRole; value: string }): void {
+    unitTypes = { ...unitTypes, [d.side]: { ...unitTypes[d.side], [d.role]: d.value } };
+  }
+  function onResetUnits(): void {
+    unitTypes = structuredClone(DEFAULT_UNIT_TYPES);
+  }
+
   function onRemoveKeysite(id: string): void {
     if (!removed.includes(id)) removed = [...removed, id];
     added = added.filter((a) => a.id !== id);
@@ -341,7 +351,7 @@
     generateResult = null;
     osmError = null;
     try {
-      const blob = await buildMiz(keysites, terrain, { bakeCampaign });
+      const blob = await buildMiz(keysites, terrain, { bakeCampaign, unitTypes });
       const name = filenameFor(terrain);
       downloadBlob(blob, name);
       generateResult = bakeCampaign
@@ -460,6 +470,7 @@
       {generating}
       {generateResult}
       {bakeCampaign}
+      {unitTypes}
       {hint}
       typeColors={TYPE_COLORS}
       on:selectTerrain={(e) => onSelectTerrain(e.detail)}
@@ -470,6 +481,8 @@
       on:populate={onPopulate}
       on:shuffle={onShuffle}
       on:setCount={(e) => onSetCount(e.detail)}
+      on:setUnit={(e) => onSetUnit(e.detail)}
+      on:resetUnits={onResetUnits}
       on:removeKeysite={(e) => onRemoveKeysite(e.detail)}
       on:focusKeysite={(e) => onFocusKeysite(e.detail)}
       on:reset={onReset}

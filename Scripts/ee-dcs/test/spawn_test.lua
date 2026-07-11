@@ -5,7 +5,7 @@
 -- result pinpoints a bad CLSID vs a bad/absent airframe.
 --
 -- Run in the MISSION env:
---   net.dostring_in('server', 'dofile([[C:/Users/jonat/DCSStudio/my-test-mod/Scripts/dynamic-mission-test/test/spawn_test.lua]])')
+--   net.dostring_in('server', 'dofile([[C:/Users/jonat/DCSStudio/my-test-mod/Scripts/ee-dcs/test/spawn_test.lua]])')
 -- Returns a summary string and logs a full PASS/FAIL table via env.info ("[spawn_test] ...").
 -- Each probe spawns, checks existence, then immediately destroys — nothing is left in the world.
 
