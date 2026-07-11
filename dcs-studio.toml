@@ -1,0 +1,27 @@
+# dcs-studio.toml — DCS Studio project manifest
+# Generated for "dynamic-mission-test". Describes the mod, its files, where each installs
+# to, and what it depends on. Install destinations use named roots, resolved
+# per-machine at install time:
+#   {SavedGames}  → your DCS "Saved Games" folder
+#   {GameInstall} → your DCS game install directory
+
+[project]
+name = "dynamic-mission-test"
+version = "0.2.0"
+author = "Jonathan Turnock"
+description = "A dynamic mission script mod"
+template = "mission-script"
+dcs_min_version = "2.9.0"
+
+# Mission scripts are injected into a running mission via DCS Studio (inject
+# tool) or loaded by a DO SCRIPT FILE trigger in the mission editor.
+# No filesystem install target is needed.
+
+# File manifest — tracked project files and their role.
+[[files]]
+path = "Scripts/dynamic-mission-test/main.lua"
+role = "script"
+
+[[files]]
+path = "README.md"
+role = "doc"

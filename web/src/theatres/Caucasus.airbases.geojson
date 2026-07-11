@@ -1,0 +1,324 @@
+{
+ "type": "FeatureCollection",
+ "properties": {
+  "terrain": "Caucasus",
+  "source": "world.getAirbases"
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     37.359783,
+     45.013175
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Anapa-Vityazevo"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     38.925202,
+     45.08743
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Krasnodar-Center"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     37.786226,
+     44.67333
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Novorossiysk"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     37.985887,
+     44.961383
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Krymsk"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     40.021427,
+     44.67144
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Maykop-Khanskaya"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     38.004146,
+     44.567675
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Gelendzhik"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     39.924232,
+     43.439378
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Sochi-Adler"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     39.203067,
+     45.0461
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Krasnodar-Pashkovsky"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     41.142448,
+     42.852741
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Sukhumi-Babushara"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     40.564176,
+     43.124233
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Gudauta"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     41.609275,
+     41.60328
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Batumi"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     42.061021,
+     42.238728
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Senaki-Kolkhi"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     41.876484,
+     41.932105
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Kobuleti"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     42.495684,
+     42.179154
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Kutaisi"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     43.10068,
+     44.218647
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Mineralnye Vody"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     43.625109,
+     43.510071
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Nalchik"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     44.620327,
+     43.791303
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Mozdok"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     44.946875,
+     41.67472
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Tbilisi-Lochini"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     44.947183,
+     41.641163
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Soganlug"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     45.019091,
+     41.637736
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Vaziani"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     44.588923,
+     43.208501
+    ]
+   },
+   "properties": {
+    "type": "AIRBASE",
+    "category": "AIRDROME",
+    "name": "Beslan"
+   }
+  }
+ ]
+}

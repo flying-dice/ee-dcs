@@ -1,0 +1,163 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   EECH MAP GENERATOR — tactical MFD theme.
+   The whole tool is a multi-function display from Enemy Engaged: the map is the
+   phosphor screen, the control column is the avionics bezel. Phosphor green +
+   master-caution amber on green-black; NATO friendly/hostile for the two sides.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Phosphor CRT palette */
+  --void: #050b09;        /* green-black background */
+  --panel: #081311;       /* bezel panel fill */
+  --panel-2: #0c1d18;     /* raised panel */
+  --edge: #123a2c;        /* dim phosphor hairline */
+  --edge-hot: #1f6b4d;    /* live/armed hairline */
+
+  --phosphor: #5cf2a6;    /* primary phosphor green */
+  --phosphor-hot: #c9ffe6;/* highlight / glow core */
+  --phosphor-dim: #2f8a60;/* secondary green — ticks, labels, rules */
+
+  --amber: #f6a623;       /* master-caution amber — primary action + warnings */
+  --amber-dim: #3d2c06;   /* amber panel fill */
+
+  --friendly: #4aa8ff;    /* BLUE faction */
+  --friendly-dim: #10314f;
+  --hostile: #ff5157;     /* RED faction */
+  --hostile-dim: #431417;
+
+  --ink: #bfead2;         /* body text (soft phosphor white) */
+  --ink-dim: #6b9a83;     /* muted text */
+
+  /* Aliases the components already reference — remapped to the phosphor system */
+  --bg: var(--void);
+  --text: var(--ink);
+  --muted: var(--ink-dim);
+  --blue: var(--friendly);
+  --red: var(--hostile);
+  --accent: var(--phosphor);
+  --accent-dim: #0d3325;
+
+  --font-hud: 'Share Tech Mono', ui-monospace, 'Cascadia Mono', monospace;
+  --font-ui: 'Chakra Petch', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --glow: 0 0 6px rgba(92, 242, 166, 0.35);
+  --glow-amber: 0 0 6px rgba(246, 166, 35, 0.4);
+
+  font-family: var(--font-ui);
+  color: var(--ink);
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app {
+  margin: 0;
+  height: 100%;
+  background: var(--void);
+  color: var(--ink);
+}
+
+/* ── Floating control island — the map stays full-bleed behind ───────────────── */
+/* A detached avionics panel: translucent green-black glass, phosphor hairline, a
+   very faint internal scanline for the CRT nod (only on the island, never the map). */
+.island {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(92, 242, 166, 0.03) 0px,
+      rgba(92, 242, 166, 0.03) 1px,
+      transparent 2px,
+      transparent 4px
+    ),
+    linear-gradient(180deg, rgba(10, 24, 20, 0.94), rgba(6, 15, 13, 0.94));
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(92, 242, 166, 0.04);
+  backdrop-filter: blur(3px);
+}
+
+/* ── HUD label utility — used for section titles, readouts ────────────────────── */
+.hud {
+  font-family: var(--font-hud);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+/* ── Controls: angular avionics buttons ──────────────────────────────────────── */
+button {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: 2px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s, background 0.12s, color 0.12s;
+}
+button:hover:not(:disabled) {
+  border-color: var(--edge-hot);
+  color: var(--phosphor-hot);
+  box-shadow: inset 0 0 0 1px rgba(31, 107, 77, 0.4);
+}
+button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+button.primary {
+  color: #1a1204;
+  background: var(--amber);
+  border-color: var(--amber);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  box-shadow: var(--glow-amber);
+}
+button.primary:hover:not(:disabled) {
+  background: #ffbb3d;
+  color: #140d02;
+}
+
+select, input {
+  font-family: var(--font-hud);
+  letter-spacing: 0.04em;
+  color: var(--phosphor);
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: 2px;
+  padding: 7px 8px;
+}
+select:focus, input:focus, button:focus-visible, a:focus-visible {
+  outline: none;
+  border-color: var(--phosphor);
+  box-shadow: var(--glow);
+}
+
+a { color: var(--phosphor); text-decoration: none; border-bottom: 1px dotted var(--phosphor-dim); }
+a:hover { color: var(--phosphor-hot); }
+
+code {
+  font-family: var(--font-hud);
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  padding: 0 4px;
+  border-radius: 2px;
+  color: var(--phosphor);
+}
+
+::selection { background: rgba(92, 242, 166, 0.28); color: var(--phosphor-hot); }
+
+/* Thin phosphor scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--edge-hot) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--edge-hot); border-radius: 0; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,8 @@
+# CargoLua.toml — lua-cargo manifest (dependencies + bundle targets)
+[package]
+name = "dynamic-mission-test"
+version = "0.2.0"
+
+[[bundle]]
+name = "dynamic-mission-test.lua"
+path = "Scripts/dynamic-mission-test/main.lua"

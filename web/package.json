@@ -1,0 +1,34 @@
+{
+  "name": "dcs-eech-mapgen",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Browser tool: pick a real-world region on an OSM map and generate a balanced EECH-campaign DCS .miz (trigger zones from open data).",
+  "scripts": {
+    "sync:campaign": "node scripts/sync-campaign.mjs",
+    "predev": "node scripts/sync-campaign.mjs",
+    "prebuild": "node scripts/sync-campaign.mjs",
+    "precheck": "node scripts/sync-campaign.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^3.1.2",
+    "@tsconfig/svelte": "^5.0.4",
+    "@types/leaflet": "^1.9.12",
+    "@types/proj4": "^2.5.5",
+    "svelte": "^4.2.19",
+    "svelte-check": "^3.8.6",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.8"
+  },
+  "dependencies": {
+    "@fontsource/chakra-petch": "^5.2.7",
+    "@fontsource/share-tech-mono": "^5.2.7",
+    "jszip": "^3.10.1",
+    "leaflet": "^1.9.4",
+    "proj4": "^2.12.1"
+  }
+}

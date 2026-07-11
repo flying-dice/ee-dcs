@@ -1,0 +1,60 @@
+# EECH Spec 00 — INDEX
+
+Ground-truth feature specification of the Enemy Engaged Comanche Hokum (EECH) dynamic campaign, transposed from the C source at `E:\eech_source_code` (github.com/flying-dice/eech_source_code), for the DCS World Lua port. Every constant, formula, threshold and timer in specs 01–10 carries an `eech <file>:<line>` citation; warzone-data-file values are marked DATA-DRIVEN with the reader cited. **214 features** across 10 specs.
+
+## Campaign overview
+
+An EECH campaign is a persistent, server-authoritative entity tree: a session entity owns two forces (sides), each force owns keysites, groups (of vehicles/aircraft), tasks and pilots, and the world is partitioned into a sector grid overlaid with per-side fog-of-war timers and four influence maps. Warzone data files seed keysites, hardware reserves, population-derived installations and a road-node graph. A timed update scheduler (19 registered campaign cadences, phase-aligned to elapsed campaign time) drives 12 high-level AI task generators that scan keysites and sectors, score candidates against imap layers gated by FOW (downgrading strikes to recon when intelligence is stale), and post tasks to a per-keysite task board. An assignment engine matches pending tasks to existing *idle* groups via a suitability matrix (deliberately reserving player-flyable tasks for humans), a route generator builds terrain-biased waypoint routes, and landing-slot arbitration throttles air operations at each keysite. Task state changes fan out reactions — CAP/BARCAP on incoming strikes, SEAD rings, BDA and efficiency-branched follow-on strikes or troop insertions — while keysites run a producer→consumer supply economy (factories/refineries/ports produce ammo/fuel that airbases and FARPs drain), repair damaged buildings, and flip sides via probabilistic troop-insertion capture. Attrition is replenished from finite per-side hardware reserves through per-keysite regeneration queues. The shipped campaign ends event-driven only: all five objective keysites taken, the enemy left without usable airbases, or without player-flyable combat helicopters. (The famous fc_updt.c "campaign criteria" evaluator is dead code in the community source — see Spec 02.)
+
+## Spec index
+
+| Spec | File | Prefix | Features | Covers |
+|---|---|---|---|---|
+| 01 | [01-session-lifecycle.md](01-session-lifecycle.md) | SESSION | F1–F20 | Session entity, update scheduling (per-frame list + 19-entry timed cadence table), game time/day-night, time acceleration, gameflow, campaign creation & objective-keysite selection, event-driven victory, save/restore, campaign UI surface |
+| 02 | [02-force-win-criteria.md](02-force-win-criteria.md) | FORCE | F1–F37 | force_info model, 8 hardware categories, reserve seed/decrement/(unused) recycle, force_percentage, all 15 campaign criteria (dead code, fully enumerated), the live win checks in fc_msgs.c |
+| 03 | [03-keysites-supply.md](03-keysites-supply.md) | KEYSITE | F1–F19 | 9-type × 28-column keysite database, supply production/consumption economy, crates & resupply missions, efficiency (building-strength), repair, probabilistic capture, en_suply |
+| 04 | [04-task-generation.md](04-task-generation.md) | TASKGEN | F1–F17 | start_high_level_ai schedule (campaign + skirmish), all 12 create_*_tasks generators (periods, scans, scoring, FOW gates, strike-vs-recon forks, caps), create_task engine, suitable.c matrix, order.c (OOB init) |
+| 05 | [05-reaction.md](05-reaction.md) | REACT | F1–F14 | Task-assigned reactions (CAP/BARCAP gates, 1800s expiries), SEAD ring (4 km, max 3), recon/BDA-completed chains with 0.3-efficiency branch, counter-insertion, strike re-attack, task-failed (none), artillery-fire & anti-ship reactions |
+| 06 | [06-sectors-fow-imaps-frontline.md](06-sectors-fow-imaps-frontline.md) | SECTOR | F1–F19 | Sector grid, per-side FOW (30s decay tick, 4h timer, recon_radius×2 grants, own-side always-visible), all 4 imap layers + normalization, ai_fline.c static frontline (computed once at load) |
+| 07 | [07-task-engine-routing.md](07-task-engine-routing.md) | TASK | F1–F26 | Complete 30-row task database (priority/duration/flyable/ROE/flags), task lifecycle & expiry, assign.c matching engine, engage.c rules, croute.c biased routing, 37 waypoint types, landing-slot protocol |
+| 08 | [08-groups-divisions-regen.md](08-groups-divisions-regen.md) | GROUP | F1–F16 | 26-row group composition database, group lifecycle (IDLE/BUSY, amalgamation, RTB, disband), 17-row division table + HQ company assignment, regen queues (ring size 5, reserve gating, capture seeding/resizing) |
+| 09 | [09-warzone-data-roads.md](09-warzone-data-roads.md) | WARZONE | F1–F21 | Full warzone schema (dead parser.c + live parsgen.c, cross-referenced), reserve seeding, faction tick (dead), population model, road-node graph (rebuildable: .dat/.nde/.wp formats), briefing content |
+| 10 | [10-pilots-multiplayer.md](10-pilots-multiplayer.md) | PILOT | F1–F25 | Pilot careers (rank thresholds, full medal tables), kill-credit pipeline, player-flyable filtering & AI task reservation for humans, MP join/side/gunship/mission flow, death/eject/disconnect, server session model |
+
+## Cross-subsystem picture
+
+```
+warzone data (parsgen.c, Spec 09) ──seeds──> keysites (03) · reserves (02) · road graph (09) · objective keysites (01)
+session scheduler (01) ──cadences──> taskgen (04) · FOW decay & imap normalize (06) · keysite supply tick (03) · regen (08) · assign sweep (07)
+unit events ──grants──> FOW (06) ──gates──> taskgen scoring (04) <──weights── imaps (06)
+taskgen (04) ──creates──> tasks (07) ──assigned to──> idle groups (08) ──routed by──> croute/waypoints/landing slots (07)
+task ASSIGNED/COMPLETED ──notifies──> force (02) ──dispatches──> reactions (05) ──create more──> tasks (07)
+combat losses ──> regen queues (08) ──gated by──> force reserves (02); keysite capture (03) ──> queue seeding (08) · win check (01/02)
+players (10) ──reserved tasks──> assign.c (07); kills (10) ──> pilot careers (10) · force stats (02)
+```
+
+Load-bearing couplings the port must respect: FOW gates in taskgen reference the *sector* timers that unit movement stamps (06→04); reactions read keysite DB flags `requires_cap`/`requires_barcap`/`oca_target` and the 0.3 `minimum_efficiency` (03→05); regen is vetoed by force reserves ≤ 0 *and* keysite usability *and* player-landed (02+03→08); capture both flips imaps and reseeds regen queues (03→06+08); the win check fires from keysite-capture and helicopter-kill events, not a timer (03+10→01/02).
+
+## Top port gaps (rolled up from Section 5 of each spec)
+
+Ranked by campaign-behavior consequence:
+
+1. **Win condition models the wrong system** (02-F26..F28, 01-F13). The port's 3 criteria (incl. a 4h timeout) mirror the *dead* fc_updt.c evaluator; shipped EECH ends only event-driven — 5 objective keysites captured/destroyed, enemy has no usable air-capable keysite, or no player-flyable combat helicopters. EECH has **no time-based end**. Objective-keysite selection (isolation rating, top 5) has no counterpart.
+2. **No task board / assignment engine** (07-F10..F16, 04, 05). EECH conserves existing idle groups: suitability matrix (lowest-positive pick), priority sort with critical ×2, per-keysite assignment budgets, dedup via live-task counts, 10-min unassigned expiry (= the task-failure path), player reserves. The port spawns fresh groups per task, so failure-by-no-group, dedup and force conservation all vanish.
+3. **Producer→consumer supply economy absent** (03-F6..F10). Factories +1.0 ammo/min, refineries +1.0 fuel/min, ports +0.2/+0.2, airbases −0.2/−0.4; floor 10/cap 100; physical crate deliveries; resupply requested at ≤75; supply level scales rearm/refuel time. The port's finite role pools have no production and no interdiction surface — bombing a factory does nothing.
+4. **Capture rules diverge sharply** (03-F14..F16). EECH offers troop insertion only when efficiency < 0.3 and success is probabilistic (`(eff−0.3)/0.7 × members/(members+losses)`); the port captures deterministically at efficiency < 0.80 + 5 min — bases far easier to take. Capture side-effects (instant 5-building repair, regen queue seeding ±6 helo/±4 FW, imap repaint) mostly missing.
+5. **FOW radii are invented; mechanism differs** (06-F6..F9). The 30 s decay tick is real (`FOG_OF_WAR_DECAY_RATE`, highlevl.h:67) but FOW is a per-sector countdown (max 4 h) stamped at **per-unit-type `recon_radius × 2`** with linear falloff — fighters 20 km effective, attack helis 10 km, most ground vehicles 1–4 km — not flat 20/10/3 km categories; own-controlled sectors are always fully visible; only sector entry grants (engagements grant nothing).
+6. **No persistence** (01-F16..F18). EECH saves/restores the entire entity tree with backup rotation and autosave; the port loses the campaign on mission end — the single largest missing subsystem.
+7. **No sector grid or road network** (06-F1..F5, 09-F13..F19). Sectors carry ownership (the PSD model that seeds the territorial game), FOW, imaps and task caps; ground groups advance one adjacent road node per decision, rated 2.0 × enemy-base-distance imap (there is no path search). Bases-as-sectors plus a 140 km dynamic base-distance frontline is a different mechanism from EECH's frontline, which is computed **once at campaign load** and used mainly for initial force placement.
+8. **Efficiency formula mismatch** (03-F12). EECH keysite efficiency = building strength / maximum (supply plays no part); below 0.3 → UNUSABLE or destroyed. The port's health×0.5 + ammo×0.25 + fuel×0.25 blend and ammo&fuel≥50% repair gate are inventions.
+9. **Reserve/regen semantics** (02-F27..F33, 08-F12..F16). Reserve recycle (`replace_into_force_info`) has **zero callers** — shipped EECH never returns hardware to the pool, so the port's recycle-on-RTB implements design intent, not shipped behavior. `rg_dbase.c` is empty: no per-category timers exist; regen cadence is one DATA-DRIVEN per-side float. Vehicles are reserve-gated too (not aircraft-only); queue overflow silently discards entitlements; capture reseeds and resizes queues.
+10. **Pilot/player layer unported** (10-F7..F20). EECH's AI deliberately reserves campaign tasks for human players and assigns real campaign missions to them; kills feed a persistent career (Lt 0 → Col 250,000 pts, full medal tables). None exists in the port — humans fly beside the campaign, not inside it.
+11. **Landing-slot arbitration absent** (07-F22..F26). Reserve/lock accounting per keysite throttles EECH air-operation tempo; the port has no equivalent, so sortie rates are unbounded by basing capacity.
+12. **Reaction subtleties** (05-F4..F13). >1 live SEAD task aborts all keysite follow-ons; strict-`<` vs `≥` asymmetry at the 0.3 efficiency branch; artillery-fire BAI/recon, anti-ship, and group-objective SEAD/BAI reactions have no port counterpart; ground/anti-ship strikes intentionally skip dedup.
+13. **Route generation** (07-F17..F20). Terrain-biased recursive midpoint routing (valley-hugging, enemy-sector avoidance, 0.94-cosine optimizer) replaced by straight DCS waypoints — changes exposure and timing of every air task.
+14. **Generator coverage** (04). The port matches campaign periods but omits the skirmish schedule, the keysite-strike recon-first fork details, and the SEAD-ring helper; `heli_war` is a port invention with no EECH generator equivalent (documented as such).
+
+## Source caveats (do not "fix" in the port)
+
+- Dead code is pervasive in the community source and is flagged per spec: fc_updt.c criteria evaluator (02), ai/faction/parser.c (not compiled — live parser is ai/parser/parsgen.c, 09), END_CAMPAIGN no-op and trigger polling stub (01), `validate_task_generation` stub and unused `difficulty_rating` (07), people/ship regen (08), IMAP_IMPORTANCE has zero live consumers (06).
+- Deliberate quirks to replicate, not repair: lowest-positive suitability pick (assign.c:497), shared repair static-timer (ks_updt.c), regen queue overwrite-oldest, ×1000 flying-hours unit bug (10).

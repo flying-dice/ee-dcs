@@ -1,0 +1,14 @@
+# Node / web tooling
+web/node_modules/
+web/dist/
+# Generated from dist/ by web/scripts/sync-campaign.mjs
+web/src/generated/
+
+# Test / tooling artifacts
+.playwright-mcp/
+scratchpad/
+
+# Logs & OS cruft
+*.log
+.DS_Store
+Thumbs.db
