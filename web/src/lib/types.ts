@@ -83,21 +83,57 @@ export interface TheatreFeature {
   };
 }
 
-/** A DCS airbase scraped from the terrain (Beacons.lua / world.getAirbases). */
+/** One real parking spot at a DCS airfield (from Airbase.getParking via tools/dcs-export).
+ *  Coordinates are DCS world metres: x = north, y = east — placed directly on a baked
+ *  Client slot's unit ["x"]/["y"]. termType is DCS's terminal-type code (see MOOSE
+ *  AIRBASE.TerminalType): which airframe class the spot fits. */
+export interface ParkingSpot {
+  termIndex: number;         // Airbase.getParking Term_Index → unit ["parking"]/["parking_id"]
+  termType: number;          // Term_Type: 16 runway, 40 heli-only, 68 shelter, 72/104 open, …
+  toAc: boolean;             // take-off capable
+  x: number;                 // DCS north (metres)
+  y: number;                 // DCS east (metres)
+  alt: number;               // spot ground elevation (metres) → unit ["alt"]
+}
+
+/** A DCS airbase scraped from the terrain (Beacons.lua / world.getAirbases). The
+ *  airdromeId + parking spots are present only when the terrain was exported with the
+ *  current tools/dcs-export/airbases.lua (older extractions carry name/category/latlon
+ *  only — such airbases get no baked Client slots). */
 export interface AirbasePoint {
   name: string;
   latlon: LatLon;
   category: string;          // AIRDROME | HELIPAD
+  /** Numeric DCS airbase id — equals the mission-file route point ["airdromeId"]. */
+  airdromeId?: number;
+  /** Airfield reference point in DCS world metres (x = north, y = east). */
+  dcs?: DcsPoint;
+  /** Real parking spots for baking human-flyable Client slots. */
+  parking?: ParkingSpot[];
 }
 
-/** GeoJSON FeatureCollection of airbase points, one file per terrain
- *  (src/theatres/<Id>.airbases.geojson) from tools/dcs-export. */
+/** The feature list inside a theatre's `src/theatres/<Id>.geojson` (from tools/dcs-export):
+ *  a TERRAIN feature plus AIRBASE points and PARKING points joined to their airfield by
+ *  `airdromeId`. Used to type the airbase/parking features when splitting the file. */
 export interface AirbaseFeatureCollection {
   type: 'FeatureCollection';
   features: {
     type: 'Feature';
     geometry: { type: 'Point'; coordinates: number[] };
-    properties: { type: string; category: string; name: string };
+    properties: {
+      type: 'AIRBASE' | 'PARKING' | string;
+      name?: string;
+      category?: string;
+      airdromeId?: number;
+      airbase?: string;
+      // AIRBASE ref point / PARKING spot, DCS world metres (x = north, z = east).
+      x?: number;
+      z?: number;
+      // PARKING only:
+      Term_Index?: number;
+      Term_Type?: number;
+      TO_AC?: boolean;
+    };
   }[];
 }
 

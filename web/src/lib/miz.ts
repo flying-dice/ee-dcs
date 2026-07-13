@@ -22,6 +22,7 @@ import type { Keysite, DcsZone, Terrain, Side } from './types';
 import { latLonToDcs } from './projection';
 import type { UnitTypes } from './units';
 import { unitConfigLua } from './units';
+import { buildClientSlots } from './slots';
 
 // The built EECH campaign bundle (~1 MB) is mirrored from the repo-root build output by
 // scripts/sync-campaign.mjs (npm pre{dev,build,check} hooks) — rebuild the campaign and
@@ -38,17 +39,31 @@ async function loadCampaignBundle(): Promise<string> {
 const CAMPAIGN_LUA_NAME = 'ee-dcs.lua';
 const INIT_SCRIPT_RESKEY = 'ResKey_initScript_10';
 
+// Coalition/country roster. The campaign spawns everything at runtime via
+// coalition.addGroup for country.id.USA (2, blue) / RUSSIA (0, red) — but DCS rejects
+// addGroup for a country that isn't declared in the mission, failing every spawn with
+// "Can't update mission database". So we declare the full roster exactly like a working
+// ME-saved mission: CJTF Blue/Red hold the blue/red coalitions and every other country
+// (including USA and RUSSIA) sits in neutrals. coalition.<side>.country stays empty (no
+// pre-placed units — the campaign spawns them). Without this, nothing ever spawns.
+const CJTF_BLUE_ID = 80;
+const CJTF_RED_ID = 81;
+const NEUTRAL_COUNTRY_IDS: number[] = [];
+for (let id = 0; id <= 92; id++) {
+  if (id !== 14 && id !== CJTF_BLUE_ID && id !== CJTF_RED_ID) NEUTRAL_COUNTRY_IDS.push(id);
+}
+
 // ── Lua table serializer (DCS Mission Editor style) ─────────────────────────────
 //
 // Emits tab-indented `["key"] = value,` / `[n] = value,` lines exactly the way DCS
 // writes mission files. Only needs to serialize the plain JSON-like tables we build
 // below (numbers, strings, booleans, nested objects, and arrays).
 
-type LuaValue = number | string | boolean | LuaTable;
-interface LuaObject {
+export type LuaValue = number | string | boolean | LuaTable;
+export interface LuaObject {
   [key: string]: LuaValue;
 }
-type LuaTable = LuaObject | LuaValue[];
+export type LuaTable = LuaObject | LuaValue[];
 
 const TAB = '\t';
 
@@ -116,7 +131,7 @@ function serializeTable(tbl: LuaTable, level: number): string {
 }
 
 /** Serialize a named top-level table, e.g. `mission = { … }`, as a .miz entry body. */
-function serializeNamed(name: string, tbl: LuaTable): string {
+export function serializeNamed(name: string, tbl: LuaTable): string {
   return `${name} = \n${serializeTable(tbl, 0)} -- end of ${name}\n`;
 }
 
@@ -188,12 +203,14 @@ function zoneToLua(z: DcsZone): LuaObject {
 
 // ── Minimal, valid mission skeleton ──────────────────────────────────────────────
 
-function emptyCoalitionSide(name: string): LuaObject {
+function emptyCoalitionSide(name: string, country?: LuaObject | null): LuaObject {
   return {
     bullseye: { y: 0, x: 0 },
     nav_points: {},
     name,
-    country: {}, // no placed units — the campaign spawns everything at runtime
+    // No campaign units are pre-placed (spawned at runtime), but baked human-flyable
+    // Client slots live here as country[1] when present.
+    country: country ? [country] : {},
   };
 }
 
@@ -212,6 +229,7 @@ export function buildMissionTable(
   zones: DcsZone[],
   terrain: Terrain,
   initScriptFile = '',
+  slots?: { blue: LuaObject | null; red: LuaObject | null },
 ): LuaObject {
   const zoneTables: LuaValue[] = zones.map(zoneToLua);
 
@@ -291,7 +309,7 @@ export function buildMissionTable(
     theatre: terrain.id,
     triggers: { zones: zoneTables },
     map: { centerY, zoom: 100, centerX },
-    coalitions: { blue: {}, neutrals: {}, red: {} },
+    coalitions: { blue: [CJTF_BLUE_ID], neutrals: NEUTRAL_COUNTRY_IDS, red: [CJTF_RED_ID] },
     descriptionText: '',
     pictureFileNameR: {},
     descriptionBlueTask: '',
@@ -299,9 +317,9 @@ export function buildMissionTable(
     descriptionRedTask: '',
     pictureFileNameB: {},
     coalition: {
-      blue: emptyCoalitionSide('blue'),
+      blue: emptyCoalitionSide('blue', slots?.blue),
       neutrals: emptyCoalitionSide('neutrals'),
-      red: emptyCoalitionSide('red'),
+      red: emptyCoalitionSide('red', slots?.red),
     },
     sortie: '',
     version: 23,
@@ -535,8 +553,12 @@ export interface BuildMizOptions {
    *  the output is a directly-playable campaign. Set false for a zones-only .miz. */
   bakeCampaign?: boolean;
   /** Per-side aircraft type overrides. When any differ from the port defaults, a
-   *  `_G.DMT_CONFIG` snippet is prepended to the baked bundle. Ignored if not baking. */
+   *  `_G.DMT_CONFIG` snippet is prepended to the baked bundle. Also drives which aircraft
+   *  types get baked Client slots. */
   unitTypes?: UnitTypes;
+  /** Bake 4 human-flyable Client slots per aircraft type at each compatible airbase
+   *  (needs terrain parking data — see slots.ts). Default true. */
+  bakeSlots?: boolean;
 }
 
 /** Deterministic .miz filename for a terrain, e.g. `eech-caucasus.miz`. */
@@ -558,11 +580,17 @@ export async function buildMiz(
   opts: BuildMizOptions = {},
 ): Promise<Blob> {
   const bakeCampaign = opts.bakeCampaign ?? true;
+  const bakeSlots = opts.bakeSlots ?? true;
   const { default: JSZip } = await import('jszip');
 
   const zones = keysitesToZones(keysites, terrain);
   const initScriptFile = bakeCampaign ? INIT_SCRIPT_RESKEY : '';
-  const mission = buildMissionTable(zones, terrain, initScriptFile);
+  const slots = bakeSlots ? buildClientSlots(keysites, terrain, opts.unitTypes) : undefined;
+  if (slots) {
+    console.info(`miz: baked ${slots.slotCount} Client slot(s)`);
+    if (slots.notes.length) console.info('miz slot notes:\n  ' + slots.notes.join('\n  '));
+  }
+  const mission = buildMissionTable(zones, terrain, initScriptFile, slots);
   const missionLua = serializeNamed('mission', mission);
 
   const zip = new JSZip();

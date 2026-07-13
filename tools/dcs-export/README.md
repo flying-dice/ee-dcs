@@ -1,22 +1,39 @@
 # DCS theatre export
 
-Scripts that run **inside DCS** to extract a theatre's real geometry + projection, so
-the web map-generator (`web/`) can overlay it and project lat/lon → DCS metres exactly
-as the game does (self-consistent with the terrain's warp — no assumed WGS84).
+One script (`theatre-dump.lua`) that runs **inside DCS** to extract a theatre's real
+geometry + projection + airbases, so the web map-generator (`web/`) can overlay it and
+project lat/lon → DCS metres exactly as the game does (self-consistent with the terrain's
+warp — no assumed WGS84).
 
 ## How to run
 
-1. Open **DCS Fiddle** (or any DCS Lua console with a GUI-environment option).
-2. Load the target map — open a mission on it in the Mission Editor, or run a mission.
-3. **`theatre.lua`** → select the **GUI environment**, paste, run. It returns a GeoJSON
-   `Feature` (map-extent polygon + `properties.projection.proj` proj4 string + UTM +
-   self-validation anchors). Save the returned JSON as `web/src/theatres/<Id>.geojson`.
-4. **`airbases.lua`** → select the **mission/server environment** (needs `world.getAirbases`,
-   so a mission must be running), paste, run. It returns a GeoJSON `FeatureCollection` of
-   airbase + parking points. Optional overlay; save as `web/src/theatres/<Id>.airbases.geojson`.
+Each theatre is ONE file — `web/src/theatres/<Id>.geojson` — a GeoJSON `FeatureCollection`
+holding the **TERRAIN** feature (map-extent polygon + projection + anchors) plus one
+**AIRBASE** point per airfield and one **PARKING** point per spot.
 
-After dropping the `.geojson` into `web/src/theatres/`, rebuild the web app — the theatre
-appears in the picker automatically (the app globs that folder). No code change needed.
+The two halves live in different DCS Lua environments — bounds/projection need the GUI/hooks
+env (`terrain.GetTerrainConfig`/`convert*`), airbases/parking need the mission env
+(`world.getAirbases`/`Airbase.getParking`), and neither env has both. So **`theatre-dump.lua`
+runs as a GUI hook**: it computes the TERRAIN feature locally, then pulls the airbases from
+the running mission with `net.dostring_in` (which works in a stock, sanitized mission env
+because `world`/`Airbase`/`coord` are never sanitized) and writes the file with `io` (hooks
+have it). No `MissionScripting.lua` change of any kind.
+
+Install:
+
+1. **Copy `theatre-dump.lua`** into your DCS write dir, e.g.
+   `C:\Users\<you>\Saved Games\DCS.openbeta\Scripts\Hooks\theatre-dump.lua`.
+2. Restart DCS, then load a mission on each terrain. A few seconds in, an in-mission alert
+   names the file it wrote — by default `Saved Games\DCS.openbeta\<Id>.geojson`. Copy that
+   into `web/src/theatres/`. (Or set `OUT_DIR` at the top of the file to your
+   `web\src\theatres\` path to write there directly — no other setup.)
+
+**No fallback:** if the hooks env can't read the terrain API, nothing is written (never
+partial/approximate bounds). `theatre-dump.lua` is the whole tool — one self-contained file
+(it embeds the DCS Fiddle JSON encoder/decoder; there are no other scripts to run).
+
+After the `.geojson` is in `web/src/theatres/`, rebuild the web app — the theatre appears
+in the picker automatically (the app globs that folder). No code change needed.
 
 ## Why extract from DCS rather than hardcode params
 

@@ -1,35 +1,94 @@
-import type { Terrain, TheatreFeature, BBox, LatLon, AirbasePoint, AirbaseFeatureCollection } from './types';
+import type {
+  Terrain,
+  TheatreFeature,
+  BBox,
+  LatLon,
+  AirbasePoint,
+  AirbaseFeatureCollection,
+  ParkingSpot,
+} from './types';
 
 // ── DCS theatres, loaded from baked GeoJSON extractions ─────────────────────────
 //
-// Each theatre is a GeoJSON Feature under src/theatres/<Id>.geojson, produced by
-// tools/dcs-export/theatre.lua run inside DCS (see that script's header). The Feature
-// carries the real (warped) map-extent polygon and a proj4 string extracted from DCS
-// itself — so projecting a lat/lon reproduces the game's own convertLatLonToMeters.
+// Each theatre is ONE GeoJSON file under src/theatres/<Id>.geojson. It is either a bare
+// TERRAIN Feature (the map-extent polygon + a proj4 string extracted from DCS, so
+// projecting a lat/lon reproduces the game's own convertLatLonToMeters) or — once the
+// airbase export has run — a FeatureCollection holding that TERRAIN feature plus one
+// AIRBASE point per airfield and one PARKING point per spot (see tools/dcs-export).
 //
-// To add a theatre: run the export script on that map in DCS, drop the resulting
-// <Id>.geojson into src/theatres/, and rebuild. No code change needed.
+// To add a theatre: run tools/dcs-export/theatre.lua for the TERRAIN feature, then
+// tools/dcs-export/theatre-dump.lua to fold airbases+parking into the same file. Drop it
+// into src/theatres/ and rebuild — the app globs this folder, no code change needed.
 
 // Vite bundles these as raw text (Vite doesn't parse .geojson natively) → JSON.parse.
-// The folder holds two kinds of file: <Id>.geojson (the theatre Feature) and
-// <Id>.airbases.geojson (a scraped airbase FeatureCollection).
 const rawFiles = import.meta.glob('../theatres/*.geojson', {
   eager: true,
   query: '?raw',
   import: 'default',
 }) as Record<string, string>;
 
-// Airbase collections, keyed by terrain id (filename before ".airbases").
-const airbasesByTerrain: Record<string, AirbasePoint[]> = {};
-for (const [path, raw] of Object.entries(rawFiles)) {
-  if (!path.endsWith('.airbases.geojson')) continue;
-  const id = path.split('/').pop()!.replace('.airbases.geojson', '');
-  const fc = JSON.parse(raw) as AirbaseFeatureCollection;
-  airbasesByTerrain[id] = fc.features.map((f) => ({
-    name: f.properties.name,
-    category: f.properties.category,
-    latlon: { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] },
-  }));
+// Build airfields from the AIRBASE/PARKING features, joining each parking spot to its
+// airfield by numeric airdromeId (present only once a terrain has the current export).
+function parseAirbaseFeatures(features: AirbaseFeatureCollection['features']): AirbasePoint[] {
+  const airbases: AirbasePoint[] = [];
+  const byAirdromeId = new Map<number, AirbasePoint>();
+  const parkingByAirdromeId = new Map<number, ParkingSpot[]>();
+
+  for (const f of features) {
+    const p = f.properties;
+    if (p.type === 'TERRAIN') continue; // the map-extent feature, handled separately
+    if (p.type === 'PARKING') {
+      // DCS world metres: export x = north (unit x), z = east (unit y).
+      if (p.airdromeId === undefined || p.Term_Index === undefined) continue;
+      const list = parkingByAirdromeId.get(p.airdromeId) ?? [];
+      list.push({
+        termIndex: p.Term_Index,
+        termType: p.Term_Type ?? 0,
+        toAc: p.TO_AC ?? false,
+        x: p.x ?? 0,
+        y: p.z ?? 0,
+        alt: f.geometry.coordinates[2] ?? 0,
+      });
+      parkingByAirdromeId.set(p.airdromeId, list);
+      continue;
+    }
+    // AIRBASE (or legacy features with no explicit type but a name/category).
+    const ab: AirbasePoint = {
+      name: p.name ?? '',
+      category: p.category ?? '',
+      latlon: { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] },
+      airdromeId: p.airdromeId,
+      dcs: p.x !== undefined && p.z !== undefined ? { x: p.x, y: p.z } : undefined,
+    };
+    airbases.push(ab);
+    if (p.airdromeId !== undefined) byAirdromeId.set(p.airdromeId, ab);
+  }
+
+  // Attach parking to its airfield (only when the export carried airdromeId + spots).
+  for (const [aid, spots] of parkingByAirdromeId) {
+    const ab = byAirdromeId.get(aid);
+    if (ab) ab.parking = spots;
+  }
+  return airbases;
+}
+
+// Split one theatre file into its TERRAIN feature (projection/bounds) + parsed airbases.
+// Accepts a bare TERRAIN Feature or a FeatureCollection carrying it. Null if no TERRAIN.
+function splitTheatreFile(raw: string): { terrain: TheatreFeature; airbases: AirbasePoint[] } | null {
+  const data = JSON.parse(raw) as
+    | TheatreFeature
+    | { type: 'FeatureCollection'; features: AirbaseFeatureCollection['features'] };
+  if (data.type === 'Feature') {
+    return { terrain: data, airbases: [] };
+  }
+  if (data.type === 'FeatureCollection') {
+    const terrain = data.features.find((f) => f.properties?.type === 'TERRAIN') as unknown as
+      | TheatreFeature
+      | undefined;
+    if (!terrain) return null;
+    return { terrain, airbases: parseAirbaseFeatures(data.features) };
+  }
+  return null;
 }
 
 function ringToLatLon(ring: number[][]): LatLon[] {
@@ -56,7 +115,7 @@ function zoomFor(bounds: BBox): number {
   return 8;
 }
 
-function featureToTerrain(f: TheatreFeature): Terrain {
+function featureToTerrain(f: TheatreFeature, airbases: AirbasePoint[]): Terrain {
   const ring = ringToLatLon(f.geometry.coordinates[0]);
   const bounds = bboxOf(ring);
   const center: LatLon = { lat: f.properties.center.lat, lon: f.properties.center.lon };
@@ -65,7 +124,7 @@ function featureToTerrain(f: TheatreFeature): Terrain {
     id: f.properties.id,
     label: f.properties.name || f.properties.id,
     center,
-    airbases: airbasesByTerrain[f.properties.id] ?? [],
+    airbases,
     boundsPolygon: ring,
     bounds,
     projString: f.properties.projection.proj,
@@ -75,9 +134,10 @@ function featureToTerrain(f: TheatreFeature): Terrain {
   };
 }
 
-export const TERRAINS: Terrain[] = Object.entries(rawFiles)
-  .filter(([path]) => !path.endsWith('.airbases.geojson'))
-  .map(([, raw]) => featureToTerrain(JSON.parse(raw) as TheatreFeature))
+export const TERRAINS: Terrain[] = Object.values(rawFiles)
+  .map((raw) => splitTheatreFile(raw))
+  .filter((s): s is { terrain: TheatreFeature; airbases: AirbasePoint[] } => s !== null)
+  .map(({ terrain, airbases }) => featureToTerrain(terrain, airbases))
   .sort((a, b) => a.label.localeCompare(b.label));
 
 export function terrainById(id: string): Terrain | undefined {

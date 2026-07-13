@@ -50,6 +50,10 @@ const MIN_SPACING_M = 4000;
 // hand-authored map rather than stacking in one city. (Not an EECH rule — a curation
 // proxy; EECH hand-picked sparse keysites, popread.c has no spacing logic.)
 const DECLUTTER_M = 5000;
+// FARPs are forward operating bases: generated behind the frontline in friendly
+// territory, this far back (metres, seeded jitter between the two).
+const FARP_MIN_OFFSET_M = 8000;
+const FARP_MAX_OFFSET_M = 20000;
 
 // Zone radii, metres — matches the port's sensible zone sizes.
 const RADIUS_BY_TYPE: Record<KeysiteType, number> = {
@@ -129,6 +133,88 @@ export function sideOfFrontline(p: LatLon, frontline: LatLon[]): number {
  *  anchor for its half of the map). */
 export function blueSignFrom(mainBlue: AirbasePoint | null, frontline: LatLon[]): number {
   return mainBlue ? sideOfFrontline(mainBlue.latlon, frontline) : 1;
+}
+
+// ── FARP placement: forward operating bases generated along the frontline ─────────
+// FARPs aren't tied to real-world features — EECH scatters them as objects and the
+// campaign spawns them at the zone. We place `count` of them evenly along the drawn
+// frontline, offset into friendly territory, so they hug the front AND the requested
+// count is always met (OSM rarely has that many real heli sites).
+
+function frontlineLength(fl: LatLon[]): number {
+  let c = 0;
+  for (let i = 0; i < fl.length - 1; i++) c += distM(fl[i], fl[i + 1]);
+  return c;
+}
+
+// Point at metre-distance `target` along the polyline, plus its segment index.
+function pointAtAlong(fl: LatLon[], target: number): { lat: number; lon: number; i: number } {
+  let cum = 0;
+  for (let i = 0; i < fl.length - 1; i++) {
+    const seg = distM(fl[i], fl[i + 1]);
+    if (cum + seg >= target || i === fl.length - 2) {
+      const t = seg > 0 ? Math.max(0, Math.min(1, (target - cum) / seg)) : 0;
+      return {
+        lat: fl[i].lat + t * (fl[i + 1].lat - fl[i].lat),
+        lon: fl[i].lon + t * (fl[i + 1].lon - fl[i].lon),
+        i,
+      };
+    }
+    cum += seg;
+  }
+  return { lat: fl[0].lat, lon: fl[0].lon, i: 0 };
+}
+
+// (dLat, dLon) that moves `offsetM` metres perpendicular to the front into a side's turf.
+function offsetIntoSide(
+  fl: LatLon[],
+  p: { lat: number; lon: number; i: number },
+  side: Side,
+  blueSign: number,
+  offsetM: number,
+): { dLat: number; dLon: number } {
+  const a = fl[p.i];
+  const b = fl[p.i + 1];
+  const cosLat = Math.cos((p.lat * Math.PI) / 180) || 1e-6;
+  const vx = (b.lon - a.lon) * cosLat * 111320;
+  const vy = (b.lat - a.lat) * 111320;
+  const len = Math.hypot(vx, vy) || 1;
+  let nx = -vy / len;
+  let ny = vx / len;
+  // Flip the normal if it points at the enemy side.
+  const wantSign = side === 'blue' ? blueSign : -blueSign;
+  const testLat = p.lat + (ny * 1000) / 111320;
+  const testLon = p.lon + (nx * 1000) / (cosLat * 111320);
+  if (sideOfFrontline({ lat: testLat, lon: testLon }, fl) !== wantSign) {
+    nx = -nx;
+    ny = -ny;
+  }
+  return { dLat: (ny * offsetM) / 111320, dLon: (nx * offsetM) / (cosLat * 111320) };
+}
+
+function generateFarps(
+  frontline: LatLon[],
+  side: Side,
+  blueSign: number,
+  bbox: BBox,
+  count: number,
+  seed: number,
+): { id: string; latlon: LatLon; name: string }[] {
+  if (count <= 0 || frontline.length < 2) return [];
+  const L = frontlineLength(frontline);
+  const rnd = mulberry32(seed);
+  const out: { id: string; latlon: LatLon; name: string }[] = [];
+  for (let k = 0; k < count; k++) {
+    // Even along the front, with a little seeded jitter so Shuffle re-rolls them.
+    const frac = (k + 0.5) / count + (rnd() - 0.5) * (0.7 / count);
+    const p = pointAtAlong(frontline, Math.max(0, Math.min(1, frac)) * L);
+    const offsetM = FARP_MIN_OFFSET_M + rnd() * (FARP_MAX_OFFSET_M - FARP_MIN_OFFSET_M);
+    const { dLat, dLon } = offsetIntoSide(frontline, p, side, blueSign, offsetM);
+    const lat = Math.min(bbox.north, Math.max(bbox.south, p.lat + dLat));
+    const lon = Math.min(bbox.east, Math.max(bbox.west, p.lon + dLon));
+    out.push({ id: `farp:${side}:${k + 1}`, latlon: { lat, lon }, name: `${side}-${k + 1}` });
+  }
+  return out;
 }
 
 // ── seeded shuffle (so a Shuffle button re-rolls placements) ───────────────────────
@@ -328,6 +414,16 @@ export function buildKeysites(input: BuildInput): Keysite[] {
     for (const side of ['blue', 'red'] as Side[]) {
       const want = counts[type]?.[side] ?? 0;
       if (want <= 0) continue;
+
+      // FARPs: forward operating bases generated along the frontline (not from OSM), so
+      // they hug the front and the exact requested count is always placed.
+      if (type === 'farp') {
+        for (const f of generateFarps(frontline, side, blueSign, bbox, want, seed ^ salt('farp', side))) {
+          add({ id: f.id, type: 'farp', side, latlon: f.latlon, name: f.name });
+        }
+        continue;
+      }
+
       const pool = osmInBox.filter((c) => c.type === type && sideOf(c.latlon) === side);
       const s = seed ^ salt(type, side);
       // EECH-faithful: most prominent real features of this type at their true locations

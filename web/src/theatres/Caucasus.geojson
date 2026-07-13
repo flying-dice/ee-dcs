@@ -1,111 +1,435 @@
 {
-  "type": "Feature",
-  "geometry": {
-    "coordinates": [
-      [
-        [
-          26.7787436,
-          48.38766348
-        ],
-        [
-          27.6373314,
-          39.6089319
-        ],
-        [
-          47.14231427,
-          38.86511141
-        ],
-        [
-          49.30978739,
-          47.38222191
-        ],
-        [
-          26.7787436,
-          48.38766348
-        ]
-      ]
-    ],
-    "type": "Polygon"
-  },
+  "type": "FeatureCollection",
   "properties": {
-    "anchors": [
-      {
-        "lon": 27.6373314,
-        "lat": 47.38222191,
-        "x": 263483.3904,
-        "z": -504251.2866
+    "terrain": "Caucasus",
+    "source": "theatre.lua + airbases"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              26.7787436,
+              48.38766348
+            ],
+            [
+              27.6373314,
+              39.6089319
+            ],
+            [
+              47.14231427,
+              38.86511141
+            ],
+            [
+              49.30978739,
+              47.38222191
+            ],
+            [
+              26.7787436,
+              48.38766348
+            ]
+          ]
+        ],
+        "type": "Polygon"
       },
-      {
-        "lon": 34.26551519,
-        "lat": 47.38222191,
-        "x": 250301.8334,
-        "z": -3994.393467
-      },
-      {
-        "lon": 47.14231427,
-        "lat": 47.38222191,
-        "x": 347340.5222,
-        "z": 966978.4526
-      },
-      {
-        "lon": 27.6373314,
-        "lat": 45.12949706,
-        "x": 13227.81078,
-        "z": -521221.5831
-      },
-      {
-        "lon": 34.26551519,
-        "lat": 45.12949706,
-        "x": 0,
-        "z": -2.328306437e-10
-      },
-      {
-        "lon": 47.14231427,
-        "lat": 45.12949706,
-        "x": 97480.98072,
-        "z": 1012461.569
-      },
-      {
-        "lon": 27.6373314,
-        "lat": 39.6089319,
-        "x": -600000,
-        "z": -560000
-      },
-      {
-        "lon": 34.26551519,
-        "lat": 39.6089319,
-        "x": -612996.0653,
-        "z": 9122.376397
-      },
-      {
-        "lon": 47.14231427,
-        "lat": 39.6089319,
-        "x": -516977.1865,
-        "z": 1116766.166
+      "properties": {
+        "anchors": [
+          {
+            "lon": 27.6373314,
+            "lat": 47.38222191,
+            "x": 263483.3904,
+            "z": -504251.2866
+          },
+          {
+            "lon": 34.26551519,
+            "lat": 47.38222191,
+            "x": 250301.8334,
+            "z": -3994.393467
+          },
+          {
+            "lon": 47.14231427,
+            "lat": 47.38222191,
+            "x": 347340.5222,
+            "z": 966978.4526
+          },
+          {
+            "lon": 27.6373314,
+            "lat": 45.12949706,
+            "x": 13227.81078,
+            "z": -521221.5831
+          },
+          {
+            "lon": 34.26551519,
+            "lat": 45.12949706,
+            "x": 0,
+            "z": -2.328306437e-10
+          },
+          {
+            "lon": 47.14231427,
+            "lat": 45.12949706,
+            "x": 97480.98072,
+            "z": 1012461.569
+          },
+          {
+            "lon": 27.6373314,
+            "lat": 39.6089319,
+            "x": -600000,
+            "z": -560000
+          },
+          {
+            "lon": 34.26551519,
+            "lat": 39.6089319,
+            "x": -612996.0653,
+            "z": 9122.376397
+          },
+          {
+            "lon": 47.14231427,
+            "lat": 39.6089319,
+            "x": -516977.1865,
+            "z": 1116766.166
+          }
+        ],
+        "type": "TERRAIN",
+        "center": {
+          "lon": 34.26551519,
+          "lat": 45.12949706
+        },
+        "projection": {
+          "scale": 0.9996,
+          "proj": "+proj=tmerc +lat_0=0 +lon_0=33 +k_0=0.9996 +x_0=-99517 +y_0=-4998115 +towgs84=0,0,0,0,0,0,0 +units=m +vunits=m +ellps=WGS84 +no_defs +axis=neu",
+          "offset": {
+            "y": 0,
+            "x": -4998115,
+            "z": -99517
+          }
+        },
+        "id": "Caucasus",
+        "hemisphere": "n",
+        "utm": {
+          "endLon": 36,
+          "startLon": 30,
+          "zone": 36,
+          "centralMeridian": 33
+        },
+        "name": "Caucasus"
       }
-    ],
-    "type": "TERRAIN",
-    "center": {
-      "lon": 34.26551519,
-      "lat": 45.12949706
     },
-    "projection": {
-      "scale": 0.9996,
-      "proj": "+proj=tmerc +lat_0=0 +lon_0=33 +k_0=0.9996 +x_0=-99517 +y_0=-4998115 +towgs84=0,0,0,0,0,0,0 +units=m +vunits=m +ellps=WGS84 +no_defs +axis=neu",
-      "offset": {
-        "y": 0,
-        "x": -4998115,
-        "z": -99517
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          37.359783,
+          45.013175
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Anapa-Vityazevo"
       }
     },
-    "id": "Caucasus",
-    "hemisphere": "n",
-    "utm": {
-      "endLon": 36,
-      "startLon": 30,
-      "zone": 36,
-      "centralMeridian": 33
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          38.925202,
+          45.08743
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Krasnodar-Center"
+      }
     },
-    "name": "Caucasus"
-  }
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          37.786226,
+          44.67333
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Novorossiysk"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          37.985887,
+          44.961383
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Krymsk"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          40.021427,
+          44.67144
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Maykop-Khanskaya"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          38.004146,
+          44.567675
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Gelendzhik"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          39.924232,
+          43.439378
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Sochi-Adler"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          39.203067,
+          45.0461
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Krasnodar-Pashkovsky"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          41.142448,
+          42.852741
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Sukhumi-Babushara"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          40.564176,
+          43.124233
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Gudauta"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          41.609275,
+          41.60328
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Batumi"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          42.061021,
+          42.238728
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Senaki-Kolkhi"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          41.876484,
+          41.932105
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Kobuleti"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          42.495684,
+          42.179154
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Kutaisi"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.10068,
+          44.218647
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Mineralnye Vody"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.625109,
+          43.510071
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Nalchik"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.620327,
+          43.791303
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Mozdok"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.946875,
+          41.67472
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Tbilisi-Lochini"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.947183,
+          41.641163
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Soganlug"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          45.019091,
+          41.637736
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Vaziani"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.588923,
+          43.208501
+        ]
+      },
+      "properties": {
+        "type": "AIRBASE",
+        "category": "AIRDROME",
+        "name": "Beslan"
+      }
+    }
+  ]
 }

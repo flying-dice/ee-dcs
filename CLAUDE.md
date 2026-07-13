@@ -30,7 +30,7 @@ Caucasus multiplayer mission**: airbases are discovered from the map, all units 
 spawned via `coalition.addGroup`, and the EECH high-level AI (strikes, recon, reaction
 chains, ground frontline, helicopter war, logistics, win condition) runs on staggered
 timers. The delivery goal is **MP-server playout** — humans join/leave a live campaign
-and their kills, losses, and recon matter to the economy (see `goals/03-mp-server-playout/`).
+and their kills, losses, and recon matter to the economy.
 
 Every module is a faithful port of specific EECH C files. Fork:
 https://github.com/flying-dice/eech_source_code — local mirror `E:\eech_source_code`.
@@ -52,7 +52,7 @@ these tools to exist in a session.
 
 Run build + check after every change; do not commit with warnings or findings.
 
-## Hard guardrails (from goals/03 GOAL.md — binding)
+## Hard guardrails (binding)
 
 - Mission-scripting environment only: `env.info()` **not** `log.info()`; **no `net.*`**,
   no `os` / `io` / `lfs`. Persistence goes through the DCS Studio bridge
@@ -70,10 +70,10 @@ Run build + check after every change; do not commit with warnings or findings.
   `reaction.spawn_bda`, `heli_war.spawn_escort` (full context: ANALYSIS §4).
 - **Players are first-class**: no campaign code may destroy, recycle, regen, or
   misclassify a player-controlled unit.
-- **Superseded constraint — do not "fix" back:** goal-02 said "spawn in-air, never
-  TakeOffParking." The design deliberately moved to **ground spawns at the nearest
+- **Superseded constraint — do not "fix" back:** an earlier design said "spawn in-air,
+  never TakeOffParking." The design deliberately moved to **ground spawns at the nearest
   friendly base with real TakeOff waypoints** (more EECH-faithful). The `attack_waves.lua:61`
-  comment and goal-02 wording are stale (backlog DOC-1). Keep ground spawns.
+  comment is stale. Keep ground spawns.
 
 ## Architecture cheat-sheet
 
@@ -91,21 +91,17 @@ Run build + check after every change; do not commit with warnings or findings.
   only via `imap.get()`.
 - **Entry point:** `main.lua` (the trigger script) → `require("game_loop").start()`. Note
   `main.lua` also still runs a legacy parallel supply/CAP/patrol layer and carries a dead
-  `_G.game_loop` handoff (double-start footgun) — retiring it is backlog P2.
+  `_G.game_loop` handoff (double-start footgun) — retiring it is a known follow-up.
 - **Re-injection guard:** `campaign_state.lua` bumps global `_DMT_GEN` each load; every
   scheduled closure captures `my_gen = cs.GENERATION` and self-cancels when it no longer
   matches. Per-process only — a server restart resets all state (persistence is unbuilt).
 - **Scheduler pattern:** `game_loop.start()` registers ~23 periodic timers with a
   period + initial offset each, explicitly mirroring EECH `start_high_level_ai()`.
 
-Depth lives in `goals/03-mp-server-playout/ANALYSIS-2026-07-06.md` and `README.md` — read
-those rather than duplicating them here.
+Depth lives in `README.md` — read it rather than duplicating it here.
 
 ## Workflow rules
 
-- The `goals/` backlog is authoritative. **Read the latest journal in the active goal
-  before working** (`goals/03-mp-server-playout/`). Journals are append-only; use the
-  `goal-backlog` skill.
 - Coordination model: Fable coordinates; Opus agents implement; per-feature adversarial
   `Agent` review before a cluster is called done. **Never use the Workflow tool.**
 - Project skills in `.claude/skills/` — `dev-loop` (build/check/inject cycle),

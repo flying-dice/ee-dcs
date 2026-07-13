@@ -282,8 +282,8 @@ each with a period and an initial offset that staggers load — a direct mirror 
 | troop insertion | 120 s | CAS, artillery | 900 s |
 | troop patrol | 300 s | OCA strike / sweep, BAI | 1800 / 1200 s |
 
-The full 23-row table with per-side BLUE/RED offsets is in
-`goals/03-mp-server-playout/ANALYSIS-2026-07-06.md` §1.
+The full 23-row schedule with per-side BLUE/RED offsets is defined in
+`Scripts/ee-dcs/game_loop.lua` (`start()`), mirroring EECH `start_high_level_ai()`.
 
 **Re-injection is safe.** `campaign_state` bumps a global generation counter each load;
 every scheduled closure self-cancels when the generation changes, so the bundle can be
@@ -313,17 +313,62 @@ Honest state of play:
 - **AI-vs-AI campaign — feature-complete vs EECH** (goals 01 and 02). Every major EECH
   campaign system has a module, all adversarially reviewed, building clean. It has **not
   yet been live-validated** in a running mission over a soak — that is the first P0 item.
-- **Player slots / join-leave / persistence — the active goal, not yet built.** The mission
-  is empty and `coalition.addGroup` cannot create human-flyable slots, so provisioning
-  player slots (pre-baked `.miz` with Client slots vs DCS 2.9 dynamic spawn) is the hard
-  blocker. There is also no player join/leave lifecycle handling and no persistence across
-  server restarts. The economy already treats humans carefully at the edges (the supply and
-  reaction handlers skip player units; humans lift fog of war and count in the strength
-  census; an enemy AI can target them) — but there is no deliberate player integration yet.
+- **Player slots — provisioned.** `coalition.addGroup` can't create human-flyable slots at
+  runtime, so the web generator instead **bakes them into the `.miz`**: 4 `TakeOffParkingHot`
+  Client slots per aircraft type at every compatible airfield, on real parking spots (see
+  *Human-flyable MP slots* below). Needs the per-terrain airbase/parking export.
+- **Join-leave / persistence — not yet built.** There is still no player join/leave
+  lifecycle handling and no persistence across server restarts. The economy already treats
+  humans carefully at the edges (the supply and reaction handlers skip player units; humans
+  lift fog of war and count in the strength census; an enemy AI can target them) — but
+  deliberate player lifecycle integration is the remaining work.
 
-The roadmap and full backlog for making this playable in MP live in
-`goals/03-mp-server-playout/GOAL.md`, backed by the structural analysis in
-`goals/03-mp-server-playout/ANALYSIS-2026-07-06.md`.
+## Human-flyable MP slots
+
+The web generator bakes **4 `TakeOffParkingHot` Client slots per aircraft type at each
+compatible airfield** (fixed-wing at AIRDROMEs, helicopters at AIRDROMEs + HELIPADs), on
+real parking spots, into `coalition.<side>.country[].{plane,helicopter}` — the exact group
+shape the Mission Editor writes for a Client aircraft. The aircraft types follow the
+campaign config (or your `DMT_CONFIG` overrides); each side's slots go to airfields that
+side owns under the drawn frontline.
+
+A ramp slot needs per-airfield DCS data — the numeric `airdromeId` and each parking spot's
+`Term_Index` / `Term_Type` / world x,z — which only DCS can supply. So slots appear only
+for terrains whose airbase/parking data has been exported (see **Exporting a theatre from
+DCS** below); a terrain without it still gets zones + campaign, just no slots. Big
+transports are placed on open ramps, fighters on shelters/open, helicopters on
+helipad/open; spots are never reused, and shortfalls are reported.
+
+## Exporting a theatre from DCS
+
+Each theatre the web tool offers is **one file** — `web/src/theatres/<Id>.geojson`, a
+GeoJSON `FeatureCollection` holding the **TERRAIN** feature (map-extent polygon + a proj4
+projection extracted from DCS + UTM + self-validation anchors) plus one **AIRBASE** point
+per airfield (with numeric `airdromeId`) and one **PARKING** point per spot (`Term_Index` /
+`Term_Type` / world x,z). DCS terrains are geographically warped relative to WGS84, so the
+projection is derived from DCS's own `convertLatLonToMeters` — projected zones then land
+exactly where DCS puts them. Everything is extracted **from DCS**, never hardcoded.
+
+Bounds/projection and airbases/parking come from two different DCS Lua environments (the
+GUI/hooks env has `terrain.GetTerrainConfig`; the mission env has `world.getAirbases`), and
+neither has both. So **`tools/dcs-export/theatre-dump.lua` runs as a GUI hook**: it computes
+the TERRAIN feature locally, pulls the airbases from the running mission with
+`net.dostring_in` (which works in a stock, sanitized mission env — `world`/`Airbase`/`coord`
+are never sanitized), and writes the combined `<Id>.geojson` with `io`. No
+`MissionScripting.lua` change of any kind.
+
+1. **Copy `theatre-dump.lua`** into your DCS write dir's `Scripts\Hooks\` folder.
+2. Restart DCS, then load a mission on each terrain. ~4 s in, an in-mission alert names the
+   file it wrote — by default `Saved Games\DCS.openbeta\<Id>.geojson`; copy it into
+   `web/src/theatres/`. (Or set `OUT_DIR` in the file to write there directly.) Re-running
+   just overwrites, so it's idempotent.
+
+There is **no fallback**: bounds/projection come straight from `terrain.GetTerrainConfig` /
+`convert*`. If the hooks env can't read that API, nothing is written (never
+partial/approximate data). Rebuild the web app after the `.geojson` lands in
+`web/src/theatres/` — the theatre appears in the picker automatically (the app globs that
+folder) and its airfields carry the parking data that lets generated `.miz` files include
+Client slots.
 
 ## Persistence (surviving a server restart)
 

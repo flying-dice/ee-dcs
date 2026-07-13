@@ -38,6 +38,7 @@
   export let loadingOsm = false;
   export let osmError: string | null = null;
   export let counts: CountConfig;
+  export let countsDirty = false;
   export let keysites: Keysite[] = [];
   export let blueSummary: SideSummary = { airbases: 0, farps: 0, total: 0 };
   export let redSummary: SideSummary = { airbases: 0, farps: 0, total: 0 };
@@ -52,12 +53,15 @@
   const dispatch = createEventDispatcher<{
     selectTerrain: string;
     setMode: Mode;
+    confirmBbox: void;
     finishFrontline: void;
     clearFrontline: void;
+    confirmFrontline: void;
     clearMain: Side;
     populate: void;
     shuffle: void;
     setCount: { type: KeysiteType; side: Side; value: number };
+    applyCounts: void;
     setUnit: { side: Side; role: AircraftRole; value: string };
     resetUnits: void;
     removeKeysite: string;
@@ -105,11 +109,10 @@
     <div class="brand">
       <span class="mark">◣◤</span>
       <div>
-        <h1>ENEMY&nbsp;ENGAGED</h1>
+        <h1>EE-DCS</h1>
         <div class="sub">Campaign Generator</div>
       </div>
     </div>
-    <p class="tag">EE&nbsp;-&nbsp;DCS</p>
   </header>
 
   <p class="hint"><span class="caret">&gt;</span> {hint}</p>
@@ -131,9 +134,19 @@
   <!-- 2. bbox -->
   <section class:disabled={!terrain}>
     <div class="step">2 · Theatre area</div>
-    <button class:active={mode === 'bbox'} disabled={!terrain} on:click={() => toggle('bbox')}>
-      {hasBbox ? 'Redraw bbox' : 'Draw bbox'}
-    </button>
+    <div class="row">
+      <button class:active={mode === 'bbox'} disabled={!terrain} on:click={() => toggle('bbox')}>
+        {hasBbox ? 'Redraw' : 'Draw bbox'}
+      </button>
+      {#if hasBbox}
+        <button class:active={mode === 'bbox-edit'} on:click={() => dispatch('setMode', 'bbox-edit')}>
+          Move / resize
+        </button>
+      {/if}
+    </div>
+    {#if mode === 'bbox-edit'}
+      <button class="primary" on:click={() => dispatch('confirmBbox')}>✓ Done — lock the area</button>
+    {/if}
     {#if hasBbox}
       {#if bboxValid}<span class="badge green">inside terrain ✓</span>
       {:else}<span class="badge red">outside terrain — redraw</span>{/if}
@@ -152,6 +165,16 @@
       </button>
       <button disabled={frontlineCount === 0} on:click={() => dispatch('clearFrontline')}>Clear</button>
     </div>
+    {#if frontlineCount >= 2}
+      <div class="row">
+        <button class:active={mode === 'frontline-edit'} on:click={() => dispatch('setMode', 'frontline-edit')}>
+          Edit vertices
+        </button>
+        {#if mode === 'frontline-edit'}
+          <button class="primary" on:click={() => dispatch('confirmFrontline')}>✓ Done</button>
+        {/if}
+      </div>
+    {/if}
     <span class="muted">
       {frontlineCount} vertices{frontlineComplete ? ' · complete' : frontlineCount > 0 ? ' · drawing' : ''}
     </span>
@@ -201,6 +224,14 @@
           </div>
         {/each}
       </div>
+      {#if populated}
+        <button class="primary apply" disabled={!countsDirty} on:click={() => dispatch('applyCounts')}>
+          {countsDirty ? '✓ Apply counts — rebuild' : 'Counts applied'}
+        </button>
+        <span class="muted">Edit the numbers freely — nothing rebuilds until you Apply.</span>
+      {:else}
+        <span class="muted">Set counts here; Populate builds with them.</span>
+      {/if}
     {/if}
 
     {#if populated}
@@ -368,7 +399,6 @@
     text-transform: uppercase;
     color: var(--amber);
   }
-  .tag { margin: 8px 0 0; font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
   code { padding: 0 3px; font-size: 0.9em; }
 
   .hint {
@@ -617,4 +647,15 @@
     font-size: 0.7rem;
   }
   .attr { margin-top: 6px; font-size: 0.68rem; }
+
+  /* ── mobile: fill the drawer, roomier tap targets ────────────────────────── */
+  @media (max-width: 720px) {
+    .panel { width: 100%; }
+    header { padding-right: 54px; } /* clear the drawer's close ✕ (nudged off the scrollbar) */
+    .panel button:not(.tiny):not(.x) { min-height: 42px; }
+    select { min-height: 42px; }
+    input.uin { min-height: 36px; }
+    input.cn { min-height: 34px; }
+    section { padding: 13px 14px; }
+  }
 </style>
