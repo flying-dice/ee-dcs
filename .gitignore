@@ -1,4 +1,5 @@
 # Node / web tooling
+node_modules/
 web/node_modules/
 web/dist/
 # Generated from dist/ by web/scripts/sync-campaign.mjs
