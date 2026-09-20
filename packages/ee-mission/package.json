@@ -1,0 +1,14 @@
+{
+  "name": "ee-mission",
+  "scripts": {
+    "build": "tstl",
+    "dev": "tstl --watch"
+  },
+  "dependencies": {
+    "lua-types": "^2.13.1"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "typescript-to-lua": "^1.37.1"
+  }
+}
