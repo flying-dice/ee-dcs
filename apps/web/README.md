@@ -4,7 +4,7 @@ The **published web app** for building Enemy Engaged: Comanche vs Hokum campaign
 World. **This site is how you get mission files** — there's nothing to install and no build
 step: open it, design a theatre on a real-world map, and download a ready-to-play `.miz`.
 
-> **Live site: https://ee-dcs.pages.dev/**
+> **Deployment target:** GitHub Pages at `https://flying-dice.github.io/ee-dcs/`.
 
 You pick a DCS theatre, paint resolution-6 H3 cells BLU or RED as rear or close
 territory, choose each side's main airbase, and the app writes a `.miz`
@@ -84,16 +84,17 @@ npm run preview  # serve the production build
 npm run export:osm --workspace dcs-eech-mapgen -- Caucasus # refresh an OSM theatre export
 ```
 
-The app is a static site (relative `base`), so `dist/` can be served from any static host,
-a subfolder, or opened over `file://`.
+The app is a static site (relative `base`), so `dist/` can be served from an HTTP static
+host at the root or under a subfolder. Opening it over `file://` is unsupported because
+the browser fetches the compressed OSM asset.
 
 ### Publishing
 
-The delivery model is the **hosted site**: build (`npm run build`) and deploy the resulting
-`dist/` to any static host (GitHub Pages, Netlify, Cloudflare Pages, an S3 bucket, …). Users
-never clone or build — they visit the URL, generate a theatre, and download the `.miz`. The
-campaign Lua is baked into each download, so the hosted site is a complete distribution
-channel on its own. It's live on **Cloudflare Pages** at **https://ee-dcs.pages.dev/**.
+The delivery model is the **hosted site**: the GitHub Pages workflow builds and deploys
+`dist/` when `main` changes. Users never clone or build — they visit the URL, generate a
+theatre, and download the `.miz`. The campaign Lua is baked into each download, so the
+hosted site is a complete distribution channel on its own. The workflow checks that every
+theatre has a paired compressed OSM export before publishing.
 
 ## Architecture
 
