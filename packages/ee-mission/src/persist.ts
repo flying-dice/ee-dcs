@@ -61,6 +61,11 @@ export interface Bridge {
 		): LuaMultiReturn<[Database | undefined, string | undefined]>;
 	};
 }
+declare global {
+	/** Injected by DCS Studio when present; see `bridge()` below. */
+	var dcs_studio: Bridge | undefined;
+}
+
 // Optional native bridge stays outside sanitized os/io/lfs.
 function bridge(): Bridge | undefined {
 	return _G.dcs_studio;

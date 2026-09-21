@@ -391,14 +391,14 @@ export function group_is_alive(group: Group | undefined): boolean {
 // DCS adapter search rings in metres, expanding to a 4 km fallback limit.
 const SNAP_RADII_METRES = [200, 500, 1000, 2000, 4000];
 const SNAP_BEARING_COUNT = 8;
-function surfaceAt(x: number, z: number): land.SurfaceType | undefined {
+function surfaceAt(x: number, z: number): number | undefined {
 	try {
 		return land.getSurfaceType({ x, y: z });
 	} catch (_error) {
 		return undefined;
 	}
 }
-function isDry(surface: land.SurfaceType | undefined): boolean {
+function isDry(surface: number | undefined): boolean {
 	return (
 		surface === land.SurfaceType.LAND ||
 		surface === land.SurfaceType.ROAD ||

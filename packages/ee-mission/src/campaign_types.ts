@@ -1,6 +1,300 @@
 /** @noSelfInFile */
 
-export type Side = coalition.side.BLUE | coalition.side.RED;
+import type {
+	ControllerAction,
+	MissionCommandPath,
+	TriggerColor,
+	WorldMarkPanel,
+	WorldVolume,
+	l_Airbase,
+	l_Controller,
+	l_Group,
+	l_Object,
+	l_Position3,
+	l_StaticObject,
+	l_Unit,
+	l_Vec2,
+	l_Vec3,
+	l_Warehouse,
+	l_WorldEvent,
+	l_WorldEventHandler,
+} from "@flying-dice/tslua-dcs-mission-types";
+
+/**
+ * DCS mission-scripting surface.
+ *
+ * The DCS API itself comes from `@flying-dice/tslua-dcs-mission-types` (wired in
+ * via tsconfig `types`, which supplies the globals `coalition`, `land`, `timer`,
+ * `env`, `world`, `trigger`, `Group`, `Unit`, `Airbase`, `StaticObject`,
+ * `missionCommands` and `coord`).
+ *
+ * This block only covers what that package does not:
+ *  - short aliases for the package's `l_*` interfaces, so existing annotations
+ *    such as `Group` / `Unit` keep working (the package exports the *type* as
+ *    `l_Group` and reserves the bare name for the *value*);
+ *  - the campaign's own spawn-table shapes, which are mission-data payloads
+ *    rather than DCS API objects, so the package has no counterpart;
+ *  - `country` and `Object.Category`, which the package does not declare.
+ */
+declare global {
+	// -- aliases onto the package's DCS object types -------------------------
+	type Vec2 = l_Vec2;
+	type Vec3 = l_Vec3;
+	type Position3 = l_Position3;
+	type Group = l_Group;
+	type Unit = l_Unit;
+	type StaticObject = l_StaticObject;
+	type Controller = l_Controller;
+	type Warehouse = l_Warehouse;
+	/** A DCS task/command table: `{ id, params }`. */
+	type DcsTask = ControllerAction;
+	type SearchVolume = WorldVolume;
+	type MarkPanel = WorldMarkPanel;
+	/** RGBA, each component 0..1. */
+	type MarkupColor = TriggerColor;
+
+	interface DcsDescription {
+		category?: number;
+		attributes?: Record<string, boolean | undefined>;
+		typeName?: string;
+		displayName?: string;
+	}
+
+	type Airbase = l_Airbase;
+	/**
+	 * An airbase/heliport handle as returned by `Airbase.getID()`, which DCS
+	 * types as `number | string`. It is passed straight back to DCS in
+	 * waypoint fields, so the campaign never needs it as a number.
+	 */
+	type AirbaseId = number | string;
+
+	/**
+	 * Any DCS world object the campaign inspects generically (event
+	 * participants, scenery hits).
+	 *
+	 * Deliberately structural rather than `extends l_Object`: in this package
+	 * `l_Unit` / `l_StaticObject` do not extend `l_Object`, so `l_Object` is not
+	 * a supertype of the concrete classes, and it omits `getLife` / `getDesc`
+	 * which DCS does expose here. This lists only what the campaign calls.
+	 */
+	interface DcsObject {
+		isExist(): boolean;
+		getPosition(): Position3;
+		getPoint(): Vec3;
+		getName(): string;
+		getID(): number | string;
+		getLife(): number;
+		getDesc(): DcsDescription;
+		getCategory(): number;
+		getTypeName(): string;
+		destroy(): void;
+		getCoalition?(): number;
+		getPlayerName?(): string | undefined;
+		getGroup?(): Group | undefined;
+	}
+
+	/**
+	 * The package types `initiator` / `target` / `place` as `unknown` because
+	 * their class varies by event ID. The campaign only ever subscribes to
+	 * events whose participants are world objects, so they are narrowed here
+	 * rather than cast at each of the event handlers.
+	 */
+	interface DcsEvent extends l_WorldEvent {
+		initiator?: DcsObject;
+		target?: DcsObject;
+		place?: Airbase;
+	}
+
+	interface DcsEventHandler extends l_WorldEventHandler {
+		onEvent(this: DcsEventHandler, event: DcsEvent): void;
+	}
+
+	// -- campaign spawn-table shapes (no package counterpart) ----------------
+	/** Payload passed to `coalition.addStaticObject`. */
+	interface StaticData {
+		name: string;
+		[key: string]: unknown;
+	}
+
+	interface UnitData {
+		name: string;
+		type: string;
+		x: number;
+		y: number;
+		heading?: number;
+		skill?: string;
+		payload?: PayloadData;
+		/** DCS FARP parking name, exported by the Mission Editor as "1".."4". */
+		parking?: string;
+		/** DCS FARP parking identifier, exported by the Mission Editor as "1".."4". */
+		parking_id?: string;
+		[key: string]: unknown;
+	}
+
+	/** Payload passed to `coalition.addGroup`. */
+	interface GroupData {
+		name: string;
+		units: UnitData[];
+		route?: { points: WaypointData[] };
+		[key: string]: unknown;
+	}
+
+	interface WaypointData {
+		x: number;
+		y: number;
+		alt?: number;
+		alt_type?: string;
+		speed?: number;
+		type?: string;
+		action?: string;
+		ETA?: number;
+		ETA_locked?: boolean;
+		name?: string;
+		formation_template?: string;
+		airdromeId?: AirbaseId;
+		helipadId?: AirbaseId;
+		linkUnit?: AirbaseId;
+		[key: string]: unknown;
+	}
+
+	interface PylonData {
+		CLSID: string;
+		num?: number;
+	}
+
+	interface PayloadData {
+		fuel: number;
+		gun?: number;
+		flare?: number;
+		chaff?: number;
+		pylons?: PylonData[];
+		unlimited?: { fuel: boolean; guns: boolean; flares: boolean; chaff: boolean };
+	}
+
+	interface MissionZoneVertex {
+		x: number;
+		y: number;
+	}
+	interface MissionZone {
+		name?: string;
+		type?: number;
+		x: number;
+		y: number;
+		radius?: number;
+		color?: number[];
+		verticies?: MissionZoneVertex[];
+	}
+	interface DcsMission {
+		triggers?: { zones?: MissionZone[] };
+		coalitions?: { blue?: number[]; red?: number[]; neutrals?: number[] };
+	}
+
+	// -- not declared by the package ----------------------------------------
+	namespace country {
+		enum id {
+			RUSSIA = 0,
+			USA = 2,
+			CJTF_BLUE = 80,
+			CJTF_RED = 81,
+		}
+	}
+
+	/**
+	 * DCS puts `Category` and `getByName` on the global `Object`, alongside the
+	 * standard library's own members.
+	 */
+	interface ObjectConstructor {
+		readonly Category: {
+			readonly UNIT: 1;
+			readonly WEAPON: 2;
+			readonly STATIC: 3;
+			readonly BASE: 4;
+			readonly SCENERY: 5;
+			readonly CARGO: 6;
+		};
+		getByName(name: string): DcsObject | undefined;
+	}
+
+	// -- campaign globals ----------------------------------------------------
+	// Declared as `var` so they land on `typeof globalThis`, which is what
+	// `lua-types` already types `_G` as. Redeclaring `_G` itself would clash.
+	let _DMT_GEN: number | undefined;
+	let _DMT_DEBUG: boolean | undefined;
+	var DMT_CONFIG: unknown;
+	var DMT_ACTIVE_CONFIG: unknown;
+	var __dmt_handlers: DcsEventHandler[] | undefined;
+	var __dmt_real_addGroup: typeof coalition.addGroup | undefined;
+	var __dmt_real_addStatic: typeof coalition.addStaticObject | undefined;
+	var __dmt_static_death_handler: DcsEventHandler | undefined;
+
+	function addGroup(
+		countryId: number,
+		category: number,
+		data: GroupData,
+	): Group | undefined;
+	function addStatic(
+		countryId: number,
+		data: StaticData,
+	): StaticObject | Group | undefined;
+
+	/**
+	 * Overload merged onto `lua-types`' own `require`, so the campaign's
+	 * `require<Module>("name")` module handles stay typed.
+	 */
+	function require<T>(moduleName: string): T;
+}
+
+declare module "@flying-dice/tslua-dcs-mission-types" {
+	/** `env.mission` is the parsed mission table; the package does not declare it. */
+	interface l_env {
+		mission?: DcsMission;
+	}
+
+	/**
+	 * DCS invokes an F-10 menu callback as `callback(argument)`, with no
+	 * receiver. The package declares these callbacks as `(argument: T) => void`,
+	 * which TSTL reads as taking an implicit `self`, so passing a plain function
+	 * fails to compile. These overloads restate the same signatures with an
+	 * explicit `this: void`, which is the calling convention DCS actually uses.
+	 *
+	 * `@noSelf` must be repeated here: it is not inherited from the package's
+	 * own declaration, and without it TSTL emits `missionCommands:addCommand...`
+	 * colon calls, which would shift every argument by one at runtime.
+	 *
+	 * @noSelf
+	 */
+	interface l_missionCommands {
+		addCommand<T>(
+			name: string,
+			path: MissionCommandPath | undefined,
+			callback: (this: void, argument: T) => void,
+			argument: T,
+		): MissionCommandPath;
+		addCommandForCoalition<T>(
+			coalitionId: number,
+			name: string,
+			path: MissionCommandPath | undefined,
+			callback: (this: void, argument: T) => void,
+			argument: T,
+		): MissionCommandPath;
+		addCommandForGroup<T>(
+			groupId: number,
+			name: string,
+			path: MissionCommandPath | undefined,
+			callback: (this: void, argument: T) => void,
+			argument: T,
+		): MissionCommandPath;
+	}
+}
+
+/**
+ * A combatant coalition: `coalition.side.RED` (1) or `coalition.side.BLUE` (2).
+ *
+ * The DCS types package models `coalition.side.*` as plain `number` rather than
+ * a TS enum, so this alias can no longer keep RED and BLUE apart at compile
+ * time the way the hand-rolled declarations did.
+ */
+export type Side = number;
 export type WorldPoint = { x: number; z: number; y?: number };
 export type TaskResult = "success" | "partial" | "failure";
 export type TaskTermination = "route_complete" | "terminated";
@@ -164,7 +458,8 @@ export interface CampaignState {
 	production: Record<number, ProductionState>;
 	base_ammo: Record<string, number>;
 	base_fuel: Record<string, number>;
-	base_warehouse: Record<string, WarehouseInventory>;
+	/** Per-base aircraft-type -> count summary, built in `keysite`. */
+	base_warehouse: Record<string, Record<string, number>>;
 	base_assign_toggle: Record<string, boolean>;
 	base_last_strike: Record<string, number>;
 	base_ad_groups: Record<string, string[]>;

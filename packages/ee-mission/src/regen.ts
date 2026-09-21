@@ -391,7 +391,7 @@ function spawnRegen(
 
 	const airbase = Airbase.getByName(baseName);
 	let airbasePos: Vec3;
-	let airbaseId: number | undefined;
+	let airbaseId: AirbaseId | undefined;
 	if (airbase !== undefined) {
 		airbasePos = airbase.getPosition().p;
 		airbaseId = airbase.getID();

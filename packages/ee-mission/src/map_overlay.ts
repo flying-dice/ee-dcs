@@ -42,7 +42,7 @@ interface DesiredLine {
 	from: WorldPoint;
 	to: WorldPoint;
 	side: Side;
-	color: number[];
+	color: MarkupColor;
 }
 interface TaskArrow {
 	lineId: number;

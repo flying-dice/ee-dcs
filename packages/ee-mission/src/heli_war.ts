@@ -66,7 +66,7 @@ const ENGAGE_DIST = 12000; // m; attack helis engage targets within this range
 interface LaunchPosition {
 	home?: Airbase;
 	pos?: Vec3;
-	id?: number;
+	id?: AirbaseId;
 }
 
 function launchPosition(baseName: string): LaunchPosition {

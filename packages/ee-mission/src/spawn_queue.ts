@@ -37,6 +37,10 @@ function make_proxy(
 	function live(): Group | undefined {
 		return Group.getByName(name);
 	}
+	// While the spawn is still queued there is no DCS group behind this handle,
+	// so the proxy implements only the subset of the group/static API the
+	// campaign calls, and reports empty/undefined for the rest. That is a
+	// deliberately partial implementation, hence the assertion.
 	return {
 		__queued: true,
 		getName(this: Group) {
@@ -69,6 +73,8 @@ function make_proxy(
 		getController(this: Group): Controller {
 			const g = live();
 			if (g) return g.getController();
+			// Same deal for the controller: record the tasks so `drain` can
+			// replay them onto the real controller once the group exists.
 			return {
 				setTask(this: Controller, task: DcsTask) {
 					item.deferred_setTask = task;
@@ -79,18 +85,18 @@ function make_proxy(
 				resetTask(this: Controller) {},
 				setCommand(this: Controller) {},
 				setOption(this: Controller) {},
-			};
+			} as unknown as Controller;
 		},
-	};
+	} as unknown as Group & { __queued: boolean };
 }
 coalition.addGroup = (country_id, category, data) => {
 	S._spawn_seq++;
-	const name = data.name ?? "SpawnQ-" + S._spawn_seq;
+	const name = (data as GroupData).name ?? "SpawnQ-" + S._spawn_seq;
 	const item: SpawnItem = {
 		kind: "group",
 		country: country_id,
 		category,
-		data,
+		data: data as GroupData,
 		name,
 		seq: S._spawn_seq,
 	};
@@ -99,16 +105,16 @@ coalition.addGroup = (country_id, category, data) => {
 };
 coalition.addStaticObject = (country_id, data) => {
 	S._spawn_seq++;
-	const name = data.name ?? "SpawnQ-static-" + S._spawn_seq;
+	const name = (data as StaticData).name ?? "SpawnQ-static-" + S._spawn_seq;
 	const item: SpawnItem = {
 		kind: "static",
 		country: country_id,
-		data,
+		data: data as StaticData,
 		name,
 		seq: S._spawn_seq,
 	};
 	S.spawn_queue.push(item);
-	return make_proxy(name, item);
+	return make_proxy(name, item) as unknown as StaticObject;
 };
 export function drain(log_fn: LogFunction = env.info): number {
 	const q = S.spawn_queue;

@@ -208,7 +208,14 @@ export function scenery_in_zone(
 				const id = object.getName();
 				if (!id || seen[id]) return true;
 				seen[id] = true;
-				result.push({ id, type, handle: object, life0: object.getLife() });
+				// DCS scenery objects expose getLife(); the package's `l_Object`
+				// omits it, so the handle is narrowed at the point of use.
+				result.push({
+					id,
+					type,
+					handle: object as unknown as DcsObject,
+					life0: (object as unknown as DcsObject).getLife(),
+				});
 			} catch (_error) {
 				/* continue enumeration */
 			}
