@@ -50,31 +50,48 @@ jobs:
 
       # Fail loudly instead of deploying a broken site.
       #
-      # apps/web/src/lib/osm.ts resolves theatre data with
-      # `import.meta.glob('../osm/*.geojson')`. If that directory is empty the build
-      # still SUCCEEDS -- the glob simply matches nothing -- and the site deploys,
-      # but selecting a theatre throws "No compiled OSM dataset" at runtime. That is
-      # the worst failure mode available: green pipeline, broken page.
+      # The app needs TWO theatre asset sets, loaded by different mechanisms:
       #
-      # These assets are a paired export contract (see docs/bots/NOTES.md):
-      # src/theatres/<Id>.geojson from DCS and src/osm/<Id>.geojson from the
-      # Docker/Osmium export. Both must be committed for a clean clone to build a
-      # working site.
+      #   1. apps/web/src/theatres/<Id>.geojson  - BUILD time. terrains.ts:24 globs
+      #      `../theatres/*.geojson`. An empty dir still BUILDS (the glob matches
+      #      nothing); the app just has no theatres.
+      #   2. apps/web/public/osm/<Id>.geojson.gz - RUN time. osm.ts:11 fetches
+      #      `${BASE_URL}osm/<Id>.geojson.gz` and gunzips it client-side. Vite copies
+      #      public/ verbatim, so a missing file is a 404 only when a theatre is
+      #      selected - long after the pipeline has gone green.
+      #
+      # Either way the build SUCCEEDS and the site deploys broken. A green pipeline
+      # publishing a broken page is the worst failure mode available, so check that
+      # both are committed. They are a paired export contract (docs/bots/NOTES.md):
+      # theatres from the DCS export, osm from the Docker/Osmium export.
       - name: Verify theatre assets are committed
         run: |
           missing=0
-          for dir in apps/web/src/theatres apps/web/src/osm; do
-            count=$(git ls-files "$dir" | grep -c '\.geojson$' || true)
-            echo "$dir: $count committed .geojson file(s)"
+          check() {
+            count=$(git ls-files "$1" | grep -c "$2\$" || true)
+            echo "$1: $count committed file(s) matching *$2"
             [ "$count" -eq 0 ] && missing=1
-          done
+            return 0
+          }
+          check apps/web/src/theatres '.geojson'
+          check apps/web/public/osm '.geojson.gz'
           if [ "$missing" -eq 1 ]; then
-            echo "::error::A theatre asset directory has no committed .geojson files. The site would build but break at runtime on theatre selection. Commit the paired export (see docs/bots/NOTES.md)."
+            echo "::error::A theatre asset set has no committed files. The site would build and deploy, then fail at runtime on theatre selection. Commit the paired export (docs/bots/NOTES.md)."
             exit 1
           fi
 
       - name: Build site
         run: npm run build --workspace dcs-eech-mapgen
+
+      # public/ is copied verbatim by Vite, so confirm the runtime asset actually
+      # reached the artifact rather than trusting that it was in the source tree.
+      - name: Verify runtime assets reached the build output
+        run: |
+          if ! ls apps/web/dist/osm/*.geojson.gz >/dev/null 2>&1; then
+            echo "::error::No osm/*.geojson.gz in apps/web/dist. The deployed site would 404 on theatre load."
+            exit 1
+          fi
+          ls -la apps/web/dist/osm/
 
       - uses: actions/configure-pages@v5
 
