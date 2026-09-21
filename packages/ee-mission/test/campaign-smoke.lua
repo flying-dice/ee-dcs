@@ -2,8 +2,60 @@
 local root = arg[1] or '.'
 local mode = arg[2] or 'typescript'
 local duration = tonumber(arg[3]) or 310
+-- Optional 4th arg: root of a checked-out lua baseline tree (one containing Scripts/ee-dcs).
+-- Only consulted by mode=='lua'. It lets the golden fixtures be regenerated from the pinned
+-- pre-deletion commit extracted into a scratch directory, without restoring that tree into
+-- the repository working copy.
+local lua_root = arg[4] or root
 local now, next_id = 100, 1000
 local logs, timers, groups, statics, handlers, marks = {}, {}, {}, {}, {}, {}
+
+-- ORDER LOG -------------------------------------------------------------------------------
+-- The name/tick comparison in run-tests.cjs is blind to WHERE a group is sent: it only sees
+-- that a group named X exists. A bug that changes a destination waypoint, a task parameter,
+-- or a unit's type/offset produces an identical name SET and an identical tick count and
+-- passes silently (proven by the `numericSuffix` LuaMultiReturn bug, which collapsed every
+-- artillery/secondary lateral slot onto -2 while this suite stayed green).
+--
+-- `orders` is the ordered, duplicate-preserving record of every order the campaign issues at
+-- the engine boundary: coalition.addGroup, coalition.addStaticObject, and
+-- Controller:setTask / :pushTask. Being a LIST it also captures CALL MULTIPLICITY — two
+-- spawns under one name are two entries here but a single entry in the name set.
+local orders = {}
+local function round(v)
+    if type(v) ~= 'number' then return v end
+    -- Quantise to 1 mm. Lua and typescript-to-lua can evaluate the same formula with a
+    -- different association order, giving ~1e-9 relative float noise; at theatre coordinates
+    -- (1e5 m) that is ~1e-4 m. 1 mm sits far below any meaningful order change (the smallest
+    -- real lateral slot step is 1500 m) and far above that noise floor.
+    return math.floor(v * 1000 + 0.5) / 1000
+end
+-- Canonical, bounded projection of a DCS route: the fields that decide WHERE a group goes and
+-- HOW it gets there. Cosmetic fields (point name, ETA_locked, formation_template) are
+-- deliberately omitted to keep the fixture reviewable; `type`/`action`/`airdromeId`/
+-- `helipadId` are kept because the hot-ramp-start guardrail in CLAUDE.md turns on them.
+local function route_points(route)
+    if type(route) ~= 'table' or type(route.points) ~= 'table' then return nil end
+    local out = {}
+    for i, p in ipairs(route.points) do
+        out[i] = {type=p.type, action=p.action, x=round(p.x), y=round(p.y),
+                  alt=round(p.alt), alt_type=p.alt_type, speed=round(p.speed),
+                  airdromeId=p.airdromeId, helipadId=p.helipadId, linkUnit=p.linkUnit}
+    end
+    return out
+end
+-- Unit composition: type and PLACEMENT of every unit in the spawned group.
+local function unit_composition(units)
+    if type(units) ~= 'table' then return nil end
+    local out = {}
+    for i, u in ipairs(units) do
+        out[i] = {type=u.type, x=round(u.x), y=round(u.y),
+                  heading=round(u.heading), parking=u.parking, skill=u.skill}
+    end
+    return out
+end
+local function record_order(entry) orders[#orders+1] = entry end
+-- END ORDER LOG ---------------------------------------------------------------------------
 local function new_id() next_id = next_id + 1; return next_id end
 local function assert_type(value, expected, label) assert(type(value) == expected, label .. ': expected ' .. expected .. ', got ' .. type(value)) end
 local function position(x,z) return {p={x=x,y=20,z=z},x={x=1,y=0,z=0},y={x=0,y=1,z=0},z={x=0,y=0,z=1}} end
@@ -32,10 +84,39 @@ local function object(name, x,z,side,kind)
     function o:inAir() assert(self==o); return false end
     return o
 end
-local function controller()
-    local c={}
-    function c:setTask(task) assert(self==c); assert_type(task,'table','setTask'); self.task=task end
-    function c:pushTask(task) assert(self==c); assert_type(task,'table','pushTask') end
+-- Projects a DCS task table down to the parameters that decide WHAT the group is ordered to
+-- do. `id` plus the route destination covers movement orders; `params.task`/`expend`/
+-- `groupId`/`unitId`/`altitude`/`speed`/`pattern`/`point` cover engage/orbit/attack orders.
+-- Unrecognised params are reduced to a sorted key list so a change in SHAPE is still visible
+-- without dumping unbounded nested data into the fixture.
+local function task_shape(task)
+    if type(task)~='table' then return {id=tostring(task)} end
+    local p = type(task.params)=='table' and task.params or {}
+    local keys={}
+    for k in pairs(p) do if type(k)=='string' then keys[#keys+1]=k end end
+    table.sort(keys)
+    local point = type(p.point)=='table' and {x=round(p.point.x),y=round(p.point.y)} or nil
+    return {
+        id=task.id,
+        route=route_points(p.route),
+        task=type(p.task)=='table' and p.task.id or p.task,
+        groupId=p.groupId, unitId=p.unitId, targetTypes=p.targetTypes,
+        altitude=round(p.altitude), speed=round(p.speed), pattern=p.pattern,
+        expend=p.expend, weaponType=p.weaponType, attackQty=p.attackQty,
+        point=point, param_keys=keys,
+    }
+end
+local function controller(owner)
+    local c={owner=owner}
+    function c:setTask(task)
+        assert(self==c); assert_type(task,'table','setTask')
+        record_order({call='setTask',group=self.owner,task=task_shape(task)})
+        self.task=task
+    end
+    function c:pushTask(task)
+        assert(self==c); assert_type(task,'table','pushTask')
+        record_order({call='pushTask',group=self.owner,task=task_shape(task)})
+    end
     function c:resetTask() assert(self==c) end
     function c:setCommand() assert(self==c) end
     function c:setOption() assert(self==c) end
@@ -62,7 +143,11 @@ function coalition.getPlayers(side) assert_type(side,'number','getPlayers'); ret
 function coalition.getStaticObjects(side) assert_type(side,'number','getStaticObjects'); local out={}; for _,s in pairs(statics) do if s.alive and s.side==side then out[#out+1]=s end end; return out end
 function coalition.addGroup(cid,category,data)
     assert_type(cid,'number','addGroup country'); assert_type(category,'number','addGroup category'); assert_type(data,'table','addGroup data')
-    local side=(cid==2 or cid==80) and 2 or 1; local g={name=data.name,id=new_id(),side=side,category=category,alive=true,units={},controller=controller(),data=data}
+    record_order({call='addGroup',group=data.name,country=cid,category=category,
+                  x=round(data.x),y=round(data.y),task=data.task,
+                  units=unit_composition(data.units),route=route_points(data.route),
+                  airdromeId=data.airdromeId})
+    local side=(cid==2 or cid==80) and 2 or 1; local g={name=data.name,id=new_id(),side=side,category=category,alive=true,units={},controller=controller(data.name),data=data}
     for _,ud in ipairs(data.units) do local u=object(ud.name,ud.x,ud.y,side,ud.type); function u:getGroup() assert(self==u); return g end; g.units[#g.units+1]=u end
     function g:getName() assert(self==g); return self.name end
     function g:getID() assert(self==g); return self.id end
@@ -77,7 +162,11 @@ function coalition.addGroup(cid,category,data)
     function g:destroy() assert(self==g); self.alive=false; for _,u in ipairs(self.units) do u:destroy() end end
     groups[g.name]=g; return g
 end
-function coalition.addStaticObject(cid,data) assert_type(cid,'number','addStatic country'); assert_type(data,'table','addStatic data'); local s=object(data.name,data.x,data.y,(cid==2 or cid==80) and 2 or 1,data.type); statics[s.name]=s; return s end
+function coalition.addStaticObject(cid,data) assert_type(cid,'number','addStatic country'); assert_type(data,'table','addStatic data')
+    record_order({call='addStatic',group=data.name,country=cid,type=data.type,
+                  x=round(data.x),y=round(data.y),heading=round(data.heading),
+                  category=data.category,shape_name=data.shape_name})
+    local s=object(data.name,data.x,data.y,(cid==2 or cid==80) and 2 or 1,data.type); statics[s.name]=s; return s end
 land={SurfaceType={LAND=1,SHALLOW_WATER=2,WATER=3,ROAD=4,RUNWAY=5},getHeight=function(p) assert_type(p,'table','getHeight'); return 20 end,getSurfaceType=function(p) assert_type(p,'table','getSurfaceType'); return 1 end}
 env={mission={triggers={zones={}},coalitions={blue={80},red={81},neutrals={0,2}}},info=function(msg) assert_type(msg,'string','env.info'); logs[#logs+1]=msg end}
 trigger={action={}}
@@ -98,8 +187,8 @@ local mission_require
 local function inject()
     if mode=='lua' then
         for key in pairs(package.loaded) do if package.loaded[key] and key~='_G' and key~='package' and key~='string' and key~='table' and key~='math' and key~='io' and key~='os' and key~='debug' and key~='coroutine' then package.loaded[key]=nil end end
-        package.path=root..'/Scripts/ee-dcs/?.lua;'..package.path
-        local result=dofile(root..'/Scripts/ee-dcs/main.lua'); mission_require=require; return result
+        package.path=lua_root..'/Scripts/ee-dcs/?.lua;'..package.path
+        local result=dofile(lua_root..'/Scripts/ee-dcs/main.lua'); mission_require=require; return result
     end
     local file=assert(io.open(root..'/dist/ee-dcs.lua','rb')); local text=file:read('*a'); file:close()
     text=text:gsub('return ____entry%s*$', 'return ____entry, require')
@@ -125,6 +214,32 @@ pcall=function(fn,...) local results=pack(native_pcall(fn,...)); if results[1]==
 math.randomseed(42)
 local ok,result=xpcall(inject,debug.traceback)
 if not ok then for _,line in ipairs(logs) do print(line) end; error(result) end
+
+-- TASK CREATION COUNTS --------------------------------------------------------------------
+-- Orders and names only become visible once a task ASSIGNS and a group SPAWNS. A generator
+-- that produces nothing at all is therefore invisible to both: the orphaned tasks simply
+-- expire. That is exactly how 12 `string.match` LuaMultiReturn defects left the SEAD and BAI
+-- generators permanently dead in the typescript port while this suite stayed green.
+--
+-- Counting task_board.create_task by task TYPE closes that hole: a silently dead generator
+-- drops its type's count to zero and the comparison in run-tests.cjs turns red.
+--
+-- Both trees call the board through a module-table lookup (`board.create_task({...})`), so a
+-- single wrapper on the shared module table intercepts every generator in either tree. It is
+-- installed after inject() (which only SCHEDULES timers) and before run_until, so no task
+-- creation can escape it.
+local task_creations={}
+local board_module=mission_require('task_board')
+assert(type(board_module)=='table' and type(board_module.create_task)=='function',
+    'order harness: task_board.create_task is not interceptable — the per-type task-creation '..
+    'counts would silently record nothing, which is the very failure mode they exist to catch')
+local inner_create_task=board_module.create_task
+board_module.create_task=function(spec)
+    local task_type=(type(spec)=='table' and spec.type) or 'UNTYPED'
+    task_creations[task_type]=(task_creations[task_type] or 0)+1
+    return inner_create_task(spec)
+end
+
 local ticks=run_until(now+duration)
 local marks_before_reset=0; for _ in pairs(marks) do marks_before_reset=marks_before_reset+1 end
 local function count(t) local n=0; for _ in pairs(t) do n=n+1 end; return n end
@@ -144,6 +259,140 @@ local campaign_groups=count(groups)
 local campaign_statics=count(statics)
 local campaign_group_names=sorted_names(groups)
 local campaign_static_names=sorted_names(statics)
+-- Same cut for the order log and the task-creation counts: everything recorded from here on
+-- is a test-harness fixture (FARP regression, deferred-task probe, neutral-enum probe,
+-- re-injection), not campaign behaviour, and must not leak into the differential.
+local campaign_orders={}
+for i=1,#orders do campaign_orders[i]=orders[i] end
+local campaign_task_creations={}
+for task_type,n in pairs(task_creations) do campaign_task_creations[task_type]=n end
+
+-- GENERATOR LIVENESS ----------------------------------------------------------------------
+-- The per-type counts above only catch a generator that was ALIVE in the golden recording
+-- going dead. SEAD and BAI create zero tasks in the toy 4-base theatre at both smoke
+-- durations for a legitimate reason: both are fog-of-war gated (FOW_THRESHOLD_SEAD 0.25,
+-- FOW_THRESHOLD_BAI 0.5, cas_bai_sead.ts:125-126) and the theatre never accumulates enough
+-- recognition, so they correctly fall back to recon. A zero there proves nothing.
+--
+-- This fixture removes that excuse. It raises fog of war over every base to maximum, then
+-- runs the SEAD, BAI and CAS generators once each and requires every one of them to create
+-- at least one task of its own type. With the generators healthy each produces a strike
+-- task; with the `string.match` LuaMultiReturn defect that killed them, groupFlag() classes
+-- every ground group PRIMARY, so aaTargets() returns nothing and no group is ever in the
+-- 'second' echelon — SEAD and BAI then create literally zero tasks and this turns red while
+-- the spawned-name set and tick count stay identical.
+--
+-- Runs after the campaign snapshot cut above, so it never contaminates the differential.
+-- Fixture failures are COLLECTED, not raised on the spot, and reported at the very end after
+-- SUMMARY_JSON has been printed. One run then shows every fixture that failed AND lets
+-- run-tests.cjs still diff the order log, instead of the first assert hiding the rest.
+local fixture_failures={}
+local function fixture_check(condition, message)
+    if not condition then fixture_failures[#fixture_failures+1]=message end
+    return condition
+end
+
+local liveness={}
+task_creations=liveness
+local FOW_MAX=4.0*3600  -- fog_of_war.ts:27
+local liveness_state=mission_require('campaign_state').S
+for base_name in pairs(liveness_state.base_owner) do
+    liveness_state.fow[base_name]=liveness_state.fow[base_name] or {}
+    liveness_state.fow[base_name][coalition.side.BLUE]=FOW_MAX
+    liveness_state.fow[base_name][coalition.side.RED]=FOW_MAX
+end
+local cbs=mission_require('cas_bai_sead')
+for _,side in ipairs({coalition.side.BLUE,coalition.side.RED}) do
+    cbs.schedule_sead(side,0,function() end)
+    cbs.schedule_bai(side,0,function() end)
+    cbs.schedule_cas(side,0,function() end)
+end
+run_until(now+2)  -- generators use MIN_SCHEDULER_DELAY_SECONDS=1; one pass each, no re-fire
+for _,task_type in ipairs({'sead','bai','cas'}) do
+    fixture_check((liveness[task_type] or 0)>0,
+        'generator liveness: the '..task_type..' generator created ZERO tasks with fog of war '..
+        'saturated and valid targets present — it is silently dead')
+end
+task_creations={}
+-- END GENERATOR LIVENESS ------------------------------------------------------------------
+
+-- DEPLOYMENT DISPERSION -------------------------------------------------------------------
+-- Targeted regression for the defect that motivated the order log: `numericSuffix()` in
+-- ground_forces read `string.match()` without destructuring, so TSTL handed it a table, it
+-- returned 0 for every group, and every artillery battery and secondary group took lateral
+-- slot (0 % 5) - 2 = -2. Co-located groups heading for the same objective then converged on
+-- ONE deployment point instead of spreading across the five-slot standoff ring.
+--
+-- Names, tick counts and even per-type task counts are all identical either way, which is
+-- why the suite stayed green through the bug. This fixture is the direct probe: two groups
+-- with the SAME initial position and the SAME objective, differing only in the numeric
+-- suffix that selects their slot. Their deployment waypoints must be separated by exactly
+-- the slot delta times the slot spacing. With the bug both slots are -2 and the separation
+-- is 0, so both assertions below fail.
+local DEPLOY_SLOT_COUNT, DEPLOY_SLOT_CENTRE = 5, 2   -- ground_forces.ts:67-68
+local ARTY_SLOT_SPACING, SEC_SLOT_SPACING = 2000, 1500 -- ground_forces.ts:65-66
+local function slot_of(id) return (id % DEPLOY_SLOT_COUNT) - DEPLOY_SLOT_CENTRE end
+-- 9001 -> slot -1, 9003 -> slot +1: two DIFFERENT, non-adjacent slots either side of centre,
+-- so a collapse to a single slot is unambiguous rather than an off-by-one.
+local SLOT_A_ID, SLOT_B_ID = 9001, 9003
+local ground=mission_require('ground_forces')
+local dispersion_side=coalition.side.BLUE
+
+local function place_probe_group(name, x, z, unit_type)
+    return __dmt_real_addGroup(country.id.CJTF_BLUE, Group.Category.GROUND,
+        {name=name, units={{name=name..'-1', type=unit_type, x=x, y=z}}})
+end
+-- Deployment waypoint = the LAST route point of the move order issued to `name`.
+local function last_deploy_point(name, from_index)
+    local found
+    for i=from_index,#orders do
+        local o=orders[i]
+        if o.call=='setTask' and o.group==name and o.task and o.task.route then
+            found=o.task.route[#o.task.route]
+        end
+    end
+    return found
+end
+local function assert_dispersed(kind, name_a, name_b, spacing, from_index)
+    local a=last_deploy_point(name_a, from_index)
+    local b=last_deploy_point(name_b, from_index)
+    if not fixture_check(a and b,
+        'deployment dispersion: '..kind..' probes were never issued a move order '..
+        '(fixture setup problem, not a port regression)') then return end
+    local expected=math.abs(slot_of(SLOT_A_ID)-slot_of(SLOT_B_ID))*spacing
+    local actual=math.sqrt((a.x-b.x)^2+(a.y-b.y)^2)
+    fixture_check(math.abs(actual-expected)<1,
+        string.format('deployment dispersion: co-located %s groups with the same objective '..
+            'deployed %.1f m apart, expected %.1f m (slots %+d and %+d, %d m spacing). '..
+            'A separation of 0 means numericSuffix() returned 0 for both and every group '..
+            'collapsed onto slot -2.',
+            kind, actual, expected, slot_of(SLOT_A_ID), slot_of(SLOT_B_ID), spacing))
+end
+
+-- ARTILLERY: two batteries co-located deep in blue rear. Nearest enemy base is Red Front at
+-- (30000,0), well beyond ARTY_STANDOFF, so both advance to the same standoff ring.
+local arty_a='Arty-2-'..SLOT_A_ID
+local arty_b='Arty-2-'..SLOT_B_ID
+local arty_from=#orders+1
+liveness_state.arty_groups[dispersion_side][arty_a]=
+    {grp=place_probe_group(arty_a,-50000,0,'M-109'), home_base='Blue Rear'}
+liveness_state.arty_groups[dispersion_side][arty_b]=
+    {grp=place_probe_group(arty_b,-50000,0,'M-109'), home_base='Blue Rear'}
+
+-- SECONDARY: two second-echelon groups co-located next to the same blue frontline base, so
+-- both resolve the same `behind_base` and the same rear vector.
+local sec_a='GndSec-2-'..SLOT_A_ID
+local sec_b='GndSec-2-'..SLOT_B_ID
+liveness_state.sec_groups[dispersion_side][sec_a]=
+    {grp=place_probe_group(sec_a,-31000,10000,'M-1 Abrams'), home_base='Blue Front', want=1}
+liveness_state.sec_groups[dispersion_side][sec_b]=
+    {grp=place_probe_group(sec_b,-31000,10000,'M-1 Abrams'), home_base='Blue Front', want=1}
+
+ground.schedule_ground(dispersion_side,0,function() end)
+run_until(now+1)
+assert_dispersed('artillery', arty_a, arty_b, ARTY_SLOT_SPACING, arty_from)
+assert_dispersed('secondary', sec_a, sec_b, SEC_SLOT_SPACING, arty_from)
+-- END DEPLOYMENT DISPERSION ---------------------------------------------------------------
 local zones=mission_require('zones')
 env.mission.triggers.zones={{name='Scenery Enum Test',type=0,x=0,y=0,radius=100}}
 zones.load()
@@ -331,11 +580,69 @@ local function json_string_array(list)
     for _,s in ipairs(list) do parts[#parts+1]=json_string(s) end
     return '['..table.concat(parts,',')..']'
 end
+-- Deterministic JSON for the order log. Object keys are emitted in sorted order and nil-valued
+-- fields are omitted, so the same world state always serialises to the same bytes regardless of
+-- Lua's pairs() iteration order — otherwise the fixture would be flaky rather than a net.
+local function json_number(n)
+    if n ~= n or n == math.huge or n == -math.huge then
+        error('order log: non-finite number cannot be recorded deterministically')
+    end
+    if n == math.floor(n) and math.abs(n) < 1e15 then return string.format('%d', n) end
+    return string.format('%.6f', n)
+end
+local json_value
+local function json_array(list)
+    local parts={}
+    for i=1,#list do parts[#parts+1]=json_value(list[i]) end
+    return '['..table.concat(parts,',')..']'
+end
+local function json_object(t)
+    local keys={}
+    for k in pairs(t) do keys[#keys+1]=k end
+    table.sort(keys)
+    local parts={}
+    for _,k in ipairs(keys) do parts[#parts+1]=json_string(k)..':'..json_value(t[k]) end
+    return '{'..table.concat(parts,',')..'}'
+end
+json_value=function(v)
+    local t=type(v)
+    if v==nil then return 'null' end
+    if t=='boolean' then return tostring(v) end
+    if t=='number' then return json_number(v) end
+    if t=='string' then return json_string(v) end
+    if t=='table' then
+        if #v>0 then return json_array(v) end
+        if next(v)==nil then return '{}' end
+        return json_object(v)
+    end
+    error('order log: cannot serialize a '..t..' — orders must be plain data')
+end
+
+-- Call multiplicity per spawn name: repeated spawns under one name are one entry in
+-- `group_names` but N here, so a duplicate-spawn regression is detectable.
+local spawn_call_counts={}
+for _,entry in ipairs(campaign_orders) do
+    if entry.call=='addGroup' or entry.call=='addStatic' then
+        local key=entry.call..':'..tostring(entry.group)
+        spawn_call_counts[key]=(spawn_call_counts[key] or 0)+1
+    end
+end
+
 print(string.format(
-    'SUMMARY_JSON {"mode":%s,"duration":%d,"ticks":%d,"groups":%d,"statics":%d,"group_names":%s,"static_names":%s}',
+    'SUMMARY_JSON {"mode":%s,"duration":%d,"ticks":%d,"groups":%d,"statics":%d,"group_names":%s,"static_names":%s,'..
+    '"orders":%s,"spawn_call_counts":%s,"task_creations":%s,"generator_liveness":%s}',
     json_string(mode), duration, ticks, campaign_groups, campaign_statics,
-    json_string_array(campaign_group_names), json_string_array(campaign_static_names)
+    json_string_array(campaign_group_names), json_string_array(campaign_static_names),
+    json_array(campaign_orders), json_object(spawn_call_counts), json_object(campaign_task_creations),
+    json_object(liveness)
 ))
+
+-- Reported last, on purpose: SUMMARY_JSON above is already on stdout, so run-tests.cjs can
+-- still diff the order log and show WHICH waypoints moved alongside these fixture failures.
+if #fixture_failures>0 then
+    for _,message in ipairs(fixture_failures) do print('FIXTURE FAILED: '..message) end
+    error(#fixture_failures..' campaign-smoke fixture(s) failed in mode '..mode, 0)
+end
 
 
 

@@ -383,6 +383,19 @@ function spawnSupport(
 			? MLRS_SLOTS
 			: ARTY_SLOTS
 		: SECONDARY_SLOTS;
+	// RNG DRAW ORDER matters: the Lua baseline drew the two +/-200 m jitter randoms FIRST, then the
+	// group-size random (git show 232b9f5:Scripts/ee-dcs/ground_forces.lua, spawn_sec_group). Calling
+	// composition() before spawnOrigin() consumes the same COUNT of draws in a different order, which
+	// shifts every GndSec spawn origin and group size off the baseline. Ordering is not an EECH
+	// constant, so there is no citation here - this exists purely to keep the port stream-identical
+	// to the baseline the golden fixtures were recorded from.
+	const start = spawnOrigin(
+		side,
+		home,
+		artillery
+			? ARTY_INITIAL_REAR_OFFSET_METRES
+			: SECONDARY_INITIAL_REAR_OFFSET_METRES,
+	);
 	const types = composition(
 		side,
 		slots,
@@ -393,13 +406,6 @@ function spawnSupport(
 		artillery ? "Arty-%d-%d" : "GndSec-%d-%d",
 		side,
 		id,
-	);
-	const start = spawnOrigin(
-		side,
-		home,
-		artillery
-			? ARTY_INITIAL_REAR_OFFSET_METRES
-			: SECONDARY_INITIAL_REAR_OFFSET_METRES,
 	);
 	const units = makeUnits(name, types, start, 0, artillery);
 	const [ok, group] = pcall(() =>
