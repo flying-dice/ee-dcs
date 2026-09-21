@@ -505,8 +505,14 @@ function nearestUnoccupiedEnemy(
 	return best;
 }
 
+// TSTL/Lua-interop correctness fix — NOT a campaign constant, so there is deliberately no EECH
+// citation. `string.match()` is a LuaMultiReturn; assigned to a single variable, typescript-to-lua
+// emits `local match = {string.match(name, p)}` — a TABLE, so `tonumber(match)` is nil and this
+// helper always returned 0. Every artillery/secondary group then took slot (0 % 5) - 2 = -2,
+// collapsing the five-slot lateral dispersion onto one point. Destructuring forces the
+// single-value form, matching the Lua baseline's `tonumber(sname:match("(%d+)$")) or 0`.
 function numericSuffix(name: string): number {
-	const match = string.match(name, "(%d+)$");
+	const [match] = string.match(name, "(%d+)$");
 	return match !== undefined ? (tonumber(match) ?? 0) : 0;
 }
 
