@@ -1,0 +1,93 @@
+name: Deploy web app to GitHub Pages
+
+# Replaces Cloudflare Pages. The Pages source is set to "GitHub Actions" in
+# Settings > Pages, so this workflow is the only thing that publishes the site.
+#
+# The app is a static Vite/Svelte build. vite.config.js already sets `base: './'`,
+# so the bundle works from the project-pages subpath (flying-dice.github.io/ee-dcs/)
+# without a base-path override here.
+
+on:
+  push:
+    branches: [main]
+    # Only rebuild when something the site actually contains changes.
+    paths:
+      - "apps/web/**"
+      - "packages/ee-mission/**"
+      - "dist/ee-dcs.lua"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race. Don't cancel a run that is already publishing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Build the campaign bundle from TypeScript source rather than trusting the
+      # committed dist/ee-dcs.lua. apps/web's `prebuild` copies that file into the
+      # site, so building it here guarantees the deployed page ships the campaign
+      # that matches this commit instead of a stale artifact.
+      - name: Build campaign bundle
+        run: npm run build --workspace ee-mission
+
+      # Fail loudly instead of deploying a broken site.
+      #
+      # apps/web/src/lib/osm.ts resolves theatre data with
+      # `import.meta.glob('../osm/*.geojson')`. If that directory is empty the build
+      # still SUCCEEDS -- the glob simply matches nothing -- and the site deploys,
+      # but selecting a theatre throws "No compiled OSM dataset" at runtime. That is
+      # the worst failure mode available: green pipeline, broken page.
+      #
+      # These assets are a paired export contract (see docs/bots/NOTES.md):
+      # src/theatres/<Id>.geojson from DCS and src/osm/<Id>.geojson from the
+      # Docker/Osmium export. Both must be committed for a clean clone to build a
+      # working site.
+      - name: Verify theatre assets are committed
+        run: |
+          missing=0
+          for dir in apps/web/src/theatres apps/web/src/osm; do
+            count=$(git ls-files "$dir" | grep -c '\.geojson$' || true)
+            echo "$dir: $count committed .geojson file(s)"
+            [ "$count" -eq 0 ] && missing=1
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "::error::A theatre asset directory has no committed .geojson files. The site would build but break at runtime on theatre selection. Commit the paired export (see docs/bots/NOTES.md)."
+            exit 1
+          fi
+
+      - name: Build site
+        run: npm run build --workspace dcs-eech-mapgen
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
