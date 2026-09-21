@@ -9,6 +9,13 @@ updatedAt: 2026-09-21T20:15:00.000Z
 ---
 # Complete the Lua -> TS port and delete the Lua tree
 
+> **Paths re-pointed 2026-09-21.** The Lua baseline was deleted; module paths below now name
+> their `packages/ee-mission/src/*.ts` counterparts. **Line numbers were taken against the Lua
+> tree** and will not map exactly — locate by symbol, or read the original via
+> `git show <pre-deletion-commit>:Scripts/ee-dcs/<module>.lua`. EECH C-source citations
+> (`E:\eech_source_code`) are unaffected.
+
+
 Finish migrating the campaign to `packages/ee-mission` (TypeScript -> TSTL) and remove
 `Scripts/ee-dcs/*.lua` as a source tree.
 
@@ -34,7 +41,7 @@ Both build systems write the same file:
 
 | Build | Output | Configured in |
 |---|---|---|
-| lua-cargo | `dist/ee-dcs.lua` | `CargoLua.toml:6-7` (`path = "Scripts/ee-dcs/main.lua"`, `name = "ee-dcs.lua"`) |
+| lua-cargo | `dist/ee-dcs.lua` | `CargoLua.toml:6-7` (`path = "packages/ee-mission/src/main.ts"`, `name = "ee-dcs.lua"`) |
 | TSTL | `dist/ee-dcs.lua` | `packages/ee-mission/tsconfig.json` (`outDir: "../../dist"` -> `E:\ee-dcs\dist`, `luaBundle: "ee-dcs.lua"`) |
 
 Whichever runs last wins, silently. **`CLAUDE.md` still documents `lua-cargo build` as *the* build**,
@@ -220,12 +227,12 @@ before deleting:
 - [x] Per-module Lua vs TS behavioural diff — done via the differential harness, not a manual read
 - [ ] Confirm every EECH `file:line` citation survived into the TS sources — **NOT verified**, no systematic audit was run
 - [ ] Live-validation soak on the TSTL bundle — blocked, DCS Studio unreachable (card 13)
-- [ ] Remove `CargoLua.toml` / `CargoLua.lock` — descoped by the user (build process)
-- [ ] Delete stale `packages/dist/ee-dcs.lua` — descoped with the build work
+- [x] Remove `CargoLua.toml` / `CargoLua.lock` — removed; they pointed at the deleted tree, so the duplicate-output hazard is gone
+- [x] Delete stale `packages/dist/ee-dcs.lua` — removed (4 KB lualib-only leftover)
 - [x] Delete `Scripts/ee-dcs/*.lua` — 35 files, staged
-- [~] Rewrite CLAUDE.md and README for the TS workflow — CLAUDE.md done (banner + build/test commands); README module table still cites Lua paths (card 06)
+- [x] Rewrite CLAUDE.md and README for the TS workflow — both re-pointed; README no longer cites the deleted tree except as deliberate history
 - [ ] Define the TS replacement for the `check` gate, or state none exists
-- [ ] Re-point open cards 01-08 at TS paths
+- [x] Re-point open cards at TS paths — all cards re-pointed, each carrying a note that line numbers were taken against the Lua tree
 
 ## Gates
 

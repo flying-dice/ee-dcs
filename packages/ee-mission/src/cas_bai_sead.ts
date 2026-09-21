@@ -65,6 +65,7 @@
 */
 
 import * as mode from "./campaign_mode";
+import { matches } from "./lua_interop";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
@@ -219,17 +220,6 @@ function aaUnit(unit: Unit): boolean {
 		a?.["LR SAM"] === true ||
 		a?.["IR Guided SAM"] === true
 	);
-}
-// TSTL/Lua-interop correctness helper — NOT a campaign constant, so there is deliberately no
-// EECH citation for it. `string.match()` is typed as a LuaMultiReturn; used directly inside an
-// expression, typescript-to-lua wraps it in a table constructor — `({string.match(n, p)})` —
-// which is never nil. That made every `string.match(n, p) !== undefined` test ALWAYS TRUE (and
-// every `=== undefined` test always false), so name-tagged groups were all mis-classified.
-// Destructuring forces the single-value form (`local found = string.match(n, p)`), which is what
-// the Lua baseline's `n:match(...)` tests do (Scripts/ee-dcs/cas_bai_sead.lua:464-473).
-function matches(text: string, pattern: string): boolean {
-	const [found] = string.match(text, pattern);
-	return found !== undefined;
 }
 function groupFlag(group: Group): number | undefined {
 	const name = group.getName();

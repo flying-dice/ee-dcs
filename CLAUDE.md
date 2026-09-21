@@ -51,8 +51,9 @@ these tools to exist in a session.
 
 - **Build** — `npm run build --workspace ee-mission` (typescript-to-lua) → bundles
   `packages/ee-mission/src/index.ts` and its module tree into `dist/ee-dcs.lua`.
-  TSTL is the ONLY producer of that file. `lua-cargo` and `CargoLua.toml` are dead —
-  the `Scripts/ee-dcs/*.lua` tree they built was deleted 2026-09-21 (sprint 02).
+  TSTL is the ONLY producer of that file. `lua-cargo`, `CargoLua.toml` and `CargoLua.lock`
+  were REMOVED on 2026-09-21 along with the `Scripts/ee-dcs/*.lua` tree they built, so the
+  old duplicate-output hazard (two builds writing `dist/ee-dcs.lua`) no longer exists.
 - **Tests / regression net** — `npm run test --workspace ee-mission`
   (set `LUA_BIN` if Lua 5.1 is not on PATH). Runs 27 core-parity checks plus campaign
   smoke at 310 s and 2100 s, asserting the world state against **golden fixtures**

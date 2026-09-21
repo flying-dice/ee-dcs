@@ -6,6 +6,13 @@ updatedAt: 2026-09-21T16:06:45.000Z
 ---
 # Recover the deleted specs/ catalog and goals/ backlog
 
+> **Paths re-pointed 2026-09-21.** The Lua baseline was deleted; module paths below now name
+> their `packages/ee-mission/src/*.ts` counterparts. **Line numbers were taken against the Lua
+> tree** and will not map exactly — locate by symbol, or read the original via
+> `git show <pre-deletion-commit>:Scripts/ee-dcs/<module>.lua`. EECH C-source citations
+> (`E:\eech_source_code`) are unaffected.
+
+
 Commit `7f4879e` ("Add MP Client slots, single-file theatre export, release cleanup") deleted **28
 files**, including the entire spec catalog and the entire goal backlog:
 
@@ -15,8 +22,8 @@ files**, including the entire spec catalog and the entire goal backlog:
 
 This leaves dangling references throughout the live codebase and docs:
 
-- **Lua modules cite the deleted specs by ID** — `spec 06 SECTOR-F16` (`frontline.lua:20`),
-  `spec 02 FORCE-F6` (`supply.lua`), `spec 07-F9` (`task_board.lua`), `spec 01 F13`, `spec 02 F26`,
+- **Lua modules cite the deleted specs by ID** — `spec 06 SECTOR-F16` (`frontline.ts:20`),
+  `spec 02 FORCE-F6` (`supply.ts`), `spec 07-F9` (`task_board.ts`), `spec 01 F13`, `spec 02 F26`,
   `spec 04 F6` and more. A reader cannot resolve any of them.
 - **`CHANGELOG.md:13`** points at `goals/03-mp-server-playout/GAP-ANALYSIS-2026-07-09.md`.
 - **`CLAUDE.md`** referenced "ANALYSIS section 4" (now annotated with the git-history location).

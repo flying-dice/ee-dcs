@@ -6,16 +6,23 @@ updatedAt: 2026-09-21T16:06:45.000Z
 ---
 # Sweep README and CHANGELOG for remaining stale claims
 
+> **Paths re-pointed 2026-09-21.** The Lua baseline was deleted; module paths below now name
+> their `packages/ee-mission/src/*.ts` counterparts. **Line numbers were taken against the Lua
+> tree** and will not map exactly — locate by symbol, or read the original via
+> `git show <pre-deletion-commit>:Scripts/ee-dcs/<module>.lua`. EECH C-source citations
+> (`E:\eech_source_code`) are unaffected.
+
+
 The 2026-09-21 audit corrected the stale doc claims it tripped over, but the sweep was
 **opportunistic** — `README.md` is ~425 lines and was never audited end to end.
 
 Already fixed in `CLAUDE.md` / `README.md`:
 
-- main.lua's "legacy parallel supply/CAP/patrol layer" + `_G.game_loop` double-start (deleted in Cluster H)
+- main.ts's "legacy parallel supply/CAP/patrol layer" + `_G.game_loop` double-start (deleted in Cluster H)
 - bundle module count 21 → 33
 - dead "ANALYSIS section 4" pointer (now annotated with its git-history location)
 - "imap layers held outside `S`" (they live on `S.imap` since Wave 1)
-- "there is no production" (`supply.lua` has a production economy)
+- "there is no production" (`supply.ts` has a production economy)
 - README's heli_war row (deleted anti-armour/hunter-killer schedulers) and frontline row (Gabriel-graph)
 - README's "Escalation phases" bullet — **fixed independently in the working tree** as
   "State-driven campaign tempo", which is why the audit's own version of that edit was dropped

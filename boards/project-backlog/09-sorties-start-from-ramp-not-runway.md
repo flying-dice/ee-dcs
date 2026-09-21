@@ -8,6 +8,13 @@ updatedAt: 2026-09-21T17:20:00.000Z
 ---
 # Sorties start from the ramp, not the runway
 
+> **Paths re-pointed 2026-09-21.** The Lua baseline was deleted; module paths below now name
+> their `packages/ee-mission/src/*.ts` counterparts. **Line numbers were taken against the Lua
+> tree** and will not map exactly — locate by symbol, or read the original via
+> `git show <pre-deletion-commit>:Scripts/ee-dcs/<module>.lua`. EECH C-source citations
+> (`E:\eech_source_code`) are unaffected.
+
+
 **Symptom (user report):** sorties start runway-hot; they should start from the ramp.
 
 **Root cause:** every AI spawner paired `type="TakeOff"` with `action="From Parking Area"`. In DCS
@@ -41,13 +48,13 @@ troop-insertion cadence.
 
 26 sites converted to `type="TakeOffParkingHot"` + `action="From Parking Area Hot"`:
 
-- **Lua (13):** `attack_waves.lua` x2, `cas_bai_sead.lua` x3, `heli_war.lua` x2, `reaction.lua` x2,
-  `recon.lua`, `regen.lua`, `supply_flight.lua`, `troop.lua`
+- **Lua (13):** `attack_waves.ts` x2, `cas_bai_sead.ts` x3, `heli_war.ts` x2, `reaction.ts` x2,
+  `recon.ts`, `regen.ts`, `supply_flight.ts`, `troop.ts`
 - **TypeScript mirror (13):** the matching sites in `packages/ee-mission/src/*.ts`
 
 `TakeOffGroundHot` sites (padless FARP / bare-coordinate starts) were left unchanged - correct as-is.
 Stale comments describing "a real TakeOff waypoint" / "TakeOff-from-parking" updated in
-`attack_waves.lua`, `heli_war.lua`, `troop.lua`. The matched-pair rule and the DCS trap are recorded
+`attack_waves.ts`, `heli_war.ts`, `troop.ts`. The matched-pair rule and the DCS trap are recorded
 in `CLAUDE.md` under the superseded-constraint bullet so it is not reintroduced.
 
 Consistent with the existing CLAUDE.md constraint: ramp starts **are** ground spawns, so this moves

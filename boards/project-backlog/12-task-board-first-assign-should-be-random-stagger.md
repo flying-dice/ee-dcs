@@ -6,6 +6,13 @@ updatedAt: 2026-09-21T19:05:00.000Z
 ---
 # task_board first assignment pass should be a random stagger, not a fixed offset
 
+> **Paths re-pointed 2026-09-21.** The Lua baseline was deleted; port modules below name their
+> `packages/ee-mission/src/*.ts` counterparts. **Line numbers were taken against the Lua tree**
+> and will not map exactly — locate by symbol, or read the original with
+> `git show <pre-deletion-commit>:Scripts/ee-dcs/<module>.lua`. EECH C-source citations are
+> unaffected.
+
+
 Found during the sprint-02 port validation. **Neither tree matches EECH** on the task board's *first*
 assignment pass. The recurring cadence is correct in both (180 s).
 
@@ -22,7 +29,7 @@ So EECH's first pass is uniform in [0, 180) per keysite, mean 90 s.
 
 | | first pass | faithful? |
 |---|---|---|
-| Lua `task_board.lua:594` | `ASSIGN_CADENCE` (180) | No - hardcodes the maximum |
+| Lua `task_board.ts:594` | `ASSIGN_CADENCE` (180) | No - hardcodes the maximum |
 | TS `task_board.ts:590` (before sprint 02) | `45` (invented) | No - tuned by feel; **removed, see below** |
 | EECH `ks_creat.c:166` | `frand1() * 180`, per keysite | - |
 
@@ -45,7 +52,7 @@ remaining gap.
   seeded RNG to stay comparable. Note EECH is nondeterministic here *by design*.
 - **(b) `ASSIGN_CADENCE / 2` (90 s)** - the expected value of the C's distribution, documented as the
   proxy for EECH's per-keysite stagger given the port collapses those into one global pass
-  (`task_board.lua:52-56`). Deterministic, but 90 is still a number that does not appear in the C.
+  (`task_board.ts:52-56`). Deterministic, but 90 is still a number that does not appear in the C.
 
 Recommend (a) with a seeded harness: the PRIME DIRECTIVE measures fidelity against the C, and the
 determinism objection is a *test* problem with a standard test solution.

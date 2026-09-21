@@ -6,6 +6,13 @@ updatedAt: 2026-09-21T18:05:00.000Z
 ---
 # Build a real road graph from OSM and close the "structural limit" proxies
 
+> **Paths re-pointed 2026-09-21.** The Lua baseline was deleted; port modules below name their
+> `packages/ee-mission/src/*.ts` counterparts. **Line numbers were taken against the Lua tree**
+> and will not map exactly — locate by symbol, or read the original with
+> `git show <pre-deletion-commit>:Scripts/ee-dcs/<module>.lua`. EECH C-source citations are
+> unaffected.
+
+
 The port repeatedly declares "DCS exposes no road-node adjacency graph" a **structural limit that
 cannot be closed**, and substitutes metric/base-centric proxies for EECH's topology. That premise
 was true when the port was written. With OSM available it no longer is - and several proxies can be
@@ -29,7 +36,7 @@ highway class -> `path_type`, way geometry -> `link_positions`).
 **`safe_radius` is not a blocker.** `initialise_road_safe_radius()` (`ai_route.c:1170-1232`), which
 derives it from a terrain probe, is **commented out in shipped EECH**. The live value is the hardcoded
 `new_node->safe_radius = 28` at `ai_route.c:414`. So the port's existing `7 +/- 2` group size
-(`ground_forces.lua:70-72`, from `28/4 +/- 2`) is already correct and needs no OSM input.
+(`ground_forces.ts:70-72`, from `28/4 +/- 2`) is already correct and needs no OSM input.
 
 ## Two ways to get the graph - DCS-derived is now preferred
 
@@ -88,13 +95,13 @@ This removes the "do OSM roads align with the DCS mesh?" unknown entirely. OSM d
 | Currently a proxy | Becomes |
 |---|---|
 | **Card 07** - ground OOB at base centres; boundary approximated by base midpoints | Direct port of `faction.c:1387-1419`: PRIMARY = node linked to an enemy-owned node. SECONDARY/ARTILLERY = 1 and 2 links back (`faction.c:1422-1502`). No invented offsets at all. |
-| Continuous base-to-base driving (`ground_forces.lua:23-27`) | EECH's real discretisation: advance **one group one node per tick** toward the warmest reachable node (`highlevl.c:250`, create_advance_and_retreat_tasks). Fixes pacing as well as placement. |
+| Continuous base-to-base driving (`ground_forces.ts:23-27`) | EECH's real discretisation: advance **one group one node per tick** toward the warmest reachable node (`highlevl.c:250`, create_advance_and_retreat_tasks). Fixes pacing as well as placement. |
 | `SEC_STANDOFF` / `SEC_REAR_OFFSET` / `ARTY_STANDOFF` metric guesses | Deleted - echelon depth becomes link count, as in EECH. |
-| `croute` sector_side = nearest-base owner (`croute.lua:25-30`, proxying `croute.c:1534-1536`) | `side_occupying` per node - real territorial state. |
-| Air-only resupply (`supply_flight.lua:26-31`) | EECH's land-convoy branch of `create_supply_task` becomes reproducible. |
+| `croute` sector_side = nearest-base owner (`croute.ts:25-30`, proxying `croute.c:1534-1536`) | `side_occupying` per node - real territorial state. |
+| Air-only resupply (`supply_flight.ts:26-31`) | EECH's land-convoy branch of `create_supply_task` becomes reproducible. |
 | Base-ownership as the only territory model | Node `side_occupying` gives genuine territorial control - the front can move *between* bases instead of only at them. |
 
-It may also bear on the sector-grid limit that `imap.lua:11-13` and `frontline.lua:15-22` both cite:
+It may also bear on the sector-grid limit that `imap.ts:11-13` and `frontline.ts:15-22` both cite:
 OSM admin boundaries (already exported, 832 MultiPolygons) plus road-node occupancy could support a
 real sector model rather than the base-proxy. **Treat that as a separate follow-up** - do not scope
 it into this card.
@@ -139,5 +146,5 @@ advance -> everything else.
 
 ## Comments
 
-- **claude** (2026-09-21T18:05:00.000Z): Raised at user request after they pointed out the port predates the OSM data. Verified the premise both ways: the road-graph limit is cited in `ground_forces.lua:23`, `ground_forces.lua:101`, `ground_forces.lua:109` and `supply_flight.lua:29` as uncloseable, and the raw PBF does hold the roads while the compiled export drops them. The find that most improves the cost/benefit here is `ai_route.c:414` - `safe_radius` is a hardcoded 28 in shipped EECH and the terrain-derived version at `ai_route.c:1170` is commented out, so the OSM graph only has to supply positions and adjacency, not terrain-derived radii. That makes this a tractable data problem rather than a terrain-analysis one. Have not prototyped the extraction or measured graph size - the open questions above are genuine unknowns, not rhetorical.
+- **claude** (2026-09-21T18:05:00.000Z): Raised at user request after they pointed out the port predates the OSM data. Verified the premise both ways: the road-graph limit is cited in `ground_forces.ts:23`, `ground_forces.ts:101`, `ground_forces.ts:109` and `supply_flight.ts:29` as uncloseable, and the raw PBF does hold the roads while the compiled export drops them. The find that most improves the cost/benefit here is `ai_route.c:414` - `safe_radius` is a hardcoded 28 in shipped EECH and the terrain-derived version at `ai_route.c:1170` is commented out, so the OSM graph only has to supply positions and adjacency, not terrain-derived radii. That makes this a tractable data problem rather than a terrain-analysis one. Have not prototyped the extraction or measured graph size - the open questions above are genuine unknowns, not rhetorical.
 - **claude** (2026-09-21T18:25:00.000Z): Revised after the user asked whether the DCS road APIs could achieve this without OSM. They largely can, and I have reworked the approach above rather than defending the original framing. The hard limit is real - DCS exposes no enumeration or adjacency, which EECH's `for each node, for each link` loops require - but the graph can be *derived* from DCS and baked offline, and `tools/dcs-export/theatre-dump.lua` is already the exact harness pattern for doing it. That is strictly better than importing OSM roads because it eliminates the mesh-alignment risk. OSM is demoted to optional enrichment (road class, population areas). Title still says OSM; leaving it so the card stays findable, but the approach is now DCS-first.

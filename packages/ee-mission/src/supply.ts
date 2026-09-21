@@ -43,6 +43,7 @@
 -- convert_reserves also replenishes the vehicle/troop pools, so factory loss starves the ground war.
 */
 import * as config from "./config";
+import { matches } from "./lua_interop";
 import * as cs from "./campaign_state";
 import type { InventoryLedger, Side } from "./campaign_types";
 import * as keysite from "./keysite";
@@ -113,16 +114,6 @@ export const PREFIX_ROLES: PrefixRole[] = [
 	{ pattern: "^BDA%-", role: "heli", regen: true },
 ];
 
-// TSTL/Lua-interop correctness helper — NOT a campaign constant, so there is deliberately no
-// EECH citation for it. `string.match()` is typed as a LuaMultiReturn; used directly inside an
-// expression, typescript-to-lua wraps it in a table constructor — `({string.match(n, p)})` —
-// which is never nil. That made every `string.match(n, p) !== undefined` test ALWAYS TRUE (and
-// every `=== undefined` test always false). Destructuring forces the single-value form
-// (`local found = string.match(n, p)`), matching the Lua baseline's `n:match(...)` tests.
-function matches(text: string, pattern: string): boolean {
-	const [found] = string.match(text, pattern);
-	return found !== undefined;
-}
 
 export function classify_role(name: string): Role | undefined {
 	for (const entry of PREFIX_ROLES) {

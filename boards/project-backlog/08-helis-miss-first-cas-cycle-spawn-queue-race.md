@@ -6,6 +6,13 @@ updatedAt: 2026-09-21T17:10:00.000Z
 ---
 # Helicopters miss the first CAS cycle - spawn-queue race at boot
 
+> **Paths re-pointed 2026-09-21.** The Lua baseline was deleted; port modules below name their
+> `packages/ee-mission/src/*.ts` counterparts. **Line numbers were taken against the Lua tree**
+> and will not map exactly — locate by symbol, or read the original with
+> `git show <pre-deletion-commit>:Scripts/ee-dcs/<module>.lua`. EECH C-source citations are
+> unaffected.
+
+
 **Symptom (user report):** the air war opens with jets flying recon and strikes; helicopters take a
 long time to appear. In EECH, helicopters are in the campaign immediately.
 
@@ -17,27 +24,27 @@ nothing, and does not retry for a full period.
 ## Why jets fly and helis do not
 
 CAS and BAI **are** the rotary fight here: `create_air_strike_task` routes both to
-`heli_war.build_attack_heli` (`cas_bai_sead.lua:412-417`); only SEAD stays fixed-wing. So rotary
+`heli_war.build_attack_heli` (`cas_bai_sead.ts:412-417`); only SEAD stays fixed-wing. So rotary
 sorties depend entirely on CAS/BAI finding targets.
 
 The two generators draw targets from different places:
 
 | Generator | Offset | Target source | Available at T+5s? |
 |---|---|---|---|
-| `cas` (ROTARY) | **5 s** | `coalition.getGroups(enemy)` - **live DCS ground groups** (`cas_bai_sead.lua:495`) | **No** - still in the spawn queue |
+| `cas` (ROTARY) | **5 s** | `coalition.getGroups(enemy)` - **live DCS ground groups** (`cas_bai_sead.ts:495`) | **No** - still in the spawn queue |
 | `keysite_strike` (JET) | 15 s | `S.base_owner` / keysite map - **plain state, populated synchronously in init** | Yes |
 
-`spawn_queue` drains `DRAIN_PER_TICK = 4` every `DRAIN_INTERVAL = 1.0` s (`spawn_queue.lua:23-26`)
+`spawn_queue` drains `DRAIN_PER_TICK = 4` every `DRAIN_INTERVAL = 1.0` s (`spawn_queue.ts:23-26`)
 against an init burst its own header puts at ~150-200 groups. Boot enqueues in this order
-(`game_loop.lua:172-208`): FARP statics -> **ground OOB** -> installations -> AD garrisons.
+(`game_loop.ts:172-208`): FARP statics -> **ground OOB** -> installations -> AD garrisons.
 
-Critically, `init_oob` loops `{BLUE, RED}` in order (`ground_forces.lua:401`), so **every BLUE ground
+Critically, `init_oob` loops `{BLUE, RED}` in order (`ground_forces.ts:401`), so **every BLUE ground
 group is enqueued before the first RED one**. At T+5 s roughly 20 items have drained - the FARP
 statics and the leading BLUE groups. BLUE's CAS is looking for **RED** ground groups, which do not
 exist yet.
 
-So `run_cas` hits its guard at `cas_bai_sead.lua:561-565`, logs `CAS: no ground targets found`, and
-returns. The next BLUE CAS is **15 minutes later** (`campaign_mode.lua` cas period 15 min,
+So `run_cas` hits its guard at `cas_bai_sead.ts:561-565`, logs `CAS: no ground targets found`, and
+returns. The next BLUE CAS is **15 minutes later** (`campaign_mode.ts` cas period 15 min,
 `highlevl.c:246`). Meanwhile `keysite_strike` at T+15 s has keysites available immediately, launches
 jets, and its recon-first fork (`highlevl.c:1179-1205`) produces the recon sorties the user sees.
 
@@ -52,7 +59,7 @@ This is a **port-infrastructure race, not an EECH divergence**: the cadences are
 ## Compounding factor
 
 Card 07 (ground OOB spawns in the rear) means that even once the groups exist, they are 1-3 hours of
-driving from contact. CAS rates only `frontline`-echelon targets (`cas_bai_sead.lua:574-577`), so
+driving from contact. CAS rates only `frontline`-echelon targets (`cas_bai_sead.ts:574-577`), so
 until the columns close, rotary CAS has little to rate even on later cycles. **Fix 07 and 08
 together** - either alone leaves the rotary war thin at campaign open.
 
@@ -63,7 +70,7 @@ together** - either alone leaves the rotary war thin at campaign open.
    "OOB complete, then start the AI" ordering exactly. Preferred unless drain is slow.
 2. **Retry on empty** - if a generator finds no targets, re-arm at a short retry interval instead of
    waiting a full period. Cheap, but invents a retry cadence EECH does not have.
-3. **Raise `DRAIN_PER_TICK`** - the 4/tick throttle exists for a crash that `spawn_queue.lua:22-24`
+3. **Raise `DRAIN_PER_TICK`** - the 4/tick throttle exists for a crash that `spawn_queue.ts:22-24`
    says was root-caused to `launch lights=0`, not spawn volume. If that holds, the throttle may be
    over-conservative now. Reduces the race window but does not close it.
 
@@ -79,4 +86,4 @@ together** - either alone leaves the rotary war thin at campaign open.
 
 ## Comments
 
-- **claude** (2026-09-21T17:10:00.000Z): Raised from a user report that helicopters take far too long to enter the air war versus EECH. Traced end to end: `cas_bai_sead.lua:412-417` (CAS/BAI are rotary), `cas_bai_sead.lua:495` (targets are live DCS groups), `spawn_queue.lua:23-26` (4 spawns/s), `game_loop.lua:172-208` (enqueue order), `ground_forces.lua:401` (BLUE enqueued before RED), `cas_bai_sead.lua:561-565` (the empty-target early return). The scheduler cadences themselves are correct and were verified against `highlevl.c:246-268` in the 2026-09-21 audit - this is an ordering defect in port infrastructure, which is why it did not show up in a constants-focused fidelity pass. Not yet measured in a live mission; the ~15 min figure is derived, and the first checklist item is to confirm it.
+- **claude** (2026-09-21T17:10:00.000Z): Raised from a user report that helicopters take far too long to enter the air war versus EECH. Traced end to end: `cas_bai_sead.ts:412-417` (CAS/BAI are rotary), `cas_bai_sead.ts:495` (targets are live DCS groups), `spawn_queue.ts:23-26` (4 spawns/s), `game_loop.ts:172-208` (enqueue order), `ground_forces.ts:401` (BLUE enqueued before RED), `cas_bai_sead.ts:561-565` (the empty-target early return). The scheduler cadences themselves are correct and were verified against `highlevl.c:246-268` in the 2026-09-21 audit - this is an ordering defect in port infrastructure, which is why it did not show up in a constants-focused fidelity pass. Not yet measured in a live mission; the ~15 min figure is derived, and the first checklist item is to confirm it.

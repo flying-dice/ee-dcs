@@ -143,7 +143,7 @@ from the map's airfields (densest cluster) so it still runs on a bare map.
 
 The scenario **warzone data** — unit type names, countries, weapon payloads, reserve counts,
 installation statics, keysite air-defence rings, and a few documented designer theatre knobs — lives in one place:
-`Scripts/ee-dcs/config.lua`. It mirrors EECH's own split between compiled engine
+`packages/ee-mission/src/config.ts`. It mirrors EECH's own split between compiled engine
 constants (in the C source) and the data files it loads from disk (FORMCOMP.DAT, the WUT tables):
 `config.lua` is the **data layer**.
 
@@ -224,12 +224,14 @@ Before anything spawns, the campaign validates your config and **logs to `dcs.lo
 Anything traceable to the **EECH C source** — cadences, strike/repair/capture formulas,
 `MINIMUM_EFFICIENCY`, escort thresholds, fog-of-war gates, damage fractions, spawn kinematics
 (altitudes/speeds/fuel) — is **deliberately hardcoded** in its module with a `file:line` citation, per
-the project's prime directive (faithful port, not game design). `config.lua` is the warzone-data layer
+the project's prime directive (faithful port, not game design). `config.ts` is the warzone-data layer
 only; it does not expose engine constants.
 
 ## Modules
 
-22 Lua modules in `Scripts/ee-dcs/`, each headed with the EECH source it ports.
+34 TypeScript modules in `packages/ee-mission/src/`, each headed with the EECH source it ports.
+The table below names each module without its extension; the Lua baseline they were ported from
+(`Scripts/ee-dcs/*.lua`) was deleted on 2026-09-21 and is retained in git history.
 
 | Module | EECH source | Role |
 |---|---|---|
@@ -289,7 +291,7 @@ each with a period and an initial offset that staggers load — a direct mirror 
 | troop patrol | 300 s | OCA strike / sweep, BAI | 1800 / 1200 s |
 
 The full 23-row schedule with per-side BLUE/RED offsets is defined in
-`Scripts/ee-dcs/game_loop.lua` (`start()`), mirroring EECH `start_high_level_ai()`.
+`packages/ee-mission/src/game_loop.ts` (`start()`), mirroring EECH `start_high_level_ai()`.
 
 **Re-injection is safe.** `campaign_state` bumps a global generation counter each load;
 every scheduled closure self-cancels when the generation changes, so the bundle can be
@@ -317,7 +319,7 @@ Run `npm test --workspace ee-mission` for differential checks against the retain
 and simulated five-minute and 35-minute campaign runs. These require Lua 5.1 on PATH, or
 `LUA_BIN` pointing to its executable. They cover engine calling conventions, timers, spawning,
 persistence and reinjection, including player protection. They do not replace DCS Studio
-analysis or live mission validation. The originals in `Scripts/ee-dcs` remain available until
+analysis or live mission validation. The Lua originals in `Scripts/ee-dcs` were deleted on 2026-09-21 once the port was validated against them; they remain in git history. Regression cover is now the golden fixtures in `packages/ee-mission/test/golden/`, recorded from that baseline. This note previously said they would remain until
 the TypeScript bundle passes live validation; rebuilding them with lua-cargo overwrites the
 same deployment bundle with the old source tree.
 

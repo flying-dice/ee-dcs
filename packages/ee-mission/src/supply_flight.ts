@@ -49,6 +49,7 @@
 */
 
 import * as cs from "./campaign_state";
+import { matches } from "./lua_interop";
 import type { Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
 import * as croute from "./croute";
@@ -557,16 +558,6 @@ export function request(
 	return true;
 }
 
-// TSTL/Lua-interop correctness helper — NOT a campaign constant, so there is deliberately no
-// EECH citation for it. `string.match()` is typed as a LuaMultiReturn; used directly inside an
-// expression, typescript-to-lua wraps it in a table constructor — `({string.match(n, p)})` —
-// which is never nil. That made every `string.match(n, p) !== undefined` test ALWAYS TRUE (and
-// every `=== undefined` test always false). Destructuring forces the single-value form
-// (`local found = string.match(n, p)`), matching the Lua baseline's `n:match(...)` tests.
-function matches(text: string, pattern: string): boolean {
-	const [found] = string.match(text, pattern);
-	return found !== undefined;
-}
 function scanSide(side: Side, logFn: LogFunction): void {
 	const groups = coalition.getGroups(side);
 	if (groups === undefined) return;
