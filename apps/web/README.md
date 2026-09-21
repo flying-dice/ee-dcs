@@ -6,7 +6,7 @@ step: open it, design a theatre on a real-world map, and download a ready-to-pla
 
 > **Deployment target:** GitHub Pages at `https://flying-dice.github.io/ee-dcs/`.
 
-You pick a DCS theatre, paint resolution-6 H3 cells BLU or RED as rear or close
+You pick a DCS theatre, paint resolution-5 H3 cells BLU or RED as rear or close
 territory, choose each side's main airbase, and the app writes a `.miz`
 carrying one **trigger zone per keysite** — exactly what the [EECH campaign port](../CLAUDE.md)
 reads at runtime to boot an AI-vs-AI dynamic campaign.
@@ -33,7 +33,7 @@ you what a click does right now.
    theatre's DCS-extracted projection is self-consistent (e.g. `projection ✓ 0.0 m`), or
    `unvalidated` if the theatre file carries no anchors.
    Choose **BLU** or **RED**, give the brush a **Rear** or **Close** role, then drag over
-   resolution-6 H3 cells. Erase clears cells. Turn painting off to pan the map.
+   resolution-5 H3 cells. Erase clears cells. Turn painting off to pan the map.
    Close territory has a stronger fill so the forward area remains obvious at a glance.
 2. **Set each side's main airbase.** Airbases inside an assigned region automatically belong
    to that side. Toggle **BLUE main** / **RED main**, then click one of that side's DCS airbase

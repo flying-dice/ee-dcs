@@ -71,11 +71,11 @@
   </section>
   <section class:disabled={!terrain || !osmLoaded}>
     <div class="step">2 · Paint territory</div>
-    <span class="muted">Paint or erase one resolution-6 H3 cell at a time.</span>
+    <span class="muted">Paint or erase one resolution-5 H3 cell at a time.</span>
     <div class="row"><label class="paint-setting">Side<select value={assignmentSide} disabled={paintErase} on:change={setSide}><option value="blue">BLU</option><option value="red">RED</option></select></label><label class="paint-setting">Role<select value={assignmentRole} disabled={paintErase} on:change={setRole}><option value="rear">Rear</option><option value="close">Close</option></select></label></div>
     <div class="row"><button class:active={mode === 'paint'} on:click={() => toggle('paint')}>{mode === 'paint' ? 'Painting…' : 'Paint on map'}</button><button class:active={paintErase} on:click={() => dispatch('setPaintErase', !paintErase)}>{paintErase ? 'Erasing…' : 'Erase cells'}</button></div>
     <div class="territory-counts"><span>BLU rear {blueRearCount} · close {blueCloseCount}</span><span>RED rear {redRearCount} · close {redCloseCount}</span></div>
-    <span class="muted">Counts are painted resolution-6 cells. Turn painting off to pan the map.</span>
+    <span class="muted">Counts are painted resolution-5 cells. Turn painting off to pan the map.</span>
   </section>
   <section class:disabled={!terrain || !osmLoaded}>
     <div class="step">3 · Main airbases</div>

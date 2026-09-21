@@ -191,7 +191,7 @@ export interface TerritoryAssignment {
   role: TerritoryRole;
 }
 
-/** A resolution-6 H3 cell carrying its explicit scenario assignment. */
+/** A resolution-5 H3 cell carrying its explicit scenario assignment. */
 export interface AssignedTerritory {
   id: string;
   name: string;

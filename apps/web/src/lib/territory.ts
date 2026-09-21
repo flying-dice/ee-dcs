@@ -11,7 +11,7 @@ import type {
 } from './types';
 
 /** Territory painting and storage use one fixed H3 resolution. */
-export const TERRITORY_RESOLUTION = 6;
+export const TERRITORY_RESOLUTION = 5;
 
 function cellBounds(cell: string): BBox {
   const boundary = cellToBoundary(cell);
@@ -36,7 +36,7 @@ function insideTerrain(point: LatLon, ring: LatLon[]): boolean {
   return inside;
 }
 
-/** Restrict paint strokes to resolution-6 cells inside the usable theatre. */
+/** Restrict paint strokes to resolution-5 cells inside the usable theatre. */
 export function paintableCells(cell: string, terrain: Terrain, active: BBox): string[] {
   if (!isValidCell(cell) || getResolution(cell) !== TERRITORY_RESOLUTION) return [];
   const [lat, lon] = cellToLatLng(cell);
