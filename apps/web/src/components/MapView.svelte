@@ -1,14 +1,15 @@
 <script context="module" lang="ts">
-  export type Mode = 'idle' | 'main-blue' | 'main-red' | 'edit';
+  export type Mode = 'idle' | 'paint' | 'main-blue' | 'main-red' | 'edit';
 </script>
 
 <script lang="ts">
   import { onDestroy, onMount, createEventDispatcher } from 'svelte';
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
+  import { cellToBoundary, getHexagonAreaAvg, gridDisk, latLngToCell, polygonToCells } from 'h3-js';
   import { airbaseId, candidateId } from '../lib/balance';
-  import { territoryAt, roleFor } from '../lib/territory';
-  import type { Terrain, CandidateKeysite, Keysite, KeysiteType, AirbasePoint, AdminBoundary, Side, LatLon, BBox } from '../lib/types';
+  import { paintableCells, territoryAt, roleFor, TERRITORY_RESOLUTION } from '../lib/territory';
+  import type { Terrain, CandidateKeysite, Keysite, KeysiteType, AirbasePoint, Side, LatLon, BBox, TerritoryRole } from '../lib/types';
   import type { TerritoryPlan } from '../lib/types';
 
   export let terrain: Terrain | null = null;
@@ -19,8 +20,9 @@
   export let mainBlue: AirbasePoint | null = null;
   export let mainRed: AirbasePoint | null = null;
   export let mode: Mode = 'idle';
-  export let adminBoundaries: AdminBoundary[] = [];
-  export let adminBoundaryAssignments: Record<string, { side: Side; role: 'rear' | 'close' }> = {};
+  export let paintErase = false;
+  export let assignmentSide: Side = 'blue';
+  export let assignmentRole: TerritoryRole = 'rear';
   export let territoryPlan: TerritoryPlan | null = null;
   export let focus: { id: string; n: number } | null = null;
   export let typeColors: Record<KeysiteType, string> = {} as Record<KeysiteType, string>;
@@ -30,7 +32,7 @@
     toggleAirbase: AirbasePoint;
     toggleCandidate: CandidateKeysite;
     moveKeysite: { id: string; latlon: LatLon };
-    openAdminBoundary: string;
+    paintCell: string;
   }>();
 
   const BLUE = '#4aa8ff';
@@ -40,29 +42,30 @@
   let map: L.Map | undefined;
   let ro: ResizeObserver | undefined;
   let topRenderer: L.Renderer | undefined;
-  let adminRenderer: L.SVG | undefined;
+  let h3Renderer: L.SVG | undefined;
+  let gridRenderer: L.Canvas | undefined;
   let boundsLayer: L.Polygon | undefined;
   let activeBoundsLayer: L.Rectangle | undefined;
   const airbaseLayer = L.layerGroup();
   const osmLayer = L.layerGroup();
-  const adminBoundaryLayer = L.layerGroup();
+  const h3GridLayer = L.layerGroup();
+  const paintedLayer = L.layerGroup();
+  const brushLayer = L.layerGroup();
   const previewLayer = L.layerGroup();
   const keysiteEditLayer = L.layerGroup();
   const flashLayer = L.layerGroup();
   let lastFitId: string | null = null;
   let lastFocusN = 0;
   let flashTimer: ReturnType<typeof setTimeout> | undefined;
+  let brushHeld = false;
+  let lastPaintedCell: string | null = null;
+  let hoverPoint: L.LatLng | null = null;
 
   function escapeHtml(value: string): string {
     return value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character] ?? character));
   }
   function tooltip(title: string, sub: string): string {
     return `<b>${escapeHtml(title)}</b>${sub ? `<br><span class="tt-sub">${escapeHtml(sub)}</span>` : ''}`;
-  }
-  function boundaryLatLngs(coordinates: unknown): unknown {
-    if (!Array.isArray(coordinates)) return [];
-    if (coordinates.length >= 2 && typeof coordinates[0] === 'number' && typeof coordinates[1] === 'number') return [coordinates[1], coordinates[0]];
-    return coordinates.map(boundaryLatLngs);
   }
   function territoryText(point: LatLon): string {
     if (!territoryPlan) return 'unassigned territory';
@@ -71,32 +74,8 @@
     const role = roleFor(territoryPlan, point);
     return `${territory.owner.toUpperCase()} · ${role?.toUpperCase() ?? 'UNASSIGNED'}`;
   }
-  function installHazardPatterns(): void {
-    const svg = (adminRenderer as unknown as { _container?: SVGSVGElement } | undefined)?._container;
-    if (!svg || svg.querySelector('[data-territory-hazards]')) return;
-    const ns = 'http://www.w3.org/2000/svg';
-    const defs = document.createElementNS(ns, 'defs');
-    defs.dataset.territoryHazards = 'true';
-    for (const [side, colour] of [['blue', BLUE], ['red', RED]] as const) {
-      const pattern = document.createElementNS(ns, 'pattern');
-      pattern.id = `territory-close-${side}`;
-      pattern.setAttribute('width', '16');
-      pattern.setAttribute('height', '16');
-      pattern.setAttribute('patternUnits', 'userSpaceOnUse');
-      pattern.setAttribute('patternTransform', 'rotate(45)');
-      const base = document.createElementNS(ns, 'rect');
-      base.setAttribute('width', '16');
-      base.setAttribute('height', '16');
-      base.setAttribute('fill', colour);
-      const stripe = document.createElementNS(ns, 'rect');
-      stripe.setAttribute('width', '7');
-      stripe.setAttribute('height', '16');
-      stripe.setAttribute('fill', '#04100d');
-      stripe.setAttribute('fill-opacity', '0.72');
-      pattern.append(base, stripe);
-      defs.append(pattern);
-    }
-    svg.prepend(defs);
+  function cellPolygon(cell: string): [number, number][] {
+    return cellToBoundary(cell).map(([lat, lon]) => [lat, lon]);
   }
   function drawTerrain(): void {
     if (!map) return;
@@ -117,23 +96,56 @@
       map.setMaxBounds(padded);
     }
   }
-  function drawAdminBoundaries(): void {
-    adminBoundaryLayer.clearLayers();
-    installHazardPatterns();
-    for (const boundary of adminBoundaries) {
-      const assignment = adminBoundaryAssignments[boundary.id];
-      const colour = assignment?.side === 'blue' ? BLUE : assignment?.side === 'red' ? RED : MAP_GREEN;
-      const state = assignment ? `${assignment.side.toUpperCase()} · ${assignment.role.toUpperCase()}` : 'OFF';
-      const close = assignment?.role === 'close';
-      const polygon = L.polygon(boundaryLatLngs(boundary.geometry.coordinates) as L.LatLngExpression[], {
-        color: colour, weight: assignment ? 2.25 : 1, dashArray: close ? undefined : '6 4', opacity: assignment ? 0.9 : 0.38,
-        fillColor: close ? `url(#territory-close-${assignment.side})` : colour,
-        fillOpacity: assignment ? (close ? 0.48 : 0.1) : 0.015, interactive: mode === 'idle', renderer: adminRenderer,
-      });
-      polygon.bindTooltip(tooltip(boundary.name || boundary.id, `ADM${boundary.adminLevel} · ${state} · click to assign`), { sticky: true, opacity: 0.95 });
-      polygon.on('click', (event) => { if (mode === 'idle') { L.DomEvent.stop(event.originalEvent); dispatch('openAdminBoundary', boundary.id); } });
-      polygon.addTo(adminBoundaryLayer);
+  function drawH3Grid(): void {
+    h3GridLayer.clearLayers();
+    if (!map || !terrain || !activeBounds) return;
+    const bounds = map.getBounds();
+    const south = Math.max(bounds.getSouth(), activeBounds.south);
+    const north = Math.min(bounds.getNorth(), activeBounds.north);
+    const west = Math.max(bounds.getWest(), activeBounds.west);
+    const east = Math.min(bounds.getEast(), activeBounds.east);
+    if (south >= north || west >= east) return;
+    const widthKm = (east - west) * 111.32 * Math.cos(((south + north) / 2) * Math.PI / 180);
+    const heightKm = (north - south) * 111.32;
+    if (widthKm * heightKm / getHexagonAreaAvg(TERRITORY_RESOLUTION, 'km2') > 1800) return;
+    const visible = new Set(polygonToCells([[south, west], [south, east], [north, east], [north, west]], TERRITORY_RESOLUTION));
+    // polygonToCells selects by centre; tiny viewports can contain no centres.
+    for (const cell of gridDisk(latLngToCell((south + north) / 2, (west + east) / 2, TERRITORY_RESOLUTION), 1)) visible.add(cell);
+    for (const cell of visible) {
+      L.polygon(cellPolygon(cell), {
+        color: '#92c8ac', weight: 0.8, opacity: 0.28, fill: false,
+        interactive: false, renderer: gridRenderer,
+      }).addTo(h3GridLayer);
     }
+  }
+  function drawPaintedCells(): void {
+    paintedLayer.clearLayers();
+    if (!territoryPlan) return;
+    for (const territory of territoryPlan.territories) {
+      const colour = territory.owner === 'blue' ? BLUE : RED;
+      const close = territory.role === 'close';
+      const polygon = L.polygon(cellPolygon(territory.id), {
+        color: colour, weight: close ? 2 : 1.5, dashArray: close ? undefined : '5 4',
+        fillColor: colour, fillOpacity: close ? 0.35 : 0.17,
+        interactive: false, renderer: h3Renderer,
+      });
+      polygon.addTo(paintedLayer);
+    }
+  }
+  function drawBrushPreview(): void {
+    brushLayer.clearLayers();
+    if (mode !== 'paint' || !hoverPoint || !terrain || !activeBounds) return;
+    const cell = latLngToCell(hoverPoint.lat, hoverPoint.lng, TERRITORY_RESOLUTION);
+    const children = paintableCells(cell, terrain, activeBounds);
+    if (children.length === 0) return;
+    const colour = paintErase ? '#ffffff' : assignmentSide === 'blue' ? BLUE : RED;
+    const polygon = L.polygon(cellPolygon(cell), {
+      color: colour, weight: 3, dashArray: paintErase ? '5 4' : undefined,
+      fillColor: colour, fillOpacity: paintErase ? 0.06 : 0.22,
+      interactive: false, renderer: h3Renderer,
+    });
+    polygon.bindTooltip(tooltip(`H3 level ${TERRITORY_RESOLUTION}`, paintErase ? 'ERASE' : `${assignmentSide.toUpperCase()} ${assignmentRole.toUpperCase()}`), { sticky: true });
+    polygon.addTo(brushLayer);
   }
   function drawAirbases(): void {
     airbaseLayer.clearLayers();
@@ -163,18 +175,20 @@
   }
   function drawOsm(): void {
     osmLayer.clearLayers();
+    if (!map) return;
+    const visible = map.getBounds().pad(0.1);
     for (const candidate of osm) {
       if (candidate.type === 'airbase') continue;
+      if (!visible.contains([candidate.latlon.lat, candidate.latlon.lon])) continue;
       const id = candidateId(candidate);
       const selected = selectedIds.has(id);
-      if (!selected && mode !== 'edit') continue;
       const owner = territoryPlan ? territoryAt(territoryPlan, candidate.latlon)?.owner : undefined;
       const marker = L.circleMarker([candidate.latlon.lat, candidate.latlon.lon], {
         radius: selected ? 6 : 3, weight: selected ? 2 : 1, color: selected ? '#ffffff' : typeColors[candidate.type],
         fillColor: selected ? (owner === 'blue' ? BLUE : RED) : typeColors[candidate.type], fillOpacity: selected ? 1 : 0.25,
-        interactive: mode === 'edit', renderer: topRenderer,
+        interactive: true, renderer: topRenderer,
       });
-      marker.bindTooltip(tooltip(candidate.name || candidate.type, `${selected ? 'selected · ' : ''}${candidate.type} · ${territoryText(candidate.latlon)}`), { direction: 'top', opacity: 0.95 });
+      marker.bindTooltip(tooltip(candidate.source.name || candidate.name || candidate.type, `${selected ? 'selected · ' : ''}${candidate.type} · ${territoryText(candidate.latlon)}`), { direction: 'top', opacity: 0.95 });
       marker.on('click', (event) => { if (mode === 'edit') { L.DomEvent.stop(event.originalEvent); dispatch('toggleCandidate', candidate); } });
       marker.addTo(osmLayer);
     }
@@ -210,28 +224,61 @@
     if (flashTimer) clearTimeout(flashTimer);
     flashTimer = setTimeout(() => flashLayer.clearLayers(), 1700);
   }
+  function paintAt(point: L.LatLng): void {
+    if (mode !== 'paint' || !terrain || !activeBounds) return;
+    const cell = latLngToCell(point.lat, point.lng, TERRITORY_RESOLUTION);
+    if (cell === lastPaintedCell) return;
+    lastPaintedCell = cell;
+    dispatch('paintCell', cell);
+  }
+  function onMapMouseDown(event: L.LeafletMouseEvent): void {
+    if (mode !== 'paint' || event.originalEvent.button !== 0) return;
+    brushHeld = true;
+    lastPaintedCell = null;
+    paintAt(event.latlng);
+  }
+  function onMapMouseMove(event: L.LeafletMouseEvent): void {
+    hoverPoint = event.latlng;
+    drawBrushPreview();
+    if (brushHeld) paintAt(event.latlng);
+  }
+  function stopPainting(): void { brushHeld = false; lastPaintedCell = null; }
   $: if (map) { terrain; activeBounds; drawTerrain(); }
-  $: if (map) { adminBoundaries; adminBoundaryAssignments; territoryPlan; mode; drawAdminBoundaries(); }
+  $: if (map) { terrain; activeBounds; drawH3Grid(); }
+  $: if (map) { territoryPlan; drawPaintedCells(); }
+  $: if (map) { mode; paintErase; assignmentSide; assignmentRole; drawBrushPreview(); }
   $: if (map) { terrain; mainBlue; mainRed; selectedIds; territoryPlan; mode; drawAirbases(); }
   $: if (map) { osm; selectedIds; territoryPlan; mode; drawOsm(); }
   $: if (map) { keysites; drawPreview(); }
   $: if (map) { keysites; mode; drawKeysiteHandles(); }
   $: if (map) { focus; applyFocus(); }
-  $: if (map) { mode; if (map) map.getContainer().style.cursor = mode === 'idle' ? '' : 'pointer'; }
+  $: if (map) {
+    map.getContainer().style.cursor = mode === 'paint' ? 'crosshair' : mode === 'idle' ? '' : 'pointer';
+    if (mode === 'paint') { map.dragging.disable(); map.doubleClickZoom.disable(); }
+    else { map.dragging.enable(); map.doubleClickZoom.enable(); stopPainting(); }
+  }
   onMount(() => {
     map = L.map(mapEl, { zoomControl: false, preferCanvas: true, maxBoundsViscosity: 1, minZoom: 2 }).setView([43, 42], 6);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap contributors' }).addTo(map);
-    map.createPane('admin-territory'); const adminPane = map.getPane('admin-territory'); if (adminPane) adminPane.style.zIndex = '410';
-    adminRenderer = L.svg({ pane: 'admin-territory' }).addTo(map);
-    installHazardPatterns();
-    map.createPane('top'); const top = map.getPane('top'); if (top) top.style.zIndex = '640'; topRenderer = L.svg({ pane: 'top' });
+    map.createPane('h3-territory'); const h3Pane = map.getPane('h3-territory'); if (h3Pane) h3Pane.style.zIndex = '410';
+    h3Renderer = L.svg({ pane: 'h3-territory' }).addTo(map);
+    gridRenderer = L.canvas({ pane: 'h3-territory' }).addTo(map);
+    map.createPane('top'); const top = map.getPane('top'); if (top) top.style.zIndex = '640'; topRenderer = L.canvas({ pane: 'top' });
     map.createPane('flash'); const flash = map.getPane('flash'); if (flash) { flash.style.zIndex = '690'; flash.style.pointerEvents = 'none'; }
-    adminBoundaryLayer.addTo(map); previewLayer.addTo(map); osmLayer.addTo(map); airbaseLayer.addTo(map); flashLayer.addTo(map); keysiteEditLayer.addTo(map);
-    drawTerrain(); drawAdminBoundaries(); drawAirbases(); drawOsm(); drawPreview(); drawKeysiteHandles();
+    h3GridLayer.addTo(map); paintedLayer.addTo(map); brushLayer.addTo(map);
+    previewLayer.addTo(map); osmLayer.addTo(map); airbaseLayer.addTo(map); flashLayer.addTo(map); keysiteEditLayer.addTo(map);
+    map.on('mousedown', onMapMouseDown);
+    map.on('mousemove', onMapMouseMove);
+    map.on('mouseout', () => { hoverPoint = null; brushLayer.clearLayers(); stopPainting(); });
+    map.on('mouseup', stopPainting);
+    map.on('moveend zoomend', drawH3Grid);
+    map.on('moveend', drawOsm);
+    document.addEventListener('mouseup', stopPainting);
+    drawTerrain(); drawH3Grid(); drawPaintedCells(); drawAirbases(); drawOsm(); drawPreview(); drawKeysiteHandles();
     ro = new ResizeObserver(() => map?.invalidateSize()); ro.observe(mapEl);
   });
-  onDestroy(() => { ro?.disconnect(); if (flashTimer) clearTimeout(flashTimer); if (map) { map.off(); map.remove(); map = undefined; } });
+  onDestroy(() => { ro?.disconnect(); document.removeEventListener('mouseup', stopPainting); if (flashTimer) clearTimeout(flashTimer); if (map) { map.off(); map.remove(); map = undefined; } });
 </script>
 
 <div class="map" bind:this={mapEl}></div>

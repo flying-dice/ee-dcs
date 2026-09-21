@@ -10,11 +10,11 @@
   import { classifyFeatures } from './lib/classify';
   import { buildKeysites, canBuild, airbaseId, candidateId, DEFAULT_COUNTS } from './lib/balance';
   import { buildMiz, filenameFor, keysitesToZones } from './lib/miz';
-  import { buildTerritoryPlan, territoryAt } from './lib/territory';
-  import { activeAreaBounds, clipAdminBoundaries } from './lib/active_area';
+  import { buildTerritoryPlan, countTerritories, paintableCells, territoryAt } from './lib/territory';
+  import { activeAreaBounds } from './lib/active_area';
   import { DEFAULT_UNIT_TYPES } from './lib/units';
   import type { UnitTypes, AircraftRole } from './lib/units';
-  import type { Terrain, CandidateKeysite, Keysite, KeysiteType, Side, CountConfig, AddedKeysite, AirbasePoint, OsmFeature, AdminBoundary, LatLon, TerritoryPlan, TerritoryAssignment } from './lib/types';
+  import type { Terrain, CandidateKeysite, Keysite, KeysiteType, Side, CountConfig, AddedKeysite, AirbasePoint, OsmFeature, LatLon, TerritoryPlan, TerritoryAssignment } from './lib/types';
 
   const TYPE_COLORS: Record<KeysiteType, string> = { airbase:'#e2e8f0', farp:'#a78bfa', factory:'#f59e0b', refinery:'#f97316', port:'#38bdf8', radar:'#14b8a6', power:'#ec4899', command:'#f43f5e', depot:'#84cc16', fuel:'#fb923c' };
   const projChecks = validateProjection();
@@ -22,8 +22,8 @@
   let mainBlue: AirbasePoint | null = null;
   let mainRed: AirbasePoint | null = null;
   let theatreOsm: OsmFeature[] = [];
-  let adminBoundaries: AdminBoundary[] = [];
-  let adminBoundaryAssignments: Record<string, TerritoryAssignment> = {};
+  let cellAssignments: Record<string, TerritoryAssignment> = {};
+  let paintErase = false;
   let loadingOsm = false;
   let osmLoaded = false;
   let osmError: string | null = null;
@@ -44,16 +44,16 @@
   let panelOpen = true;
   let focus: { id: string; n: number } | null = null;
   let focusN = 0;
-  let assignmentBoundary: AdminBoundary | null = null;
   let assignmentSide: Side = 'blue';
   let assignmentRole: 'rear' | 'close' = 'rear';
 
   $: terrain = selectedTerrainId ? terrainById(selectedTerrainId) ?? null : null;
   $: activeBounds = terrain ? activeAreaBounds(terrain) : null;
   // The core contract changes assignments from a simple side map to an explicit side/role map.
-  $: territoryPlan = buildTerritoryPlan(adminBoundaries, adminBoundaryAssignments) as TerritoryPlan;
+  $: territoryPlan = buildTerritoryPlan(cellAssignments);
   $: areaOsm = theatreOsm.filter((feature) => !!territoryAt(territoryPlan, feature.latlon));
   $: osmRaw = classifyFeatures(areaOsm);
+  $: mapCandidates = classifyFeatures(theatreOsm).filter((item) => item.type !== 'farp');
   $: canPopulate = !!terrain && canBuild({ mainBlue, mainRed, territoryPlan });
   $: keysites = populated && terrain ? buildKeysites({ airbases: terrain.airbases, mainBlue, mainRed, osm: osmRaw, counts, seed, removed, added, positionOverrides, territoryPlan }) : [];
   $: selectedIds = new Set(keysites.map((keysite) => keysite.id));
@@ -62,18 +62,17 @@
   $: canGenerate = !!terrain && keysites.length > 0 && blueSummary.airbases > 0 && redSummary.airbases > 0 && !generating;
   $: countsDirty = !countsEqual(draftCounts, counts);
   $: projBadge = terrain ? projectionBadge(terrain) : null;
-  $: adminBlueRearCount = countTerritories(territoryPlan, 'blue', 'rear');
-  $: adminBlueCloseCount = countTerritories(territoryPlan, 'blue', 'close');
-  $: adminRedRearCount = countTerritories(territoryPlan, 'red', 'rear');
-  $: adminRedCloseCount = countTerritories(territoryPlan, 'red', 'close');
+  $: blueRearCount = countTerritories(territoryPlan, 'blue', 'rear');
+  $: blueCloseCount = countTerritories(territoryPlan, 'blue', 'close');
+  $: redRearCount = countTerritories(territoryPlan, 'red', 'rear');
+  $: redCloseCount = countTerritories(territoryPlan, 'red', 'close');
   $: hasBlueTerritory = territoryPlan.ownerCounts.blue > 0;
   $: hasRedTerritory = territoryPlan.ownerCounts.red > 0;
-  $: modeLabel = mode === 'main-blue' ? 'SET BLU AB' : mode === 'main-red' ? 'SET RED AB' : mode === 'edit' ? 'EDIT SITES' : 'STANDBY';
+  $: modeLabel = mode === 'main-blue' ? 'SET BLU AB' : mode === 'main-red' ? 'SET RED AB' : mode === 'edit' ? 'EDIT SITES' : mode === 'paint' ? 'PAINT H3' : 'STANDBY';
   $: hint = workflowHint(terrain, loadingOsm, osmLoaded, mode, hasBlueTerritory, hasRedTerritory, mainBlue, mainRed, populated);
 
   function summarize(keysites: Keysite[], side: Side): SideSummary { const sites = keysites.filter((keysite) => keysite.side === side); return { airbases: sites.filter((keysite) => keysite.type === 'airbase').length, farps: sites.filter((keysite) => keysite.type === 'farp').length, total: sites.length }; }
   function projectionBadge(item: Terrain): ProjBadge { const checks = projChecks.filter((check) => check.terrain === item.id); if (!item.projectionValidated || checks.length === 0) return { text:'projection unvalidated', tone:'amber' }; const max = Math.max(...checks.map((check) => check.errorM)); return { text:`projection ${checks.every((check) => check.ok) ? '✓' : '✗'} ${max.toFixed(1)} m`, tone: checks.every((check) => check.ok) ? 'green' : 'red' }; }
-  function countTerritories(plan: TerritoryPlan, side: Side, role: 'rear' | 'close'): number { return plan.territories.filter((territory) => territory.owner === side && territory.role === role).length; }
   function workflowHint(currentTerrain: Terrain | null, isLoading: boolean, isLoaded: boolean, currentMode: Mode, blueReady: boolean, redReady: boolean, blueMain: AirbasePoint | null, redMain: AirbasePoint | null, hasPopulated: boolean): string {
     if (!currentTerrain) return 'Start by picking a DCS theatre.';
     if (isLoading) return 'Loading the baked DCS and OpenStreetMap theatre data.';
@@ -81,7 +80,8 @@
     if (currentMode === 'main-blue') return 'Click a BLUE-owned airbase ring to set the BLUE main.';
     if (currentMode === 'main-red') return 'Click a RED-owned airbase ring to set the RED main.';
     if (currentMode === 'edit') return 'Drag generated sites or click markers to tune the keysite network.';
-    if (!blueReady || !redReady) return 'Click administrative regions and assign side plus rear or close role.';
+    if (currentMode === 'paint') return 'Drag across H3 cells to paint the selected side and role; choose Erase to clear.';
+    if (!blueReady || !redReady) return 'Select a brush and paint BLU/RED rear and close cells.';
     if (!blueMain || !redMain) return 'Select one main airbase inside each side’s assigned territory.';
     if (!hasPopulated) return 'Populate keysites from the assigned territories and operational roles.';
     return 'Tune counts, shuffle placement, edit sites on the map, or generate the mission.';
@@ -89,8 +89,8 @@
   function countsEqual(first: CountConfig, second: CountConfig): boolean { return (Object.keys(first) as KeysiteType[]).every((type) => first[type].blue === second[type].blue && first[type].red === second[type].red); }
   function invalidate(): void { populated = false; removed = []; added = []; positionOverrides = {}; generateResult = null; }
   async function onSelectTerrain(id: string): Promise<void> {
-    selectedTerrainId = id; mainBlue = null; mainRed = null; theatreOsm = []; adminBoundaries = []; adminBoundaryAssignments = {}; osmLoaded = false; loadingOsm = true; osmError = null; mainError = null; invalidate();
-    try { const osm = await loadTheatreOsm(id); const selectedTerrain = terrainById(id); theatreOsm = osm.features; adminBoundaries = selectedTerrain ? clipAdminBoundaries(osm.adminBoundaries, activeAreaBounds(selectedTerrain)) : osm.adminBoundaries; osmLoaded = true; } catch (error) { osmError = (error as Error).message; } finally { loadingOsm = false; }
+    selectedTerrainId = id; mainBlue = null; mainRed = null; theatreOsm = []; cellAssignments = {}; osmLoaded = false; loadingOsm = true; osmError = null; mainError = null; invalidate();
+    try { const osm = await loadTheatreOsm(id); theatreOsm = osm.features; osmLoaded = true; } catch (error) { osmError = (error as Error).message; } finally { loadingOsm = false; }
   }
   function onSetMode(next: Mode): void { mode = mode === next ? 'idle' : next; mainError = null; if (mode !== 'idle') panelOpen = false; }
   function onDesignateMain(airbase: AirbasePoint): void {
@@ -102,9 +102,28 @@
     mainError = null; mode = 'idle'; panelOpen = true; invalidate();
   }
   function onClearMain(side: Side): void { if (side === 'blue') mainBlue = null; else mainRed = null; invalidate(); }
-  function onOpenAssignment(id: string): void { const boundary = adminBoundaries.find((item) => item.id === id); if (!boundary) return; assignmentBoundary = boundary; const current = adminBoundaryAssignments[id]; assignmentSide = current?.side ?? 'blue'; assignmentRole = current?.role ?? 'rear'; }
-  function onApplyAssignment(): void { if (!assignmentBoundary) return; adminBoundaryAssignments = { ...adminBoundaryAssignments, [assignmentBoundary.id]: { side: assignmentSide, role: assignmentRole } }; if (mainBlue && territoryAt(buildTerritoryPlan(adminBoundaries, adminBoundaryAssignments) as TerritoryPlan, mainBlue.latlon)?.owner !== 'blue') mainBlue = null; if (mainRed && territoryAt(buildTerritoryPlan(adminBoundaries, adminBoundaryAssignments) as TerritoryPlan, mainRed.latlon)?.owner !== 'red') mainRed = null; assignmentBoundary = null; invalidate(); }
-  function onClearAssignment(): void { if (!assignmentBoundary) return; const next = { ...adminBoundaryAssignments }; delete next[assignmentBoundary.id]; adminBoundaryAssignments = next; assignmentBoundary = null; invalidate(); }
+  function onPaintCell(cell: string): void {
+    if (!terrain || !activeBounds) return;
+    const children = paintableCells(cell, terrain, activeBounds);
+    if (children.length === 0) return;
+    const next = { ...cellAssignments };
+    let changed = false;
+    for (const child of children) {
+      const previous = next[child];
+      if (paintErase) {
+        if (previous) { delete next[child]; changed = true; }
+      } else if (previous?.side !== assignmentSide || previous.role !== assignmentRole) {
+        next[child] = { side: assignmentSide, role: assignmentRole };
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    cellAssignments = next;
+    const plan = buildTerritoryPlan(next);
+    if (mainBlue && territoryAt(plan, mainBlue.latlon)?.owner !== 'blue') mainBlue = null;
+    if (mainRed && territoryAt(plan, mainRed.latlon)?.owner !== 'red') mainRed = null;
+    invalidate();
+  }
   function onPopulate(): void { if (!canPopulate) return; counts = structuredClone(draftCounts); populated = true; mode = 'idle'; }
   function onSetCount(detail: { type: KeysiteType; side: Side; value: number }): void { const value = Math.max(0, Math.min(20, Math.round(detail.value || 0))); draftCounts = { ...draftCounts, [detail.type]: { ...draftCounts[detail.type], [detail.side]: value } }; }
   function onApplyCounts(): void { counts = structuredClone(draftCounts); }
@@ -119,11 +138,11 @@
   function downloadBlob(blob: Blob, name: string): void { const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
   async function onGenerate(): Promise<void> { if (!terrain || !canGenerate) return; generating = true; try { const blob = await buildMiz(keysites, terrain, { bakeCampaign, unitTypes }); const name = filenameFor(terrain); downloadBlob(blob, name); generateResult = bakeCampaign ? `${name} — ${keysites.length} zones + campaign Lua, ready to play in DCS` : `${name} — ${keysites.length} zones (no campaign Lua)`; } catch (error) { osmError = `Generate failed: ${(error as Error).message}`; } finally { generating = false; } }
   function onDownloadGeoJson(): void { if (!terrain) return; const zones = keysitesToZones(keysites, terrain); const features = keysites.map((keysite) => ({ type:'Feature', properties:{ kind:'keysite', type:keysite.type, side:keysite.side, name:keysite.name }, geometry:{ type:'Point', coordinates:[keysite.latlon.lon, keysite.latlon.lat] } })); downloadBlob(new Blob([JSON.stringify({ type:'FeatureCollection', properties:{ terrain:terrain.id, zones }, features }, null, 2)], { type:'application/geo+json' }), `eech-${terrain.id.toLowerCase()}-design.geojson`); }
-  function onReset(): void { mainBlue = null; mainRed = null; adminBoundaryAssignments = {}; assignmentBoundary = null; mode = 'idle'; mainError = null; invalidate(); }
+  function onReset(): void { mainBlue = null; mainRed = null; cellAssignments = {}; mode = 'idle'; mainError = null; invalidate(); }
 </script>
 
 <div class="app">
-  <div class="map-wrap"><MapView {terrain} {activeBounds} {keysites} {selectedIds} osm={populated ? osmRaw.filter((item) => item.type !== 'farp') : []} {mainBlue} {mainRed} {mode} {adminBoundaries} {adminBoundaryAssignments} {territoryPlan} {focus} typeColors={TYPE_COLORS} on:designateMain={(event) => onDesignateMain(event.detail)} on:toggleAirbase={(event) => onToggleAirbase(event.detail)} on:toggleCandidate={(event) => onToggleCandidate(event.detail)} on:moveKeysite={(event) => onMoveKeysite(event.detail)} on:openAdminBoundary={(event) => onOpenAssignment(event.detail)} /></div>
+  <div class="map-wrap"><MapView {terrain} {activeBounds} {keysites} {selectedIds} osm={mapCandidates} {mainBlue} {mainRed} {mode} {paintErase} {assignmentSide} {assignmentRole} {territoryPlan} {focus} typeColors={TYPE_COLORS} on:designateMain={(event) => onDesignateMain(event.detail)} on:toggleAirbase={(event) => onToggleAirbase(event.detail)} on:toggleCandidate={(event) => onToggleCandidate(event.detail)} on:moveKeysite={(event) => onMoveKeysite(event.detail)} on:paintCell={(event) => onPaintCell(event.detail)} /></div>
   <div class="frame" aria-hidden="true"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
   <aside class="island readout hud">
     <div><span>THEATRE</span><b>{terrain ? terrain.label.toUpperCase() : '——'}</b></div><div><span>MODE</span><b>{modeLabel}</b></div><div><span>AIRFIELDS</span><b>{terrain ? terrain.airbases.length : '—'}</b></div><div><span>ZONES</span><b>{keysites.length || '—'}</b></div><div class="split"><span class="blue">BLU {blueSummary.total}</span><span class="red">RED {redSummary.total}</span></div>
@@ -132,7 +151,7 @@
   <button class="panel-backdrop" class:show={panelOpen} aria-label="Close controls" on:click={() => panelOpen = false}></button>
   <aside class="dock-left" class:open={panelOpen}>
     <button class="panel-close" aria-label="Close controls" on:click={() => panelOpen = false}>✕</button>
-    <ControlPanel terrains={TERRAINS} {selectedTerrainId} {terrain} {projBadge} {mode} mainBlueName={mainBlue?.name ?? null} mainRedName={mainRed?.name ?? null} {canPopulate} {populated} {loadingOsm} {osmLoaded} {osmError} {mainError} adminBoundaryCount={adminBoundaries.length} {adminBlueRearCount} {adminBlueCloseCount} {adminRedRearCount} {adminRedCloseCount} {hasBlueTerritory} {hasRedTerritory} counts={draftCounts} {countsDirty} {keysites} {blueSummary} {redSummary} {canGenerate} {generating} {generateResult} {bakeCampaign} {unitTypes} {hint} typeColors={TYPE_COLORS} {assignmentBoundary} {assignmentSide} {assignmentRole} on:selectTerrain={(event) => onSelectTerrain(event.detail)} on:setMode={(event) => onSetMode(event.detail)} on:clearMain={(event) => onClearMain(event.detail)} on:populate={onPopulate} on:shuffle={onShuffle} on:setCount={(event) => onSetCount(event.detail)} on:applyCounts={onApplyCounts} on:setUnit={(event) => onSetUnit(event.detail)} on:resetUnits={onResetUnits} on:removeKeysite={(event) => onRemoveKeysite(event.detail)} on:focusKeysite={(event) => onFocusKeysite(event.detail)} on:reset={onReset} on:generate={onGenerate} on:downloadGeoJson={onDownloadGeoJson} on:setBakeCampaign={(event) => bakeCampaign = event.detail} on:openManual={() => showManual = true} on:setAssignmentSide={(event) => assignmentSide = event.detail} on:setAssignmentRole={(event) => assignmentRole = event.detail} on:applyAssignment={onApplyAssignment} on:clearAssignment={onClearAssignment} on:cancelAssignment={() => assignmentBoundary = null} />
+    <ControlPanel terrains={TERRAINS} {selectedTerrainId} {terrain} {projBadge} {mode} mainBlueName={mainBlue?.name ?? null} mainRedName={mainRed?.name ?? null} {canPopulate} {populated} {loadingOsm} {osmLoaded} {osmError} {mainError} {blueRearCount} {blueCloseCount} {redRearCount} {redCloseCount} {hasBlueTerritory} {hasRedTerritory} counts={draftCounts} {countsDirty} {keysites} {blueSummary} {redSummary} {canGenerate} {generating} {generateResult} {bakeCampaign} {unitTypes} {hint} typeColors={TYPE_COLORS} {paintErase} {assignmentSide} {assignmentRole} on:selectTerrain={(event) => onSelectTerrain(event.detail)} on:setMode={(event) => onSetMode(event.detail)} on:clearMain={(event) => onClearMain(event.detail)} on:populate={onPopulate} on:shuffle={onShuffle} on:setCount={(event) => onSetCount(event.detail)} on:applyCounts={onApplyCounts} on:setUnit={(event) => onSetUnit(event.detail)} on:resetUnits={onResetUnits} on:removeKeysite={(event) => onRemoveKeysite(event.detail)} on:focusKeysite={(event) => onFocusKeysite(event.detail)} on:reset={onReset} on:generate={onGenerate} on:downloadGeoJson={onDownloadGeoJson} on:setBakeCampaign={(event) => bakeCampaign = event.detail} on:openManual={() => showManual = true} on:setAssignmentSide={(event) => assignmentSide = event.detail} on:setAssignmentRole={(event) => assignmentRole = event.detail} on:setPaintErase={(event) => paintErase = event.detail} />
   </aside>
   {#if showManual}<Manual typeColors={TYPE_COLORS} on:close={() => showManual = false} />{/if}
 </div>

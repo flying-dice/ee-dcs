@@ -332,7 +332,7 @@ function goto(id: string): void {
         </div>
         <div>
           <h3>Build one (this tool)</h3>
-          <p>Use this generator to turn any real-world region into a theatre: assign administrative regions to Blue or Red as rear or close territory, choose each side’s main airbase, and it places real airfields and infrastructure as keysites. FARPs and radar use close territory; producers and command sites use rear territory. It then ships a playable <code>.miz</code> with the campaign baked in. Open it in DCS and the war starts. See <button class="ilink" on:click={() => goto('editor')}>Editing the theatre</button> to customise it.</p>
+          <p>Use this generator to turn any real-world region into a theatre: paint resolution-6 H3 cells Blue or Red as rear or close territory, choose each side’s main airbase, and it places real airfields and infrastructure as keysites. FARPs and radar use close territory; producers and command sites use rear territory. It then ships a playable <code>.miz</code> with the campaign baked in. Open it in DCS and the war starts. See <button class="ilink" on:click={() => goto('editor')}>Editing the theatre</button> to customise it.</p>
         </div>
       </div>
       <p class="note">Tip: the side that owns more producers and forward FARPs sustains a higher sortie tempo. If your side is losing, the highest-leverage targets are the enemy’s <b>factories and refineries</b> — starve the economy and the front follows.</p>

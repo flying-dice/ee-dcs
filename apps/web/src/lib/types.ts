@@ -163,6 +163,8 @@ export interface OsmFeature {
   latlon: LatLon;            // representative point (centroid for ways/relations)
   tags: Record<string, string>;
   name?: string;
+  /** Baked campaign keysite enum, also visible as GeoJSON `kind`. */
+  kind?: KeysiteType;
 }
 
 /** A named real-world feature that can anchor an operational objective. */
@@ -181,25 +183,7 @@ export interface OperationAxis {
   objective: ObjectiveFeature;
 }
 
-/** Polygon geometry shared by administrative areas. */
-export interface AreaGeometry {
-  geometry: {
-    type: 'Polygon' | 'MultiPolygon';
-    coordinates: number[][][] | number[][][][];
-  };
-}
-
-/** A simplified OSM administrative relation retained for theatre-level planning. */
-export interface AdminBoundary {
-  id: string;
-  name: string;
-  /** OSM's source admin level; level 6 is the current district-level default. */
-  adminLevel: number;
-  geometry: AreaGeometry['geometry'];
-  tags: Record<string, string>;
-}
-
-/** User-authored operational function for an administrative territory. */
+/** User-authored operational function for an H3 cell. */
 export type TerritoryRole = 'rear' | 'close';
 
 export interface TerritoryAssignment {
@@ -207,13 +191,12 @@ export interface TerritoryAssignment {
   role: TerritoryRole;
 }
 
-/** A selected administrative area carrying its explicit scenario assignment. */
+/** A resolution-6 H3 cell carrying its explicit scenario assignment. */
 export interface AssignedTerritory {
   id: string;
   name: string;
   owner: Side;
   role: TerritoryRole;
-  boundary: AdminBoundary;
   bounds: BBox;
   areaKm2: number;
   representativePoint: LatLon;
@@ -222,6 +205,7 @@ export interface AssignedTerritory {
 /** Immutable territorial input to keysite generation. */
 export interface TerritoryPlan {
   territories: AssignedTerritory[];
+  byCell: Readonly<Record<string, AssignedTerritory>>;
   bounds: BBox | null;
   ownerCounts: Record<Side, number>;
 }

@@ -6,7 +6,7 @@ step: open it, design a theatre on a real-world map, and download a ready-to-pla
 
 > **Live site: https://ee-dcs.pages.dev/**
 
-You pick a DCS theatre, assign its administrative regions to BLU or RED as rear or close
+You pick a DCS theatre, paint resolution-6 H3 cells BLU or RED as rear or close
 territory, choose each side's main airbase, and the app writes a `.miz`
 carrying one **trigger zone per keysite** — exactly what the [EECH campaign port](../CLAUDE.md)
 reads at runtime to boot an AI-vs-AI dynamic campaign.
@@ -28,14 +28,13 @@ you what a click does right now.
    matching DCS and OSM GeoJSON exports without contacting Overpass. Its real (warped) playable
    quad is drawn as a translucent overlay. The selectable active area is the bounding box around
    all DCS airfields plus a 100 km buffer, which removes the large unused edges found in DCS maps.
-   Administrative regions are clipped to that active area, the map frames it, and every DCS airfield is
+   The map frames that active area, and every DCS airfield is
    plotted as a hollow phosphor **ring** with its name. A projection badge shows whether the
    theatre's DCS-extracted projection is self-consistent (e.g. `projection ✓ 0.0 m`), or
    `unvalidated` if the theatre file carries no anchors.
-   Simplified administrative boundaries are also drawn. Click one to open an assignment
-   dialog, choose **BLU** or **RED**, and give it a **Rear** or **Close** role. Clear the
-   assignment from the same dialog when the region should not participate in the scenario.
-   Close territory uses diagonal hazard stripes so the forward area remains obvious at a glance.
+   Choose **BLU** or **RED**, give the brush a **Rear** or **Close** role, then drag over
+   resolution-6 H3 cells. Erase clears cells. Turn painting off to pan the map.
+   Close territory has a stronger fill so the forward area remains obvious at a glance.
 2. **Set each side's main airbase.** Airbases inside an assigned region automatically belong
    to that side. Toggle **BLUE main** / **RED main**, then click one of that side's DCS airbase
    **rings**. The chosen airfield is highlighted (★) and force-included as the primary base.
@@ -44,13 +43,13 @@ you what a click does right now.
    **airbases are real DCS
    airfields** (owned by their containing territory, mains forced), **support sites come from
    OpenStreetMap**, while generated FARPs are distributed directly inside the side's assigned
-   Close administrative territories. FARP placement does not depend on OSM land-use coverage.
+   Close painted H3 cells. FARP placement does not depend on OSM land-use coverage.
    Role is a hard placement rule: **FARPs and radar use Close territory**; **factories,
    refineries, ports, power, command, supply depots and fuel depots use Rear territory**.
    Airbases may be in either role.
    A requested count deliberately underfills when its side has too few valid candidates.
    Location-tied keysites keep their real positions and take the side and role of the
-   containing assigned region. Counts default to an EECH-shaped warzone:
+   containing painted cell. Counts default to an EECH-shaped warzone:
    basing-dominant (≈4 airbases + 5 FARPs/side) with **sparse** strategic sites (≈2
    factories, 1 each of refinery/port/radar/power/command/depot/fuel) — EECH places each strategic
    keysite from a single terrain marker, so a campaign has a couple of factories, not a
@@ -61,8 +60,8 @@ you what a click does right now.
    - **Edit on map** — drag a generated FARP by its handle, click a selected site to remove
      it, or click an unpicked airbase ring / OSM dot to add it. A grouped list mirrors the
      selection with per-item remove (×). Manual edits survive shuffles. Every marker
-     hover-tooltips its underlying data. Unselected OSM candidates are hidden outside this
-     mode; DCS airbases remain visible.
+     hover-tooltips its underlying data. Potential OSM locations remain visible in every
+     mode; DCS airbases remain visible too.
 4. **Balance readout.** Per-side airbase / FARP / total counts, with a warning if a side has
    no airbase (Generate stays locked until both sides have ≥ 1).
 5. **Generate `.miz`.** **Ship campaign Lua** (ticked by default) bakes the EECH campaign
@@ -109,8 +108,10 @@ channel on its own. It's live on **Cloudflare Pages** at **https://ee-dcs.pages.
   `terrains` → `osm` → `classify` → `territory` → `balance` → `projection` → `miz`. **Do not edit these
   from the UI layer;** the UI only imports from them.
 - `src/theatres/*.geojson` — one baked theatre extraction per DCS map.
-- `src/osm/*.geojson` — one pre-exported OSM feature collection with the same theatre id;
-  it includes objective/keysite points and simplified district-level administrative boundaries.
+- `public/osm/*.geojson.gz` — one compressed, static OSM feature collection with the same theatre id;
+  it includes eligible keysite candidates within the active map area. The browser decodes
+  gzip automatically or with its native decompressor. Each candidate has
+  top-level `kind` (the campaign keysite type) and `name` properties for map inspection.
 - `src/generated/campaign-bundle.lua` — the EECH campaign bundle, mirrored from the
   repo-root build output (`../dist/ee-dcs.lua`) by
   `scripts/sync-campaign.mjs`, which runs automatically before `dev`/`build`/`check`.
@@ -131,13 +132,50 @@ Theatres are data, not code — no rebuild logic changes needed:
 2. Drop the resulting `<Id>.geojson` into `src/theatres/`.
 3. Put a current planet file at `E:\planet-latest.osm.pbf` (or set `OSM_PLANET_PATH`), start
    Docker, and run `npm run export:osm --workspace dcs-eech-mapgen -- <Id>`. Osmium extracts
-   the DCS theatre polygon, filters the supported objective/keysite tags, and writes the
-   paired `src/osm/<Id>.geojson`. Turf simplifies the retained administrative boundaries. The
-   current Caucasus export treats OSM `admin_level=6` relations as its district-level
-   layer while preserving the source level and tags. The regional PBF is cached under
-   `.osm-work` for fast reruns.
+   the DCS theatre polygon, filters the supported keysite tags, and writes the
+   paired `public/osm/<Id>.geojson.gz`. Explicit facilities plus industrial-area and warehouse
+   spawn sites within the airfield-based active map area are retained. The regional PBF is cached under
+   `.osm-work` for fast reruns. To rebuild just the compact output from the cached
+   `filtered.geojson` without Docker or the planet
+   file, run the same command with `--from-cache` after the theatre id.
+   Small components (piers, storage tanks, substations, ordinary fuel stations,
+   military bunkers and checkpoints) are intentionally not candidates.
+   Ports require a named port or ferry-terminal area, not a pier or ferry stop point.
+   Power candidates include named generating plants with documented electrical
+   output of at least 100 MW and substation areas with a documented voltage of
+   at least 220 kV. Small distribution sites, individual transformers, and plants
+   without a capacity tag are omitted from the power class.
+   Refineries require an explicit refinery tag or refinery-identifying name; oil
+   depots and terminals are fuel candidates instead. Factories require an explicit
+   factory tag, a named works with a stated product, or an industrial-land area.
+   Warehouse-tagged sites are depot candidates, including unnamed warehouses;
+   warehouse tags take precedence over generic industrial land. Unspecified works
+   and service facilities are omitted. Ports
+   must be harbour or ferry-terminal areas, or named maritime port areas; inland
+   dry ports and airport facilities are excluded. Radar requires a radar station
+   or radar facility tag, so a weather-radar tower is not treated as military radar.
+   Command candidates include named military bases, naval bases, barracks and
+   otherwise untyped military land areas. Explicit military-base candidates are preserved.
+   Civic command options include town halls, named civic centres and substantial
+   government offices/buildings (at least 750 m² for town halls, 1,500 m² for
+   the others). Airfields, ranges,
+   danger areas and abandoned military sites do not become command dots.
+   No candidate class has a geographic cap or nearby-site deduplication. Every
+   active-area industrial-land polygon is exported as its own point. A type
+   with no credible OSM candidate is left unfilled rather than inventing a dot.
+   Exported dots are placed near the centre of their source feature, falling back
+   to an on-footprint point if the centre lies outside an irregular polygon. Where
+   a mapped site footprint contains same-kind building or point features, the site
+   centre wins and those component dots are omitted. Distinct and nested site
+   footprints are retained; the dots represent possible spawn sites, not buildings.
+   Display names prefer the source's `name:en`, then `official_name:en` or `int_name`,
+   then its original `name`. When the display name differs, `sourceName` preserves
+   the original in the GeoJSON popup; no names are machine-translated.
 4. Rebuild (`npm run build`). The new theatre appears in the dropdown automatically, and
    its projection badge reflects the baked anchors.
+
+Run `npm run test:osm --workspace dcs-eech-mapgen` to check classification examples,
+exported kinds and (when the filtered cache is present) complete industrial-polygon coverage.
 
 ## Data sources & attribution
 

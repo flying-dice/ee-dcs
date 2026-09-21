@@ -5,7 +5,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { KEYSITE_TYPES } from '../lib/types';
-  import type { Terrain, KeysiteType, Side, CountConfig, Keysite, AdminBoundary } from '../lib/types';
+  import type { Terrain, KeysiteType, Side, CountConfig, Keysite } from '../lib/types';
   import { AIRCRAFT_ROLES, DEFAULT_UNIT_TYPES } from '../lib/units';
   import type { AircraftRole, UnitTypes } from '../lib/units';
   import type { Mode } from './MapView.svelte';
@@ -23,11 +23,10 @@
   export let osmLoaded = false;
   export let osmError: string | null = null;
   export let mainError: string | null = null;
-  export let adminBoundaryCount = 0;
-  export let adminBlueRearCount = 0;
-  export let adminBlueCloseCount = 0;
-  export let adminRedRearCount = 0;
-  export let adminRedCloseCount = 0;
+  export let blueRearCount = 0;
+  export let blueCloseCount = 0;
+  export let redRearCount = 0;
+  export let redCloseCount = 0;
   export let hasBlueTerritory = false;
   export let hasRedTerritory = false;
   export let counts: CountConfig;
@@ -42,14 +41,14 @@
   export let unitTypes: UnitTypes = DEFAULT_UNIT_TYPES;
   export let hint = '';
   export let typeColors: Record<KeysiteType, string> = {} as Record<KeysiteType, string>;
-  export let assignmentBoundary: AdminBoundary | null = null;
+  export let paintErase = false;
   export let assignmentSide: Side = 'blue';
   export let assignmentRole: 'rear' | 'close' = 'rear';
   const dispatch = createEventDispatcher<{
     selectTerrain: string; setMode: Mode; clearMain: Side; populate: void; shuffle: void;
     setCount: { type: KeysiteType; side: Side; value: number }; applyCounts: void; setUnit: { side: Side; role: AircraftRole; value: string }; resetUnits: void; removeKeysite: string;
     focusKeysite: string; reset: void; generate: void; downloadGeoJson: void; setBakeCampaign: boolean; openManual: void;
-    setAssignmentSide: Side; setAssignmentRole: 'rear' | 'close'; applyAssignment: void; clearAssignment: void; cancelAssignment: void;
+    setAssignmentSide: Side; setAssignmentRole: 'rear' | 'close'; setPaintErase: boolean;
   }>();
   const SIDES: Side[] = ['blue', 'red'];
   $: grouped = group(keysites);
@@ -71,14 +70,16 @@
     {#if loadingOsm}<span class="muted">Loading DCS + OSM exports…</span>{:else if osmLoaded}<span class="badge green">DCS + OSM exports loaded ✓</span>{:else if osmError}<span class="error">{osmError}</span>{/if}
   </section>
   <section class:disabled={!terrain || !osmLoaded}>
-    <div class="step">2 · Initial distribution</div>
-    <span class="muted">Click a boundary to assign its side and operational role.</span>
-    <div class="territory-counts"><span>BLU rear {adminBlueRearCount} · close {adminBlueCloseCount}</span><span>RED rear {adminRedRearCount} · close {adminRedCloseCount}</span></div>
-    <span class="muted">{adminBoundaryCount} administrative boundaries loaded</span>
+    <div class="step">2 · Paint territory</div>
+    <span class="muted">Paint or erase one resolution-6 H3 cell at a time.</span>
+    <div class="row"><label class="paint-setting">Side<select value={assignmentSide} disabled={paintErase} on:change={setSide}><option value="blue">BLU</option><option value="red">RED</option></select></label><label class="paint-setting">Role<select value={assignmentRole} disabled={paintErase} on:change={setRole}><option value="rear">Rear</option><option value="close">Close</option></select></label></div>
+    <div class="row"><button class:active={mode === 'paint'} on:click={() => toggle('paint')}>{mode === 'paint' ? 'Painting…' : 'Paint on map'}</button><button class:active={paintErase} on:click={() => dispatch('setPaintErase', !paintErase)}>{paintErase ? 'Erasing…' : 'Erase cells'}</button></div>
+    <div class="territory-counts"><span>BLU rear {blueRearCount} · close {blueCloseCount}</span><span>RED rear {redRearCount} · close {redCloseCount}</span></div>
+    <span class="muted">Counts are painted resolution-6 cells. Turn painting off to pan the map.</span>
   </section>
   <section class:disabled={!terrain || !osmLoaded}>
     <div class="step">3 · Main airbases</div>
-    <span class="muted">Choose an airbase inside an assigned territory for each side.</span>
+    <span class="muted">Choose an airbase inside painted territory for each side.</span>
     <div class="row"><button class:active={mode === 'main-blue'} disabled={!hasBlueTerritory} on:click={() => toggle('main-blue')}>BLUE main</button><button class:active={mode === 'main-red'} disabled={!hasRedTerritory} on:click={() => toggle('main-red')}>RED main</button></div>
     {#if mainError}<div class="error">{mainError}</div>{/if}
     <div class="mains">{#if mainBlueName}<span class="blue">{mainBlueName}<button on:click={() => dispatch('clearMain', 'blue')}>×</button></span>{/if}{#if mainRedName}<span class="red">{mainRedName}<button on:click={() => dispatch('clearMain', 'red')}>×</button></span>{/if}</div>
@@ -98,20 +99,10 @@
     <button class="primary" disabled={!canGenerate} on:click={() => dispatch('generate')}>{generating ? 'Building…' : 'Generate .miz'}</button>{#if generateResult}<span class="ok">{generateResult}</span>{/if}<button disabled={keysites.length === 0} on:click={() => dispatch('downloadGeoJson')}>Download zones (GeoJSON)</button>
   </section>
   <section><button on:click={() => dispatch('reset')}>Reset distribution</button></section>
-  <footer><button class="manual" on:click={() => dispatch('openManual')}>▣ Operations Manual — how to play &amp; edit</button><p>Assign administrative regions to BLU or RED as rear or close territory, select each side’s main airbase, then generate and tune the keysite network.</p></footer>
+  <footer><button class="manual" on:click={() => dispatch('openManual')}>▣ Operations Manual — how to play &amp; edit</button><p>Paint H3 territory for BLU and RED as rear or close, select each side’s main airbase, then generate and tune the keysite network.</p></footer>
 </aside>
 
-{#if assignmentBoundary}
-  <div class="modal-backdrop" role="presentation"></div>
-  <section class="assignment-modal" role="dialog" aria-modal="true" aria-labelledby="assignment-title">
-    <h2 id="assignment-title">{assignmentBoundary.name || assignmentBoundary.id}</h2><p>Assign this administrative territory.</p>
-    <label>Side<select value={assignmentSide} on:change={setSide}><option value="blue">BLU</option><option value="red">RED</option></select></label>
-    <label>Role<select value={assignmentRole} on:change={setRole}><option value="rear">Rear</option><option value="close">Close</option></select></label>
-    <div class="row"><button class="primary" on:click={() => dispatch('applyAssignment')}>Apply</button><button on:click={() => dispatch('clearAssignment')}>Clear assignment</button><button on:click={() => dispatch('cancelAssignment')}>Cancel</button></div>
-  </section>
-{/if}
-
 <style>
-  .panel { width:330px; max-height:100%; overflow:auto; padding:0; background:var(--panel); color:var(--ink); } header,section { display:flex; flex-wrap:wrap; gap:7px; padding:11px 14px; border-bottom:1px solid var(--edge); } .brand{display:flex;align-items:center;gap:10px}.mark{color:var(--phosphor);font:1.15rem var(--font-hud);letter-spacing:-.15em;text-shadow:var(--glow)} h1,.step { width:100%; margin:0; font:.76rem var(--font-hud); letter-spacing:.13em; color:var(--phosphor); } header h1{font-size:.98rem;color:var(--phosphor-hot)} header span,.muted { font-size:.73rem; color:var(--muted); } .hint{margin:0;padding:8px 14px;background:rgba(246,166,35,.06);border-bottom:1px solid var(--edge);font-size:.76rem;line-height:1.4}.hint span{color:var(--amber);margin-right:4px} select,input { background:var(--panel-2); border:1px solid var(--edge); color:var(--ink); padding:5px; } select { width:100%; } button { background:var(--panel-2); color:var(--ink); border:1px solid var(--edge); padding:6px 8px; cursor:pointer; } button.primary,button.active { color:var(--phosphor-hot); border-color:var(--edge-hot); background:var(--accent-dim); } button:disabled { opacity:.45; cursor:default; } .disabled { opacity:.48; pointer-events:none; } .row,.territory-counts,.mains,.list { display:flex; gap:6px; width:100%; flex-wrap:wrap; } .row button { flex:1; } .territory-counts span,.mains span { padding:4px 6px; border:1px solid var(--edge); font-size:.7rem; } .blue { color:var(--friendly); } .red { color:var(--hostile); } .counts { width:100%; } .head,.count { display:grid; grid-template-columns:1fr 44px 44px; gap:5px; align-items:center; font-size:.72rem; margin:3px 0; } .count i,.site i { display:inline-block; width:8px; height:8px; transform:rotate(45deg); margin-right:5px; } .list > div { flex:1; min-width:0; } .site { display:flex; align-items:center; gap:4px; font-size:.68rem; cursor:pointer; padding:3px; } .site span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; } .site button,.mains button { padding:0 4px; } .error { color:#ffd6d8; border:1px solid var(--hostile); padding:6px; font-size:.72rem; } .ok { color:var(--phosphor-hot); font-size:.72rem; } .badge { font-size:.68rem; padding:3px 6px; border:1px solid var(--edge); } .badge.green { color:var(--phosphor-hot); } .bake{display:flex;align-items:center;gap:7px;width:100%;font-size:.76rem}.bake input{width:auto;accent-color:var(--phosphor)}.units{width:100%}.units summary{cursor:pointer;color:var(--phosphor-dim);font:.7rem var(--font-hud);letter-spacing:.1em;text-transform:uppercase}.units-grid{display:flex;flex-direction:column;gap:3px;margin:7px 0}.urow{display:grid;grid-template-columns:1fr 92px 92px;gap:5px;align-items:center;font-size:.68rem}.urow input{min-width:0;width:100%;box-sizing:border-box;font-size:.68rem}.uhead{text-align:center;font: .62rem var(--font-hud)}.unit-actions{display:flex;gap:6px;align-items:center}.unit-actions .muted{flex:1}.manual{width:100%;color:var(--phosphor-hot);border-color:var(--edge-hot);background:var(--accent-dim)}footer{padding:11px 14px;color:var(--muted);font-size:.7rem;line-height:1.4}footer p{margin:8px 0 0}.modal-backdrop { position:fixed; inset:0; pointer-events:auto; background:rgba(3,8,7,.28); backdrop-filter:blur(1px); z-index:1000; } .assignment-modal { position:fixed; z-index:1001; pointer-events:auto; left:50%; top:50%; transform:translate(-50%,-50%); width:min(340px,calc(100vw - 32px)); display:flex; flex-wrap:wrap; gap:10px; background:var(--panel); border:1px solid var(--edge-hot); box-shadow:0 15px 50px #000; } .assignment-modal h2,.assignment-modal p,.assignment-modal label { width:100%; margin:0; } .assignment-modal h2 { font:.85rem var(--font-hud); color:var(--phosphor-hot); } .assignment-modal p { color:var(--muted); font-size:.75rem; } .assignment-modal label { font-size:.75rem; } .assignment-modal select { margin-top:4px; }
+  .panel { width:330px; max-height:100%; overflow:auto; padding:0; background:var(--panel); color:var(--ink); } header,section { display:flex; flex-wrap:wrap; gap:7px; padding:11px 14px; border-bottom:1px solid var(--edge); } .brand{display:flex;align-items:center;gap:10px}.mark{color:var(--phosphor);font:1.15rem var(--font-hud);letter-spacing:-.15em;text-shadow:var(--glow)} h1,.step { width:100%; margin:0; font:.76rem var(--font-hud); letter-spacing:.13em; color:var(--phosphor); } header h1{font-size:.98rem;color:var(--phosphor-hot)} header span,.muted { font-size:.73rem; color:var(--muted); } .hint{margin:0;padding:8px 14px;background:rgba(246,166,35,.06);border-bottom:1px solid var(--edge);font-size:.76rem;line-height:1.4}.hint span{color:var(--amber);margin-right:4px} select,input { background:var(--panel-2); border:1px solid var(--edge); color:var(--ink); padding:5px; } select { width:100%; } button { background:var(--panel-2); color:var(--ink); border:1px solid var(--edge); padding:6px 8px; cursor:pointer; } button.primary,button.active { color:var(--phosphor-hot); border-color:var(--edge-hot); background:var(--accent-dim); } button:disabled { opacity:.45; cursor:default; } .disabled { opacity:.48; pointer-events:none; } .row,.territory-counts,.mains,.list { display:flex; gap:6px; width:100%; flex-wrap:wrap; } .row button { flex:1; } .paint-setting { flex:1; min-width:0; font-size:.72rem; } .territory-counts span,.mains span { padding:4px 6px; border:1px solid var(--edge); font-size:.7rem; } .blue { color:var(--friendly); } .red { color:var(--hostile); } .counts { width:100%; } .head,.count { display:grid; grid-template-columns:1fr 44px 44px; gap:5px; align-items:center; font-size:.72rem; margin:3px 0; } .count i,.site i { display:inline-block; width:8px; height:8px; transform:rotate(45deg); margin-right:5px; } .list > div { flex:1; min-width:0; } .site { display:flex; align-items:center; gap:4px; font-size:.68rem; cursor:pointer; padding:3px; } .site span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; } .site button,.mains button { padding:0 4px; } .error { color:#ffd6d8; border:1px solid var(--hostile); padding:6px; font-size:.72rem; } .ok { color:var(--phosphor-hot); font-size:.72rem; } .badge { font-size:.68rem; padding:3px 6px; border:1px solid var(--edge); } .badge.green { color:var(--phosphor-hot); } .bake{display:flex;align-items:center;gap:7px;width:100%;font-size:.76rem}.bake input{width:auto;accent-color:var(--phosphor)}.units{width:100%}.units summary{cursor:pointer;color:var(--phosphor-dim);font:.7rem var(--font-hud);letter-spacing:.1em;text-transform:uppercase}.units-grid{display:flex;flex-direction:column;gap:3px;margin:7px 0}.urow{display:grid;grid-template-columns:1fr 92px 92px;gap:5px;align-items:center;font-size:.68rem}.urow input{min-width:0;width:100%;box-sizing:border-box;font-size:.68rem}.uhead{text-align:center;font: .62rem var(--font-hud)}.unit-actions{display:flex;gap:6px;align-items:center}.unit-actions .muted{flex:1}.manual{width:100%;color:var(--phosphor-hot);border-color:var(--edge-hot);background:var(--accent-dim)}footer{padding:11px 14px;color:var(--muted);font-size:.7rem;line-height:1.4}footer p{margin:8px 0 0}
   @media(max-width:720px){.panel{width:100%;max-height:100vh}.urow{grid-template-columns:1fr 88px 88px}button,select,input{min-height:36px}}
 </style>

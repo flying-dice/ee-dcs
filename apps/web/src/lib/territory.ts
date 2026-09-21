@@ -1,86 +1,70 @@
-import { area, multiPolygon, pointOnFeature, polygon } from '@turf/turf';
+import { cellArea, cellToBoundary, cellToLatLng, getResolution, isValidCell, latLngToCell } from 'h3-js';
 import type {
-  AdminBoundary,
   AssignedTerritory,
   BBox,
   LatLon,
+  Side,
+  Terrain,
   TerritoryAssignment,
   TerritoryPlan,
   TerritoryRole,
 } from './types';
 
-function geometryBounds(boundary: AdminBoundary): BBox {
-  let west = Infinity;
-  let east = -Infinity;
-  let south = Infinity;
-  let north = -Infinity;
-  const visit = (value: unknown): void => {
-    if (!Array.isArray(value)) return;
-    if (value.length >= 2 && typeof value[0] === 'number' && typeof value[1] === 'number') {
-      west = Math.min(west, value[0]);
-      east = Math.max(east, value[0]);
-      south = Math.min(south, value[1]);
-      north = Math.max(north, value[1]);
-      return;
-    }
-    for (const child of value) visit(child);
+/** Territory painting and storage use one fixed H3 resolution. */
+export const TERRITORY_RESOLUTION = 6;
+
+function cellBounds(cell: string): BBox {
+  const boundary = cellToBoundary(cell);
+  const lats = boundary.map(([lat]) => lat);
+  const lons = boundary.map(([, lon]) => lon);
+  return {
+    west: Math.min(...lons), east: Math.max(...lons),
+    south: Math.min(...lats), north: Math.max(...lats),
   };
-  visit(boundary.geometry.coordinates);
-  return { west, east, south, north };
 }
 
-function pointInRing(location: LatLon, ring: number[][]): boolean {
+function insideTerrain(point: LatLon, ring: LatLon[]): boolean {
   let inside = false;
   for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
-    const [x1, y1] = ring[index];
-    const [x2, y2] = ring[previous];
-    if (
-      (y1 > location.lat) !== (y2 > location.lat) &&
-      location.lon < ((x2 - x1) * (location.lat - y1)) / (y2 - y1) + x1
-    ) inside = !inside;
+    const first = ring[index];
+    const second = ring[previous];
+    if ((first.lat > point.lat) !== (second.lat > point.lat) &&
+      point.lon < ((second.lon - first.lon) * (point.lat - first.lat)) / (second.lat - first.lat) + first.lon) {
+      inside = !inside;
+    }
   }
   return inside;
 }
 
-function polygonContains(location: LatLon, rings: number[][][]): boolean {
-  return rings.length > 0 && pointInRing(location, rings[0]) &&
-    rings.slice(1).every((hole) => !pointInRing(location, hole));
+/** Restrict paint strokes to resolution-6 cells inside the usable theatre. */
+export function paintableCells(cell: string, terrain: Terrain, active: BBox): string[] {
+  if (!isValidCell(cell) || getResolution(cell) !== TERRITORY_RESOLUTION) return [];
+  const [lat, lon] = cellToLatLng(cell);
+  return lon >= active.west && lon <= active.east && lat >= active.south && lat <= active.north &&
+    insideTerrain({ lat, lon }, terrain.boundsPolygon) ? [cell] : [];
 }
 
-function boundaryContains(boundary: AdminBoundary, location: LatLon): boolean {
-  return boundary.geometry.type === 'Polygon'
-    ? polygonContains(location, boundary.geometry.coordinates as number[][][])
-    : (boundary.geometry.coordinates as number[][][][]).some((part) =>
-        polygonContains(location, part),
-      );
-}
-
-/** Prepare the polygons selected and explicitly assigned by the mission author. */
+/** Prepare the explicit BLU/RED, Rear/Close cell assignments. */
 export function buildTerritoryPlan(
-  boundaries: AdminBoundary[],
   assignments: Readonly<Record<string, TerritoryAssignment>>,
 ): TerritoryPlan {
-  const territories = boundaries
-    .flatMap((boundary): AssignedTerritory[] => {
-      const assignment = assignments[boundary.id];
-      if (!assignment) return [];
-      const feature = boundary.geometry.type === 'Polygon'
-        ? polygon(boundary.geometry.coordinates as number[][][])
-        : multiPolygon(boundary.geometry.coordinates as number[][][][]);
-      const representative = pointOnFeature(feature).geometry.coordinates;
-      return [{
-        id: boundary.id,
-        name: boundary.name,
+  const territories = Object.entries(assignments)
+    .filter(([cell]) => isValidCell(cell) && getResolution(cell) === TERRITORY_RESOLUTION)
+    .map(([cell, assignment]): AssignedTerritory => {
+      const [lat, lon] = cellToLatLng(cell);
+      return {
+        id: cell,
+        name: `H3 ${cell}`,
         owner: assignment.side,
         role: assignment.role,
-        boundary,
-        bounds: geometryBounds(boundary),
-        areaKm2: area(feature) / 1_000_000,
-        representativePoint: { lon: representative[0], lat: representative[1] },
-      }];
+        bounds: cellBounds(cell),
+        areaKm2: cellArea(cell, 'km2'),
+        representativePoint: { lat, lon },
+      };
     })
     .sort((a, b) => a.id.localeCompare(b.id));
 
+  const byCell = Object.fromEntries(territories.map((territory) => [territory.id, territory]));
   const bounds = territories.length === 0 ? null : territories.reduce<BBox>(
     (combined, territory) => ({
       west: Math.min(combined.west, territory.bounds.west),
@@ -93,6 +77,7 @@ export function buildTerritoryPlan(
 
   return {
     territories,
+    byCell,
     bounds,
     ownerCounts: {
       blue: territories.filter((territory) => territory.owner === 'blue').length,
@@ -101,18 +86,15 @@ export function buildTerritoryPlan(
   };
 }
 
-/** Find the assigned territory containing a point; overlaps prefer area, then id. */
 export function territoryAt(plan: TerritoryPlan, location: LatLon): AssignedTerritory | undefined {
-  return plan.territories
-    .filter((territory) =>
-      location.lon >= territory.bounds.west && location.lon <= territory.bounds.east &&
-      location.lat >= territory.bounds.south && location.lat <= territory.bounds.north &&
-      boundaryContains(territory.boundary, location),
-    )
-    .sort((a, b) => a.areaKm2 - b.areaKm2 || a.id.localeCompare(b.id))[0];
+  if (!Number.isFinite(location.lat) || !Number.isFinite(location.lon)) return undefined;
+  return plan.byCell[latLngToCell(location.lat, location.lon, TERRITORY_RESOLUTION)];
 }
 
-/** Return the author's explicit role for the territory containing a point. */
 export function roleFor(plan: TerritoryPlan, location: LatLon): TerritoryRole | undefined {
   return territoryAt(plan, location)?.role;
+}
+
+export function countTerritories(plan: TerritoryPlan, side: Side, role: TerritoryRole): number {
+  return plan.territories.filter((territory) => territory.owner === side && territory.role === role).length;
 }

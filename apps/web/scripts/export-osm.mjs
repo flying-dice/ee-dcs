@@ -1,79 +1,85 @@
 import { spawn } from 'node:child_process';
-import { createReadStream } from 'node:fs';
 import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import readline from 'node:readline';
-import { booleanIntersects, simplify } from '@turf/turf';
+import { gzipSync } from 'node:zlib';
+import { area as polygonArea, bbox, booleanPointInPolygon, centerOfMass, pointOnFeature } from '@turf/turf';
+import { classifyOsmSite } from '../src/lib/osm-policy.mjs';
 
 const APP_ROOT = path.resolve(import.meta.dirname, '..');
 const THEATRE_DIR = path.join(APP_ROOT, 'src', 'theatres');
-const OUTPUT_DIR = path.join(APP_ROOT, 'src', 'osm');
+const OUTPUT_DIR = path.join(APP_ROOT, 'public', 'osm');
 const WORK_DIR = path.join(APP_ROOT, '.osm-work');
 const PLANET_PATH = process.env.OSM_PLANET_PATH ?? 'E:\\planet-latest.osm.pbf';
 const OSMIUM_IMAGE = process.env.OSMIUM_IMAGE ?? 'falcon-osm-osmium:latest';
 const requested = new Set(process.argv.slice(2).map((value) => value.toLowerCase()));
+const fromCache = requested.delete('--from-cache');
 
 const FILTERS = [
-  'nwr/aeroway=aerodrome,heliport',
-  'nwr/military=airfield,radar_station,depot,ammunition,bunker,barracks',
-  'nwr/man_made=works,petroleum_refinery,radar,power_station,storage_tank,tank_farm,pier',
+  'nwr/military',
+  'nwr/landuse=military',
+  'nwr/man_made=works,petroleum_refinery,radar,power_station,tank_farm',
+  'nwr/industrial=oil,refinery,port,factory',
+  'nwr/industrial=warehouse',
+  'nwr/building=warehouse',
+  'nwr/building:use=warehouse',
+  'nwr/amenity=warehouse',
+  'nwr/amenity=townhall,community_centre',
+  'nwr/office=government',
+  'nwr/building=government,government_office,civic',
   'nwr/landuse=industrial,harbour,depot',
   'nwr/harbour=yes',
-  'nwr/amenity=ferry_terminal,fuel',
-  'nwr/tower:type=radar',
+  'nwr/amenity=ferry_terminal',
   'nwr/power=plant,substation',
-  'nwr/office=government',
-  'n/place=city,town,village,hamlet,locality',
-  'n/natural=peak,saddle,ridge,valley,cliff',
-  'n/mountain_pass=yes',
-  'nwr/waterway=dam',
-  'nwr/historic=fort,castle',
 ];
-const ADM2_FILTERS = ['r/admin_level=6'];
 const KEPT_TAGS = new Set([
-  'name', 'operator', 'aeroway', 'aerodrome:type', 'icao', 'iata', 'military',
+  'name', 'name:en', 'official_name:en', 'int_name', 'military',
   'man_made', 'product', 'industrial', 'landuse', 'harbour', 'amenity',
-  'tower:type', 'power', 'office', 'substance', 'resource', 'place', 'natural',
-  'mountain_pass', 'waterway', 'historic',
-]);
-const ADMIN_BOUNDARY_TAGS = new Set([
-  'name', 'name:en', 'official_name', 'boundary', 'admin_level', 'ISO3166-2',
-  'wikidata', 'wikipedia', 'ref', 'type',
+  'building', 'building:use', 'office',
+  'power', 'substation', 'voltage', 'plant:output:electricity', 'substance', 'resource',
 ]);
 
-function supported(tags) {
-  const named = typeof tags.name === 'string' && tags.name.length > 0;
-  return /^(aerodrome|heliport)$/.test(tags.aeroway ?? '') ||
-    /^(airfield|radar_station|depot|ammunition|bunker|barracks)$/.test(tags.military ?? '') ||
-    /^(works|petroleum_refinery|radar|power_station|storage_tank|tank_farm|pier)$/.test(tags.man_made ?? '') ||
-    /^(industrial|harbour|depot)$/.test(tags.landuse ?? '') ||
-    tags.harbour === 'yes' || /^(ferry_terminal|fuel)$/.test(tags.amenity ?? '') ||
-    tags['tower:type'] === 'radar' || /^(plant|substation)$/.test(tags.power ?? '') ||
-    tags.office === 'government' ||
-    (named && /^(city|town|village|hamlet|locality)$/.test(tags.place ?? '')) ||
-    (named && /^(peak|saddle|ridge|valley|cliff)$/.test(tags.natural ?? '')) ||
-    (named && tags.mountain_pass === 'yes') || (named && tags.waterway === 'dam') ||
-    (named && /^(fort|castle)$/.test(tags.historic ?? ''));
+function nonemptyName(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function preferredName(tags) {
+  return nonemptyName(tags['name:en']) ?? nonemptyName(tags['official_name:en']) ??
+    nonemptyName(tags.int_name) ?? nonemptyName(tags.name);
 }
 
 function compactTags(tags) {
   return Object.fromEntries(Object.entries(tags).filter(([key]) => KEPT_TAGS.has(key)));
 }
 
-function compactAdminBoundaryTags(tags) {
-  return Object.fromEntries(Object.entries(tags).filter(([key]) => ADMIN_BOUNDARY_TAGS.has(key)));
+function siteFootprint(tags) {
+  return ['industrial', 'military', 'harbour', 'depot'].includes(tags.landuse) ||
+    ['plant', 'substation'].includes(tags.power) ||
+    ['base', 'naval_base'].includes(tags.military);
 }
 
-/** Osmium encodes multipolygon relation areas as a<2 * relationId + 1>. */
-function administrativeRelationId(value) {
-  const directMatch = /^(?:relation\/|r)(\d+)$/.exec(value);
-  if (directMatch) return `relation/${directMatch[1]}`;
-  const areaMatch = /^a(\d+)$/.exec(value);
-  if (!areaMatch) return null;
-  const areaId = Number(areaMatch[1]);
-  if (!Number.isSafeInteger(areaId) || areaId % 2 === 0) return null;
-  return `relation/${(areaId - 1) / 2}`;
+function insideBounds([lon, lat], bounds) {
+  return lon >= bounds[0] && lon <= bounds[2] && lat >= bounds[1] && lat <= bounds[3];
+}
+
+// Buildings and nodes describe a component of a mapped site, not another spawn site.
+// Keep every distinct site footprint, including nested industrial landuse polygons.
+function preferSiteFootprints(candidates) {
+  const grounds = new Map();
+  for (const candidate of candidates) {
+    if (!candidate.siteFootprint) continue;
+    const kind = candidate.point.properties.kind;
+    if (!grounds.has(kind)) grounds.set(kind, []);
+    grounds.get(kind).push(candidate);
+  }
+  return candidates.filter((candidate) => {
+    if (candidate.siteFootprint) return true;
+    const point = candidate.point.geometry.coordinates;
+    return !(grounds.get(candidate.point.properties.kind) ?? []).some((ground) =>
+      ground.point.properties.osmId !== candidate.point.properties.osmId &&
+      insideBounds(point, ground.bounds) && booleanPointInPolygon(point, ground.source),
+    );
+  });
 }
 
 function terrainFeature(data) {
@@ -91,6 +97,28 @@ function inside([lon, lat], ring) {
     }
   }
   return result;
+}
+
+// Match the airfield envelope shown as the dashed active-area rectangle in the UI.
+function activeBounds(data, ring) {
+  const lons = ring.map(([lon]) => lon);
+  const lats = ring.map(([, lat]) => lat);
+  const bounds = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+  const airbases = (data.features ?? []).filter((feature) =>
+    feature.properties?.type === 'AIRBASE' && feature.geometry?.type === 'Point',
+  );
+  if (airbases.length === 0) return bounds;
+  const airLons = airbases.map((feature) => feature.geometry.coordinates[0]);
+  const airLats = airbases.map((feature) => feature.geometry.coordinates[1]);
+  const centreLat = (Math.min(...airLats) + Math.max(...airLats)) / 2;
+  const latPadding = 100 / 111.32;
+  const lonPadding = 100 / (111.32 * Math.max(0.2, Math.cos(centreLat * Math.PI / 180)));
+  return [
+    Math.max(bounds[0], Math.min(...airLons) - lonPadding),
+    Math.max(bounds[1], Math.min(...airLats) - latPadding),
+    Math.min(bounds[2], Math.max(...airLons) + lonPadding),
+    Math.min(bounds[3], Math.max(...airLats) + latPadding),
+  ];
 }
 
 async function exists(file) {
@@ -117,37 +145,6 @@ async function runOsmium(workDirectory, args) {
   });
 }
 
-function collectCoordinates(value, result) {
-  if (!Array.isArray(value)) return;
-  if (value.length >= 2 && typeof value[0] === 'number' && typeof value[1] === 'number') {
-    result.push([value[0], value[1]]);
-    return;
-  }
-  for (const child of value) collectCoordinates(child, result);
-}
-
-function representativePoint(geometry) {
-  if (!geometry) return null;
-  if (geometry.type === 'Point') return geometry.coordinates;
-  const coordinates = [];
-  collectCoordinates(geometry.coordinates, coordinates);
-  if (coordinates.length === 0) return null;
-  const lons = coordinates.map(([lon]) => lon);
-  const lats = coordinates.map(([, lat]) => lat);
-  return [
-    (Math.min(...lons) + Math.max(...lons)) / 2,
-    (Math.min(...lats) + Math.max(...lats)) / 2,
-  ];
-}
-
-async function* readGeoJsonSequence(file) {
-  const lines = readline.createInterface({ input: createReadStream(file), crlfDelay: Infinity });
-  for await (const line of lines) {
-    const value = line.trim().replace(/^\u001e/, '');
-    if (value) yield JSON.parse(value);
-  }
-}
-
 async function exportTheatre(fileName) {
   const data = JSON.parse(await readFile(path.join(THEATRE_DIR, fileName), 'utf8'));
   const terrain = terrainFeature(data);
@@ -161,105 +158,107 @@ async function exportTheatre(fileName) {
   const polygonPath = path.join(theatreWork, 'polygon.geojson');
   const regionPath = path.join(theatreWork, 'region.osm.pbf');
   const rawGeoJsonPath = path.join(theatreWork, 'filtered.geojson');
-  const adminBoundaryGeoJsonPath = path.join(theatreWork, 'admin-boundaries.geojsonseq');
   await writeFile(polygonPath, JSON.stringify({
     type: 'FeatureCollection',
     features: [{ type: 'Feature', properties: {}, geometry: terrain.geometry }],
   }));
 
-  if (!(await exists(regionPath))) {
+  if (!fromCache && !(await exists(regionPath))) {
     console.log(`[${theatre}] extracting theatre polygon from ${PLANET_PATH}`);
     await runOsmium(theatreWork, [
       'extract', '-p', '/work/polygon.geojson', '-s', 'smart',
       '/data/planet.osm.pbf', '-o', '/work/region.osm.pbf', '--overwrite', '--progress',
     ]);
   }
-  console.log(`[${theatre}] filtering objective and keysite tags`);
-  await runOsmium(theatreWork, [
-    'tags-filter', '/work/region.osm.pbf', ...FILTERS,
-    '-o', '/work/filtered.osm.pbf', '--overwrite', '--progress',
-  ]);
-  console.log(`[${theatre}] exporting filtered geometry`);
-  await runOsmium(theatreWork, [
-    'export', '/work/filtered.osm.pbf', '-o', '/work/filtered.geojson',
-    '--overwrite', '--add-unique-id=type_id', '--progress',
-  ]);
-  console.log(`[${theatre}] filtering district-level administrative boundaries`);
-  await runOsmium(theatreWork, [
-    'tags-filter', '/work/region.osm.pbf', ...ADM2_FILTERS,
-    '-o', '/work/admin-boundaries.osm.pbf', '--overwrite', '--progress',
-  ]);
-  console.log(`[${theatre}] exporting administrative boundary geometry`);
-  await runOsmium(theatreWork, [
-    'export', '/work/admin-boundaries.osm.pbf', '-f', 'geojsonseq',
-    '-o', '/work/admin-boundaries.geojsonseq', '--geometry-types=polygon',
-    '--overwrite', '--add-unique-id=type_id', '--progress',
-  ]);
+  if (!fromCache) {
+    console.log(`[${theatre}] filtering keysite tags`);
+    await runOsmium(theatreWork, [
+      'tags-filter', '/work/region.osm.pbf', ...FILTERS,
+      '-o', '/work/filtered.osm.pbf', '--overwrite', '--progress',
+    ]);
+    console.log(`[${theatre}] exporting filtered geometry`);
+    await runOsmium(theatreWork, [
+      'export', '/work/filtered.osm.pbf', '-o', '/work/filtered.geojson',
+      '--overwrite', '--add-unique-id=type_id', '--progress',
+    ]);
+  } else if (!(await exists(rawGeoJsonPath))) {
+    throw new Error(`[${theatre}] --from-cache needs filtered.geojson`);
+  }
 
   const raw = JSON.parse(await readFile(rawGeoJsonPath, 'utf8'));
   const ring = terrain.geometry.coordinates[0];
-  const theatreFeature = { type: 'Feature', properties: {}, geometry: terrain.geometry };
+  const bounds = activeBounds(data, ring);
   const features = [];
   for (const feature of raw.features ?? []) {
-    const point = representativePoint(feature.geometry);
-    if (!point || !inside(point, ring)) continue;
     const rawTags = { ...(feature.properties ?? {}) };
     const osmId = String(feature.id ?? rawTags['@id'] ?? rawTags.id ?? '');
     delete rawTags['@id'];
     delete rawTags.id;
-    if (!osmId || !supported(rawTags)) continue;
     const tags = compactTags(rawTags);
-    features.push({
+    const name = preferredName(tags);
+    const classification = classifyOsmSite(tags, osmId, name ?? undefined);
+    const sourceName = nonemptyName(tags.name);
+    if (!osmId || classification === null ||
+      tags.landuse !== 'industrial' && (/^(aerodrome|heliport)$/.test(rawTags.aeroway ?? '') ||
+        rawTags.military === 'airfield')) continue;
+    const polygon = ['Polygon', 'MultiPolygon'].includes(feature.geometry?.type);
+    const centre = polygon ? centerOfMass(feature).geometry.coordinates : null;
+    const point = polygon && centre && booleanPointInPolygon(centre, feature)
+      ? centre : feature.geometry ? pointOnFeature(feature).geometry.coordinates : null;
+    if (!point || !inside(point, ring)) continue;
+    const footprintM2 = polygon ? polygonArea(feature) : 0;
+    const civicSite = classification.type === 'command' &&
+      (tags.office === 'government' || ['government', 'government_office', 'civic'].includes(tags.building) ||
+        tags.amenity === 'townhall' || tags.amenity === 'community_centre');
+    if (civicSite && tags.landuse !== 'industrial' &&
+      footprintM2 < (tags.amenity === 'townhall' ? 750 : 1500)) continue;
+    const pointFeature = {
       type: 'Feature',
       geometry: { type: 'Point', coordinates: point },
-      properties: { osmId, ...(tags.name ? { name: tags.name } : {}), tags },
-    });
-  }
-  const pointCount = features.length;
-  let adminBoundaryCount = 0;
-  for await (const feature of readGeoJsonSequence(adminBoundaryGeoJsonPath)) {
-    if (!feature.geometry || !['Polygon', 'MultiPolygon'].includes(feature.geometry.type)) continue;
-    const rawTags = { ...(feature.properties ?? {}) };
-    const osmId = administrativeRelationId(String(feature.id ?? rawTags['@id'] ?? rawTags.id ?? ''));
-    delete rawTags['@id'];
-    delete rawTags.id;
-    if (
-      !osmId ||
-      rawTags.boundary !== 'administrative' ||
-      rawTags.admin_level !== '6' ||
-      !booleanIntersects(feature, theatreFeature)
-    ) continue;
-    const coarse = simplify(feature, { tolerance: 0.003, highQuality: false, mutate: false });
-    const tags = compactAdminBoundaryTags(rawTags);
-    features.push({
-      type: 'Feature',
-      geometry: coarse.geometry,
       properties: {
-        kind: 'admin-boundary',
-        adminLevel: 6,
-        osmId,
-        name: tags['name:en'] ?? tags.name ?? tags.official_name ?? '',
+        osmId, kind: classification.type, name: name ?? (
+          classification.type === 'power' ? 'Transmission substation' :
+            classification.type === 'command' ? (civicSite ? 'Government building' : 'Military site') :
+            classification.type === 'depot' ? 'Warehouse' : 'Industrial site'),
+        ...(sourceName && sourceName !== name ? { sourceName } : {}),
         tags,
       },
+    };
+    features.push({
+      point: pointFeature,
+      source: feature,
+      siteFootprint: polygon && siteFootprint(tags),
+      bounds: polygon ? bbox(feature) : null,
     });
-    adminBoundaryCount += 1;
   }
-  features.sort((a, b) => a.properties.osmId.localeCompare(b.properties.osmId));
+  // Osmium emits a closed way both as a line (w<ID>) and an area (a<2*ID>).
+  // The area is the useful site footprint, so never expose its duplicate line.
+  const areaWayIds = new Set(features.flatMap((feature) => {
+    const match = /^a(\d+)$/.exec(feature.point.properties.osmId);
+    if (!match) return [];
+    const id = BigInt(match[1]);
+    return id % 2n === 0n ? [`w${id / 2n}`] : [];
+  }));
+  const selected = features.filter((feature) => !areaWayIds.has(feature.point.properties.osmId));
+  const active = selected.filter((feature) => {
+    return insideBounds(feature.point.geometry.coordinates, bounds);
+  });
+  const siteCandidates = preferSiteFootprints(active).map((candidate) => candidate.point);
+  siteCandidates.sort((a, b) => a.properties.osmId.localeCompare(b.properties.osmId));
   const output = {
     type: 'FeatureCollection',
     properties: {
       theatre,
       source: '© OpenStreetMap contributors',
-      exportedAt: new Date().toISOString(),
-      planetFile: path.basename(PLANET_PATH),
     },
-    features,
+    features: siteCandidates,
   };
-  await writeFile(path.join(OUTPUT_DIR, `${theatre}.geojson`), JSON.stringify(output));
-  console.log(`[${theatre}] wrote ${pointCount} point features and ${adminBoundaryCount} ADM2-style boundaries`);
+  const encoded = gzipSync(Buffer.from(JSON.stringify(output)), { level: 9, mtime: 0 });
+  await writeFile(path.join(OUTPUT_DIR, `${theatre}.geojson.gz`), encoded);
+  console.log(`[${theatre}] wrote ${siteCandidates.length} active-area point candidates (${encoded.length} gzip bytes)`);
 }
 
-await access(PLANET_PATH);
+if (!fromCache) await access(PLANET_PATH);
 for (const fileName of await readdir(THEATRE_DIR)) {
   if (fileName.toLowerCase().endsWith('.geojson')) await exportTheatre(fileName);
 }
