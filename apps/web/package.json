@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "test": "node scripts/check-mission-roster.mjs",
     "test:osm": "node scripts/check-osm-candidates.mjs",
+    "test:design": "node scripts/check-design-geojson.mjs",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "export:osm": "node scripts/export-osm.mjs"
   },

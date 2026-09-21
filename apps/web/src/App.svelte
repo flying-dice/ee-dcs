@@ -12,8 +12,10 @@
   import { buildMiz, filenameFor, keysitesToZones } from './lib/miz';
   import { buildTerritoryPlan, countTerritories, paintableCells, territoryAt } from './lib/territory';
   import { activeAreaBounds } from './lib/active_area';
+  import { createDesignGeoJson, parseDesignGeoJson } from './lib/design-geojson';
   import { DEFAULT_UNIT_TYPES } from './lib/units';
   import type { UnitTypes, AircraftRole } from './lib/units';
+  import type { DesignState } from './lib/design-geojson';
   import type { Terrain, CandidateKeysite, Keysite, KeysiteType, Side, CountConfig, AddedKeysite, AirbasePoint, OsmFeature, LatLon, TerritoryPlan, TerritoryAssignment } from './lib/types';
 
   const TYPE_COLORS: Record<KeysiteType, string> = { airbase:'#e2e8f0', farp:'#a78bfa', factory:'#f59e0b', refinery:'#f97316', port:'#38bdf8', radar:'#14b8a6', power:'#ec4899', command:'#f43f5e', depot:'#84cc16', fuel:'#fb923c' };
@@ -27,6 +29,8 @@
   let loadingOsm = false;
   let osmLoaded = false;
   let osmError: string | null = null;
+  let designError: string | null = null;
+  let designResult: string | null = null;
   let mainError: string | null = null;
   let populated = false;
   let counts: CountConfig = structuredClone(DEFAULT_COUNTS);
@@ -46,6 +50,7 @@
   let focusN = 0;
   let assignmentSide: Side = 'blue';
   let assignmentRole: 'rear' | 'close' = 'rear';
+  let loadRequest = 0;
 
   $: terrain = selectedTerrainId ? terrainById(selectedTerrainId) ?? null : null;
   $: activeBounds = terrain ? activeAreaBounds(terrain) : null;
@@ -89,8 +94,11 @@
   function countsEqual(first: CountConfig, second: CountConfig): boolean { return (Object.keys(first) as KeysiteType[]).every((type) => first[type].blue === second[type].blue && first[type].red === second[type].red); }
   function invalidate(): void { populated = false; removed = []; added = []; positionOverrides = {}; generateResult = null; }
   async function onSelectTerrain(id: string): Promise<void> {
-    selectedTerrainId = id; mainBlue = null; mainRed = null; theatreOsm = []; cellAssignments = {}; osmLoaded = false; loadingOsm = true; osmError = null; mainError = null; invalidate();
-    try { const osm = await loadTheatreOsm(id); theatreOsm = osm.features; osmLoaded = true; } catch (error) { osmError = (error as Error).message; } finally { loadingOsm = false; }
+    const request = ++loadRequest;
+    selectedTerrainId = id; mainBlue = null; mainRed = null; theatreOsm = []; cellAssignments = {}; osmLoaded = false; loadingOsm = true; osmError = null; mainError = null; designError = null; designResult = null; invalidate();
+    try { const osm = await loadTheatreOsm(id); if (request === loadRequest) { theatreOsm = osm.features; osmLoaded = true; } }
+    catch (error) { if (request === loadRequest) osmError = (error as Error).message; }
+    finally { if (request === loadRequest) loadingOsm = false; }
   }
   function onSetMode(next: Mode): void { mode = mode === next ? 'idle' : next; mainError = null; if (mode !== 'idle') panelOpen = false; }
   function onDesignateMain(airbase: AirbasePoint): void {
@@ -137,7 +145,74 @@
   function onFocusKeysite(id: string): void { focus = { id, n: ++focusN }; }
   function downloadBlob(blob: Blob, name: string): void { const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
   async function onGenerate(): Promise<void> { if (!terrain || !canGenerate) return; generating = true; try { const blob = await buildMiz(keysites, terrain, { bakeCampaign, unitTypes }); const name = filenameFor(terrain); downloadBlob(blob, name); generateResult = bakeCampaign ? `${name} — ${keysites.length} zones + campaign Lua, ready to play in DCS` : `${name} — ${keysites.length} zones (no campaign Lua)`; } catch (error) { osmError = `Generate failed: ${(error as Error).message}`; } finally { generating = false; } }
-  function onDownloadGeoJson(): void { if (!terrain) return; const zones = keysitesToZones(keysites, terrain); const features = keysites.map((keysite) => ({ type:'Feature', properties:{ kind:'keysite', type:keysite.type, side:keysite.side, name:keysite.name }, geometry:{ type:'Point', coordinates:[keysite.latlon.lon, keysite.latlon.lat] } })); downloadBlob(new Blob([JSON.stringify({ type:'FeatureCollection', properties:{ terrain:terrain.id, zones }, features }, null, 2)], { type:'application/geo+json' }), `eech-${terrain.id.toLowerCase()}-design.geojson`); }
+  function onExportDesign(): void {
+    if (!terrain || !osmLoaded) return;
+    designError = null;
+    try {
+      const state: DesignState = {
+        terrainId: terrain.id, cellAssignments, mainBlueId: mainBlue ? airbaseId(mainBlue) : null,
+        mainRedId: mainRed ? airbaseId(mainRed) : null, populated, counts, draftCounts,
+        seed, removed, added, positionOverrides, bakeCampaign, unitTypes,
+        assignmentSide, assignmentRole, paintErase,
+      };
+      const design = createDesignGeoJson(state, keysites, keysitesToZones(keysites, terrain));
+      downloadBlob(new Blob([JSON.stringify(design, null, 2)], { type: 'application/geo+json' }),
+        `eech-${terrain.id.toLowerCase()}-design.geojson`);
+      designResult = 'Design saved. Load this file to resume editing.';
+    } catch (error) {
+      designError = `Could not save design: ${(error as Error).message}`;
+    }
+  }
+  async function onImportDesign(file: File): Promise<void> {
+    designError = null;
+    designResult = null;
+    if (file.size > 20 * 1024 * 1024) { designError = 'Design file is too large (20 MB maximum).'; return; }
+    let input: unknown;
+    try { input = JSON.parse(await file.text()); }
+    catch { designError = 'Could not read the design file as JSON.'; return; }
+    const [state, error] = parseDesignGeoJson(input);
+    if (error !== null) { designError = error; return; }
+    const target = terrainById(state.terrainId);
+    if (!target) { designError = `Theatre ${state.terrainId} is not available in this app.`; return; }
+    const usable = activeAreaBounds(target);
+    if (Object.keys(state.cellAssignments).some((cell) => paintableCells(cell, target, usable).length === 0)) {
+      designError = 'The design contains painted cells outside this theatre’s active area.'; return;
+    }
+    const plan = buildTerritoryPlan(state.cellAssignments);
+    const blue = state.mainBlueId ? target.airbases.find((airbase) => airbaseId(airbase) === state.mainBlueId) ?? null : null;
+    const red = state.mainRedId ? target.airbases.find((airbase) => airbaseId(airbase) === state.mainRedId) ?? null : null;
+    if (state.mainBlueId && (!blue || territoryAt(plan, blue.latlon)?.owner !== 'blue') ||
+      state.mainRedId && (!red || territoryAt(plan, red.latlon)?.owner !== 'red')) {
+      designError = 'A saved main airbase is missing or outside its side’s territory.'; return;
+    }
+    if (state.populated && (!blue || !red)) {
+      designError = 'A populated design needs a main airbase for each side.'; return;
+    }
+    const request = ++loadRequest;
+    loadingOsm = true;
+    try {
+      const osm = await loadTheatreOsm(state.terrainId);
+      if (request !== loadRequest) return;
+      selectedTerrainId = state.terrainId;
+      theatreOsm = osm.features;
+      cellAssignments = state.cellAssignments;
+      mainBlue = blue; mainRed = red;
+      populated = state.populated;
+      counts = state.counts; draftCounts = state.draftCounts;
+      seed = state.seed; removed = state.removed; added = state.added;
+      positionOverrides = state.positionOverrides;
+      bakeCampaign = state.bakeCampaign; unitTypes = state.unitTypes;
+      assignmentSide = state.assignmentSide; assignmentRole = state.assignmentRole;
+      paintErase = state.paintErase;
+      osmLoaded = true; osmError = null; mainError = null;
+      mode = 'idle'; panelOpen = true; focus = null; generateResult = null;
+      designResult = `Loaded ${file.name}: ${Object.keys(cellAssignments).length} painted cells.`;
+    } catch (error) {
+      if (request === loadRequest) designError = `Could not load design: ${(error as Error).message}`;
+    } finally {
+      if (request === loadRequest) loadingOsm = false;
+    }
+  }
   function onReset(): void { mainBlue = null; mainRed = null; cellAssignments = {}; mode = 'idle'; mainError = null; invalidate(); }
 </script>
 
@@ -151,7 +226,7 @@
   <button class="panel-backdrop" class:show={panelOpen} aria-label="Close controls" on:click={() => panelOpen = false}></button>
   <aside class="dock-left" class:open={panelOpen}>
     <button class="panel-close" aria-label="Close controls" on:click={() => panelOpen = false}>✕</button>
-    <ControlPanel terrains={TERRAINS} {selectedTerrainId} {terrain} {projBadge} {mode} mainBlueName={mainBlue?.name ?? null} mainRedName={mainRed?.name ?? null} {canPopulate} {populated} {loadingOsm} {osmLoaded} {osmError} {mainError} {blueRearCount} {blueCloseCount} {redRearCount} {redCloseCount} {hasBlueTerritory} {hasRedTerritory} counts={draftCounts} {countsDirty} {keysites} {blueSummary} {redSummary} {canGenerate} {generating} {generateResult} {bakeCampaign} {unitTypes} {hint} typeColors={TYPE_COLORS} {paintErase} {assignmentSide} {assignmentRole} on:selectTerrain={(event) => onSelectTerrain(event.detail)} on:setMode={(event) => onSetMode(event.detail)} on:clearMain={(event) => onClearMain(event.detail)} on:populate={onPopulate} on:shuffle={onShuffle} on:setCount={(event) => onSetCount(event.detail)} on:applyCounts={onApplyCounts} on:setUnit={(event) => onSetUnit(event.detail)} on:resetUnits={onResetUnits} on:removeKeysite={(event) => onRemoveKeysite(event.detail)} on:focusKeysite={(event) => onFocusKeysite(event.detail)} on:reset={onReset} on:generate={onGenerate} on:downloadGeoJson={onDownloadGeoJson} on:setBakeCampaign={(event) => bakeCampaign = event.detail} on:openManual={() => showManual = true} on:setAssignmentSide={(event) => assignmentSide = event.detail} on:setAssignmentRole={(event) => assignmentRole = event.detail} on:setPaintErase={(event) => paintErase = event.detail} />
+    <ControlPanel terrains={TERRAINS} {selectedTerrainId} {terrain} {projBadge} {mode} mainBlueName={mainBlue?.name ?? null} mainRedName={mainRed?.name ?? null} {canPopulate} {populated} {loadingOsm} {osmLoaded} {osmError} {designError} {designResult} {mainError} {blueRearCount} {blueCloseCount} {redRearCount} {redCloseCount} {hasBlueTerritory} {hasRedTerritory} counts={draftCounts} {countsDirty} {keysites} {blueSummary} {redSummary} {canGenerate} {generating} {generateResult} {bakeCampaign} {unitTypes} {hint} typeColors={TYPE_COLORS} {paintErase} {assignmentSide} {assignmentRole} on:selectTerrain={(event) => onSelectTerrain(event.detail)} on:setMode={(event) => onSetMode(event.detail)} on:clearMain={(event) => onClearMain(event.detail)} on:populate={onPopulate} on:shuffle={onShuffle} on:setCount={(event) => onSetCount(event.detail)} on:applyCounts={onApplyCounts} on:setUnit={(event) => onSetUnit(event.detail)} on:resetUnits={onResetUnits} on:removeKeysite={(event) => onRemoveKeysite(event.detail)} on:focusKeysite={(event) => onFocusKeysite(event.detail)} on:reset={onReset} on:generate={onGenerate} on:exportDesign={onExportDesign} on:importDesign={(event) => onImportDesign(event.detail)} on:setBakeCampaign={(event) => bakeCampaign = event.detail} on:openManual={() => showManual = true} on:setAssignmentSide={(event) => assignmentSide = event.detail} on:setAssignmentRole={(event) => assignmentRole = event.detail} on:setPaintErase={(event) => paintErase = event.detail} />
   </aside>
   {#if showManual}<Manual typeColors={TYPE_COLORS} on:close={() => showManual = false} />{/if}
 </div>

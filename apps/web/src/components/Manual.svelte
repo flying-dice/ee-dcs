@@ -407,6 +407,10 @@ function goto(id: string): void {
         The whole order of battle is expressed as <b>trigger zones</b> in the Mission Editor —
         open the generated <code>.miz</code> and edit freely. No scripting required.
       </p>
+      <p>To resume designing in this tool, use <b>Save design (GeoJSON)</b> and later
+        <b>Load design (GeoJSON)</b>. That file preserves painted territory, selected main
+        airbases, site choices and generator settings. A generated <code>.miz</code> is for
+        playing or editing in DCS; it is not a project save for this generator.</p>
 
       <h3 class="sh">Every keysite is a zone</h3>
       <div class="contract">

@@ -68,7 +68,12 @@ you what a click does right now.
    bundle into the `.miz` so it plays as-is (~1 MB); untick it for a zones-only file you
    script yourself. Click **Generate .miz** to build and download the mission (e.g.
    `eech-caucasus.miz`). A success line confirms the zone count and what was baked in.
-   **Download GeoJSON** exports the generated keysites and projected zones for any GIS tool.
+   **Save design (GeoJSON)** downloads a resumable project file; **Load design (GeoJSON)**
+   restores its painted cells, main airbases, counts, shuffle, manual site edits and aircraft
+   choices. The file contains ordinary H3 Polygon features and selected-site Point features
+   for GIS inspection. Cell IDs, rather than edited polygon coordinates, control territory
+   when re-imported; the selected-site points are a preview, while saved generator settings
+   reconstruct the selection. Load requires the same supported H3 level and theatre data.
 
 **Reset distribution** clears territory assignments, main airbases and the preview while
 keeping the theatre loaded.
