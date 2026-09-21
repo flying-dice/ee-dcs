@@ -1,5 +1,11 @@
 # CLAUDE.md — ee-dcs
 
+> **Source of truth:** the campaign is TypeScript at `packages/ee-mission/src/*.ts`.
+> The `Scripts/ee-dcs/*.lua` tree referenced throughout this document was the migration
+> baseline and was **deleted on 2026-09-21**. Where a rule below names a `.lua` path,
+> it applies to that module's `.ts` counterpart. Git history retains the Lua at the
+> deletion commit.
+
 ## PRIME DIRECTIVE — align to EECH, never invent fixes (binding, overrides everything below)
 
 This is a **faithful port**, not a game design. The measure of correctness is *fidelity to the EECH
@@ -43,9 +49,17 @@ injection are all tools exposed by the **DCS Studio MCP server**
 (`http://127.0.0.1:25570/mcp`, see `.mcp.json`). The DCS Studio app must be running for
 these tools to exist in a session.
 
-- **Build** — `lua-cargo build` → bundles `Scripts/ee-dcs/main.lua` and the
-  21 required modules into `dist/ee-dcs.lua`. Must be **0 warnings**.
-- **Static analysis** — `check` — must report **no findings**.
+- **Build** — `npm run build --workspace ee-mission` (typescript-to-lua) → bundles
+  `packages/ee-mission/src/index.ts` and its module tree into `dist/ee-dcs.lua`.
+  TSTL is the ONLY producer of that file. `lua-cargo` and `CargoLua.toml` are dead —
+  the `Scripts/ee-dcs/*.lua` tree they built was deleted 2026-09-21 (sprint 02).
+- **Tests / regression net** — `npm run test --workspace ee-mission`
+  (set `LUA_BIN` if Lua 5.1 is not on PATH). Runs 27 core-parity checks plus campaign
+  smoke at 310 s and 2100 s, asserting the world state against **golden fixtures**
+  recorded from the Lua baseline before it was deleted
+  (`packages/ee-mission/test/golden/`). Must be **green**; a diff here means the port
+  has drifted from the baseline. Re-record only deliberately.
+- **Static analysis** — `check` (DCS Studio MCP) — must report **no findings**.
 - **Live injection** — `dcs_eval` runs
   `net.dostring_in('server', 'dofile("...dist/ee-dcs.lua")')` in the running
   mission. Re-injection is safe (generation guard, below).
@@ -67,13 +81,51 @@ Run build + check after every change; do not commit with warnings or findings.
   depends on them: `attack_waves.run_strike`, `attack_waves.run_oca_strike`,
   `cas_bai_sead.run_oca_sweep`, `cas_bai_sead.spawn_sead_against`,
   `cas_bai_sead.spawn_bai_against`, `troop.run_troop_insertion`, `recon.spawn_recon`,
-  `reaction.spawn_bda`, `heli_war.spawn_escort` (full context: ANALYSIS §4).
+  `reaction.spawn_bda`, `heli_war.spawn_escort` (full context: each function's own header
+  comment, plus `goals/03-mp-server-playout/ANALYSIS-2026-07-06.md` — **deleted from the
+  working tree** in `7f4879e` "release cleanup"; read it with
+  `git show 7f4879e^:goals/03-mp-server-playout/ANALYSIS-2026-07-06.md`).
 - **Players are first-class**: no campaign code may destroy, recycle, regen, or
   misclassify a player-controlled unit.
 - **Superseded constraint — do not "fix" back:** an earlier design said "spawn in-air,
   never TakeOffParking." The design deliberately moved to **ground spawns at the nearest
-  friendly base with real TakeOff waypoints** (more EECH-faithful). The `attack_waves.lua:61`
-  comment is stale. Keep ground spawns.
+  friendly base** (more EECH-faithful). Keep ground spawns. Since 2026-09-21 those are
+  **hot ramp starts** — `type="TakeOffParkingHot"` + `action="From Parking Area Hot"`.
+  NOTE the DCS trap this fixed: `type` is what the sim honours, so the old
+  `type="TakeOff"` + `action="From Parking Area"` pair spawned aircraft **on the runway**
+  despite the parking `action` and every comment claiming otherwise. Keep the pair matched.
+
+## Known open misalignments (audit 2026-09-21)
+
+Traced against the C source and **not yet fixed**. These are latent bugs under the Prime
+Directive, not accepted design — fix by realigning to the cited source, never by re-tuning.
+
+1. **imap radii are wrong and the C values exist.** `imap.lua:36-37` uses a flat
+   `AIR_COVERAGE_RADIUS = 150000` / `IMPORTANCE_RADIUS = 100000` and its header claims these
+   are "not per-keysite in our approximation." They **are** per-keysite literals in
+   `ks_dbase.c` — airbase 80 km importance / **400 km** air coverage (`ks_dbase.c:103-104`),
+   FARP 40/100 km, factory 40/0 km, military base 30/0 km. Air coverage is 2.7x too tight and
+   flat across types EECH differentiates. `BASE_DISTANCE` + `IMPORTANCE` feed `keysite.rate_*`,
+   so this skews target selection for **every** generator. `installations.FLAGS` already
+   transcribes each kind's `ks_dbase.c` row — extend it with the numeric columns
+   (`importance`, `importance_radius`, `air_coverage_radius`, `recon_distance`) and make
+   `imap.lua` read per-kind.
+2. **`keysite.lua:269` is stale**: "all port keysites are airbases (equal importance 1.0)" —
+   untrue since `installations.lua` registers non-airbase keysites whose EECH importance is
+   0.4-0.8. Re-check `designate_objectives` once (1) lands.
+3. **`STRIKE_PACKAGE_SIZE = 2`** (`attack_waves.lua:56`) — the last uncited number in the task
+   pipeline. EECH sizes flights via `suitable.c` + the group database, not a literal.
+4. **imap scan-range proxies** (`DEFAULT_AIR_SCAN_RANGE 25000`, `DEFAULT_SURF_SCAN_RANGE 15000`,
+   threat values `1.0`) — real per-unit `FLOAT_TYPE_*_SCAN_RANGE` values exist in the vehicle DB.
+5. **200 km influence radius** (`cas_bai_sead.lua:142`) — the last survivor of the invented
+   fixed-km band that `frontline.lua` already replaced with Gabriel adjacency.
+
+Everything else audited clean: all 12 `create_*_tasks` cadences/offsets match `highlevl.c:218-268`
+exactly, the `CREATE_*_TASK_COUNT` / `MIN_TASK_CREATION_RATIO` gates match `highlevl.c:88-100`, the
+escort threshold matches `assign.c:598-627`, croute's AIR profile matches `croute.c:128-134`, and
+the keysite supply-usage + flag rows match `ks_dbase.c`. The remaining proxies (road-node graph,
+repair-task latency, cargo entities, single global task-board pass) are documented structural
+limits — do **not** "fix" those back.
 
 ## Architecture cheat-sheet
 
@@ -84,14 +136,19 @@ Run build + check after every change; do not commit with warnings or findings.
 - **Registries live on `S`:** task registry (`active_tasks` + `register_task`/`get_task`/
   `clear_task`/`has_task_against` — the EECH `entity_is_object_of_task` proxy the whole
   reaction system needs); force-reserve pools (`force_reserve[side][role]`, finite,
-  consume-on-spawn / recycle-on-RTB, no production); FOW store (`fow[base][side]`);
+  consume-on-spawn / recycle-on-RTB, plus the production economy in `supply.lua`
+  — `S.production` crates from factory/refinery/port keysites convert to reserve
+  replacement); FOW store (`fow[base][side]`);
   ground-groups registry (`ground_groups[side]`, the standing frontline); keysite map
   (`base_*` = airbases); installations (`keysites[kname]` = non-airbase targets — note the
-  naming clash). imap layers are the exception: held module-local in `imap.lua`, reachable
-  only via `imap.get()`.
-- **Entry point:** `main.lua` (the trigger script) → `require("game_loop").start()`. Note
-  `main.lua` also still runs a legacy parallel supply/CAP/patrol layer and carries a dead
-  `_G.game_loop` handoff (double-start footgun) — retiring it is a known follow-up.
+  naming clash). imap layers live on `S` as well (`S.imap.raw` / `S.imap.nrm`, moved there in
+  Wave 1 for persistence); `imap.lua` holds module-local *references* into them and they stay
+  reachable only via `imap.get()`.
+- **Entry point:** `main.lua` (the trigger script) is a thin shim: install `spawn_queue`
+  interception → `reset.nuke()` → `config.load_and_validate()` → a single
+  `require("game_loop").start()` → `spawn_queue.schedule_drain()`. The legacy parallel
+  supply/CAP/patrol layer and the `_G.game_loop` double-start handoff were **deleted** in
+  Cluster H — do not reintroduce a second start path.
 - **Re-injection guard:** `campaign_state.lua` bumps global `_DMT_GEN` each load; every
   scheduled closure captures `my_gen = cs.GENERATION` and self-cancels when it no longer
   matches. Per-process only — a server restart resets all state (persistence is unbuilt).

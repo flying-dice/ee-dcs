@@ -1,134 +1,88 @@
-// ── OSM / Overpass data source ─────────────────────────────────────────────────
-// Fetches the raw geographic features the classifier turns into keysite candidates.
-// One bounded Overpass query per bbox, collecting only the tag sets classify.ts keys
-// on (aeroway, military, industrial man_made, landuse=industrial/harbour/depot,
-// power plants/substations, harbour/port, fuel depots) — never all buildings.
-//
-// Pipeline position:  bbox → fetchOsm() → OsmFeature[] → classify.ts.
+// ── Precompiled OSM data source ─────────────────────────────────────────────────
+// Theatre datasets are generated at development time by scripts/precompile-osm.mjs.
+// The browser only loads the matching static asset and filters it to the authored AO.
 
-import type { BBox, OsmFeature } from './types';
+import type { AdminBoundary, ObjectiveFeature, OsmFeature } from './types';
 
-// Public Overpass endpoints. Primary first; on a network/5xx failure fetchOsm()
-// retries once against the mirror.
-const OVERPASS_PRIMARY = 'https://overpass-api.de/api/interpreter';
-const OVERPASS_MIRROR = 'https://overpass.kumi.systems/api/interpreter';
+const compiledFiles = import.meta.glob('../osm/*.geojson', {
+  query: '?url',
+  import: 'default',
+}) as Record<string, () => Promise<string>>;
 
-/**
- * Build one Overpass QL query for the bbox. Uses a global `[bbox:s,w,n,e]` so every
- * statement is implicitly clipped, and `nwr` (node+way+relation) with `out center;`
- * so ways/relations return a centroid we can use as the keysite location.
- *
- * The tag union is deliberately narrow — only what classify.ts recognises — to keep
- * the payload bounded (no generic `building` sweep).
- */
-export function buildOverpassQuery(bbox: BBox): string {
-  // Overpass bbox order is (south, west, north, east).
-  const s = bbox.south;
-  const w = bbox.west;
-  const n = bbox.north;
-  const e = bbox.east;
-  const box = `${s},${w},${n},${e}`;
-
-  return [
-    `[out:json][timeout:60][bbox:${box}];`,
-    '(',
-    // airbase / farp candidates
-    '  nwr["aeroway"~"^(aerodrome|heliport)$"];',
-    // military installations → command/radar/depot
-    '  nwr["military"~"^(airfield|radar_station|depot|ammunition|bunker|barracks)$"];',
-    // industrial man_made → factory / refinery / radar / power / port / fuel
-    '  nwr["man_made"~"^(works|petroleum_refinery|radar|power_station|storage_tank|tank_farm|pier)$"];',
-    // industrial / harbour / depot land use → factory / port / depot
-    '  nwr["landuse"~"^(industrial|harbour|depot)$"];',
-    '  nwr["building"="industrial"];',
-    '  nwr["industrial"];', // industrial=oil/refinery/port/... — value inspected in classify.ts
-    // ports
-    '  nwr["harbour"="yes"];',
-    '  nwr["amenity"~"^(ferry_terminal|fuel)$"];',
-    // radar (alternate tagging)
-    '  nwr["tower:type"="radar"];',
-    // power infrastructure
-    '  nwr["power"~"^(plant|substation)$"];',
-    // command (regional government seats)
-    '  nwr["office"="government"];',
-    ');',
-    'out center;',
-  ].join('\n');
-}
-
-// One Overpass element as returned in the `elements` array.
-interface OverpassElement {
-  type: 'node' | 'way' | 'relation';
-  id: number;
-  lat?: number;
-  lon?: number;
-  center?: { lat: number; lon: number };
-  tags?: Record<string, string>;
-}
-
-function toFeature(el: OverpassElement): OsmFeature | null {
-  // Node coords live on lat/lon; way/relation centroids on center (from `out center`).
-  const lat = el.lat ?? el.center?.lat;
-  const lon = el.lon ?? el.center?.lon;
-  if (typeof lat !== 'number' || typeof lon !== 'number') return null; // no resolvable point → drop
-  const tags = el.tags ?? {};
-  return {
-    id: `${el.type}/${el.id}`,
-    latlon: { lat, lon },
-    tags,
-    name: tags.name,
+export async function loadTheatreOsm(
+  theatreId: string,
+): Promise<{ features: OsmFeature[]; adminBoundaries: AdminBoundary[] }> {
+  const entry = Object.entries(compiledFiles).find(([path]) =>
+    path.toLowerCase().endsWith(`/${theatreId.toLowerCase()}.geojson`),
+  );
+  if (!entry) throw new Error(`No compiled OSM dataset for ${theatreId}`);
+  const url = await entry[1]();
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Could not load the compiled OSM export for ${theatreId}`);
+  const raw = await response.text();
+  const data = JSON.parse(raw) as {
+    type: 'FeatureCollection';
+    features: Array<{
+      geometry:
+        | { type: 'Point'; coordinates: [number, number] }
+        | AdminBoundary['geometry'];
+      properties: {
+        kind?: 'admin-boundary';
+        adminLevel?: number;
+        osmId: string;
+        name?: string;
+        tags: Record<string, string>;
+      };
+    }>;
   };
-}
-
-async function postOverpass(endpoint: string, query: string): Promise<OverpassElement[]> {
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-    body: query,
-  });
-  if (!res.ok) {
-    // Signal 5xx (server / rate) so the caller can retry the mirror; 4xx is fatal.
-    const retryable = res.status >= 500;
-    const err = new Error(`Overpass ${endpoint} returned HTTP ${res.status}`);
-    (err as Error & { retryable?: boolean }).retryable = retryable;
-    throw err;
-  }
-  const json = (await res.json()) as { elements?: OverpassElement[] };
-  return json.elements ?? [];
-}
-
-/**
- * Fetch OSM features for the bbox. Tries the primary endpoint; on a network error or
- * a 5xx response retries once against the mirror. Throws a clear Error only if both
- * attempts fail. Returns only elements with a resolvable latlon.
- */
-export async function fetchOsm(bbox: BBox): Promise<OsmFeature[]> {
-  const query = buildOverpassQuery(bbox);
-
-  let elements: OverpassElement[];
-  try {
-    elements = await postOverpass(OVERPASS_PRIMARY, query);
-  } catch (primaryErr) {
-    const e = primaryErr as Error & { retryable?: boolean };
-    // Network errors have no `retryable` flag; HTTP 5xx sets it true. 4xx is fatal.
-    const isNetwork = e.retryable === undefined;
-    if (!isNetwork && e.retryable === false) {
-      throw new Error(`Overpass request failed: ${e.message}`);
-    }
-    try {
-      elements = await postOverpass(OVERPASS_MIRROR, query);
-    } catch (mirrorErr) {
-      const m = mirrorErr as Error;
-      throw new Error(
-        `Overpass request failed on both endpoints (${e.message}; mirror: ${m.message})`,
-      );
-    }
-  }
-
   const features: OsmFeature[] = [];
-  for (const el of elements) {
-    const f = toFeature(el);
-    if (f) features.push(f);
+  const adminBoundaries: AdminBoundary[] = [];
+  for (const feature of data.features) {
+    if (
+      feature.properties.kind === 'admin-boundary' &&
+      feature.geometry.type !== 'Point' &&
+      typeof feature.properties.adminLevel === 'number'
+    ) {
+      adminBoundaries.push({
+        id: feature.properties.osmId,
+        name: feature.properties.name ?? '',
+        adminLevel: feature.properties.adminLevel,
+        geometry: feature.geometry,
+        tags: feature.properties.tags,
+      });
+    } else if (feature.geometry.type === 'Point') {
+      features.push({
+        id: feature.properties.osmId,
+        latlon: { lat: feature.geometry.coordinates[1], lon: feature.geometry.coordinates[0] },
+        tags: feature.properties.tags,
+        name: feature.properties.name,
+      });
+    }
   }
-  return features;
+  return { features, adminBoundaries };
+}
+
+/** Keep named places and defensible terrain features as objective anchors. */
+export function extractObjectiveFeatures(features: OsmFeature[]): ObjectiveFeature[] {
+  const result: ObjectiveFeature[] = [];
+  for (const feature of features) {
+    const name = feature.name?.trim();
+    if (!name) continue;
+    const tags = feature.tags;
+    const settlement = /^(city|town|village|hamlet|locality)$/.test(tags.place ?? '');
+    const keyTerrain =
+      /^(peak|saddle|ridge|valley|cliff)$/.test(tags.natural ?? '') ||
+      tags.mountain_pass === 'yes' ||
+      tags.waterway === 'dam' ||
+      /^(fort|castle)$/.test(tags.historic ?? '');
+    if (!settlement && !keyTerrain) continue;
+    result.push({
+      id: feature.id,
+      kind: settlement ? 'settlement' : 'key-terrain',
+      name,
+      latlon: feature.latlon,
+      tags,
+    });
+  }
+  return result.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 }

@@ -12,7 +12,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "test": "node scripts/check-mission-roster.mjs",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "export:osm": "node scripts/export-osm.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.1.2",
@@ -27,6 +29,7 @@
   "dependencies": {
     "@fontsource/chakra-petch": "^5.2.7",
     "@fontsource/share-tech-mono": "^5.2.7",
+    "@turf/turf": "^7.4.0",
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
     "proj4": "^2.12.1"

@@ -1,12 +1,11 @@
 // ── OSM feature → candidate keysite classifier ─────────────────────────────────
-// Maps each raw OSM feature onto one of the eight EECH land keysite types (ks_dbase.c
+// Maps each raw OSM feature onto one of the campaign's authored keysite types (ks_dbase.c
 // sub-types, mirrored in the port's zones.lua). First matching rule wins; the tag
 // each rule keys on is cited inline. Produces the full CandidateKeysite list —
 // balance.ts does the trimming and side assignment.
 //
-// Fuel/oil storage → `refinery` (EECH OIL_REFINERY — fuel logistics) and military
-// depots/ammunition → `command` (EECH MILITARY_BASE): EECH has no separate DEPOT or
-// FUEL keysite, so those OSM features fold onto the real rows they belong to.
+// Refineries remain fuel producers. Storage facilities become fuel depots, while
+// military and ammunition storage becomes supply depots.
 //
 // Pipeline position:  OsmFeature[] → classifyFeatures() → CandidateKeysite[] → balance.ts.
 
@@ -40,7 +39,7 @@ function sanitise(raw: string | undefined): string {
 // True when the feature is an area (way/relation) rather than a point node — our
 // proxy for "large", used to reject tiny amenity=fuel petrol stations etc.
 function isArea(f: OsmFeature): boolean {
-  return f.id.startsWith('way/') || f.id.startsWith('relation/');
+  return f.id.startsWith('way/') || f.id.startsWith('relation/') || f.id.startsWith('a');
 }
 
 // Result of classifying one feature (before naming / dedup).
@@ -97,18 +96,18 @@ function classifyOne(f: OsmFeature): Classification | null {
   if (t.amenity === 'ferry_terminal') return { type: 'port', score: 70 };
   if (t.man_made === 'pier' && area) return { type: 'port', score: 55 }; // major (area) pier
 
-  // ── fuel/oil storage → refinery (EECH OIL_REFINERY — fuel logistics) ────────
+  // ── fuel/oil storage depot ─────────────────────────────────────────────────
   if (t.man_made === 'storage_tank' || t.man_made === 'tank_farm') {
-    return { type: 'refinery', score: 62 }; // fuel/oil storage → OIL_REFINERY
+    return { type: 'fuel', score: 62 };
   }
   if (t.landuse === 'depot' && /fuel|oil|petro/i.test(t.substance ?? t.resource ?? '')) {
-    return { type: 'refinery', score: 60 }; // fuel depot → OIL_REFINERY
+    return { type: 'fuel', score: 60 };
   }
-  if (t.amenity === 'fuel' && area) return { type: 'refinery', score: 45 }; // large fuel depot only
+  if (t.amenity === 'fuel' && area) return { type: 'fuel', score: 45 }; // large fuel depot only
 
-  // ── military depot / ammunition → command (EECH MILITARY_BASE) ──────────────
-  if (t.military === 'depot' || t.military === 'ammunition') return { type: 'command', score: 66 };
-  if (t.landuse === 'depot') return { type: 'command', score: 58 };
+  // ── supply depot / ammunition storage ──────────────────────────────────────
+  if (t.military === 'depot' || t.military === 'ammunition') return { type: 'depot', score: 66 };
+  if (t.landuse === 'depot') return { type: 'depot', score: 58 };
 
   // ── command (MILITARY_BASE) ─────────────────────────────────────────────────
   if (t.military === 'bunker') return { type: 'command', score: 56 };

@@ -13,7 +13,7 @@
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "outDir": "../dist",
+        "outDir": "../../dist",
         "resolveJsonModule": true,
         "useUnknownInCatchVariables": false
     },

@@ -2,7 +2,8 @@
   "name": "ee-mission",
   "scripts": {
     "build": "tstl",
-    "dev": "tstl --watch"
+    "dev": "tstl --watch",
+    "test": "npm run build && node test/run-tests.cjs"
   },
   "dependencies": {
     "lua-types": "^2.13.1"

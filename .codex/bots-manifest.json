@@ -1,0 +1,77 @@
+{
+  "version": "0.1.0",
+  "updatedAt": "2026-09-21T16:48:44.015Z",
+  "variant": "vanilla",
+  "items": {
+    "bot:architect": [
+      "E:\\ee-dcs\\.codex\\agents\\architect.toml"
+    ],
+    "bot:architect-deep": [
+      "E:\\ee-dcs\\.codex\\agents\\architect-deep.toml"
+    ],
+    "bot:designer": [
+      "E:\\ee-dcs\\.codex\\agents\\designer.toml"
+    ],
+    "bot:designer-deep": [
+      "E:\\ee-dcs\\.codex\\agents\\designer-deep.toml"
+    ],
+    "bot:developer": [
+      "E:\\ee-dcs\\.codex\\agents\\developer.toml"
+    ],
+    "bot:developer-lite": [
+      "E:\\ee-dcs\\.codex\\agents\\developer-lite.toml"
+    ],
+    "bot:lead": [
+      "E:\\ee-dcs\\.codex\\agents\\lead.toml",
+      "E:\\ee-dcs\\.agents\\skills\\lead"
+    ],
+    "bot:senior-developer": [
+      "E:\\ee-dcs\\.codex\\agents\\senior-developer.toml"
+    ],
+    "bot:senior-developer-deep": [
+      "E:\\ee-dcs\\.codex\\agents\\senior-developer-deep.toml"
+    ],
+    "bot:tester": [
+      "E:\\ee-dcs\\.codex\\agents\\tester.toml"
+    ],
+    "bot:tester-deep": [
+      "E:\\ee-dcs\\.codex\\agents\\tester-deep.toml"
+    ],
+    "skill:antigravity-harness": [
+      "E:\\ee-dcs\\.agents\\skills\\antigravity-harness"
+    ],
+    "skill:claude-harness": [
+      "E:\\ee-dcs\\.agents\\skills\\claude-harness"
+    ],
+    "skill:clean-code-review": [
+      "E:\\ee-dcs\\.agents\\skills\\clean-code-review"
+    ],
+    "skill:codex-harness": [
+      "E:\\ee-dcs\\.agents\\skills\\codex-harness"
+    ],
+    "skill:coding-styleguide": [
+      "E:\\ee-dcs\\.agents\\skills\\coding-styleguide"
+    ],
+    "skill:pre-commit": [
+      "E:\\ee-dcs\\.agents\\skills\\pre-commit"
+    ],
+    "skill:project-status": [
+      "E:\\ee-dcs\\.agents\\skills\\project-status"
+    ],
+    "skill:refactor": [
+      "E:\\ee-dcs\\.agents\\skills\\refactor"
+    ],
+    "skill:repodoc-workflow": [
+      "E:\\ee-dcs\\.agents\\skills\\repodoc-workflow"
+    ],
+    "skill:requirements-review": [
+      "E:\\ee-dcs\\.agents\\skills\\requirements-review"
+    ],
+    "skill:sprint-plan": [
+      "E:\\ee-dcs\\.agents\\skills\\sprint-plan"
+    ],
+    "skill:sprint-start": [
+      "E:\\ee-dcs\\.agents\\skills\\sprint-start"
+    ]
+  }
+}

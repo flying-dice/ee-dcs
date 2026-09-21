@@ -69,10 +69,10 @@ interface TypeSlot {
   size: Size;
 }
 
-function distinctTypes(units: UnitTypes[Side]): TypeSlot[] {
+export function distinctTypes(side: Side, units: UnitTypes[Side]): TypeSlot[] {
   const byType = new Map<string, TypeSlot>();
   for (const role of Object.keys(ROLE_SPEC) as AircraftRole[]) {
-    const type = (units[role] ?? '').trim() || DEFAULT_UNIT_TYPES.blue[role];
+    const type = (units[role] ?? '').trim() || DEFAULT_UNIT_TYPES[side][role];
     if (!type) continue;
     const spec = ROLE_SPEC[role];
     const existing = byType.get(type);
@@ -217,8 +217,8 @@ export function buildClientSlots(
   unitTypes?: UnitTypes,
 ): SlotResult {
   const types: Record<Side, TypeSlot[]> = {
-    blue: distinctTypes((unitTypes ?? DEFAULT_UNIT_TYPES).blue),
-    red: distinctTypes((unitTypes ?? DEFAULT_UNIT_TYPES).red),
+    blue: distinctTypes('blue', (unitTypes ?? DEFAULT_UNIT_TYPES).blue),
+    red: distinctTypes('red', (unitTypes ?? DEFAULT_UNIT_TYPES).red),
   };
   const abByName = new Map(terrain.airbases.map((a) => [a.name, a]));
   const ids: Ids = { group: 1, unit: 1, onboard: 0, names: new Set() };

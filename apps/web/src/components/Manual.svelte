@@ -1,97 +1,273 @@
 <script lang="ts">
-  // ── Manual: full-screen operations manual (old-school game-manual style) ───────
-  // Covers the whole campaign — what it is, how to play, how to win, the mechanics
-  // under the hood — plus the Mission-Editor authoring reference. Content is grounded
-  // in the port's README + modules (EECH-faithful: keysites, reserves, fog/recon,
-  // reaction chains, the ground/heli war, the economy, capture, win condition).
-  import { createEventDispatcher } from 'svelte';
-  import type { KeysiteType } from '../lib/types';
+// ── Manual: full-screen operations manual (old-school game-manual style) ───────
+// Covers the whole campaign — what it is, how to play, how to win, the mechanics
+// under the hood — plus the Mission-Editor authoring reference. Content is grounded
+// in the port's README + modules (EECH-faithful: keysites, reserves, fog/recon,
+// reaction chains, the ground/heli war, the economy, capture, win condition).
+import { createEventDispatcher } from "svelte";
+import type { KeysiteType } from "../lib/types";
 
-  export let typeColors: Record<KeysiteType, string> = {} as Record<KeysiteType, string>;
-  const dispatch = createEventDispatcher<{ close: void }>();
+export let typeColors: Record<KeysiteType, string> = {} as Record<
+	KeysiteType,
+	string
+>;
+const dispatch = createEventDispatcher<{ close: void }>();
 
-  const CONTENTS = [
-    { n: '01', id: 'briefing', title: 'Briefing', sub: 'The dynamic campaign' },
-    { n: '02', id: 'play', title: 'How to play', sub: 'Tasking & your impact' },
-    { n: '03', id: 'missions', title: 'Mission types', sub: 'The tasks that run the war' },
-    { n: '04', id: 'win', title: 'How to win', sub: 'Victory conditions' },
-    { n: '05', id: 'machine', title: 'The war machine', sub: 'Mechanics under the hood' },
-    { n: '06', id: 'editor', title: 'Editing the theatre', sub: 'The Mission Editor reference' },
-    { n: '07', id: 'acronyms', title: 'Acronyms', sub: 'Appendix & glossary' },
-  ];
+const CONTENTS = [
+	{ n: "01", id: "briefing", title: "Briefing", sub: "The dynamic campaign" },
+	{ n: "02", id: "play", title: "How to play", sub: "Tasking & your impact" },
+	{
+		n: "03",
+		id: "missions",
+		title: "Mission types",
+		sub: "The tasks that run the war",
+	},
+	{ n: "04", id: "win", title: "How to win", sub: "Victory conditions" },
+	{
+		n: "05",
+		id: "machine",
+		title: "The war machine",
+		sub: "Mechanics under the hood",
+	},
+	{
+		n: "06",
+		id: "editor",
+		title: "Editing the theatre",
+		sub: "The Mission Editor reference",
+	},
+	{ n: "07", id: "acronyms", title: "Acronyms", sub: "Appendix & glossary" },
+];
 
-  // Mission taxonomy — the EECH manual's task list, matched to what the port actually flies.
-  const MISSIONS = [
-    { m: 'Recon', who: 'Fixed-wing', d: 'A recon overflight reveals a fogged sector so a strike can be planned against it. (Rotary recon is the BDA sortie below.)' },
-    { m: 'CAP / BARCAP', who: 'Fighters', d: 'Combat / barrier air patrol, scrambled to defend a threatened base or screen a strike corridor.' },
-    { m: 'CAS', who: 'Rotary', d: 'Close air support — attack helicopters hitting enemy armour along the front line.' },
-    { m: 'BAI', who: 'Rotary', d: 'Battlefield air interdiction — ground forces and columns behind the immediate front.' },
-    { m: 'Ground / keysite strike', who: 'Fixed-wing', d: 'Degrades an enemy installation’s efficiency — factories, refineries, radars, command posts.' },
-    { m: 'OCA strike', who: 'Fixed-wing', d: 'Offensive counter-air against enemy airfields, to suppress their sortie rate.' },
-    { m: 'SEAD', who: 'Fixed-wing', d: 'Suppression of enemy air defences — hunts the radar / EWR emitters before a strike goes in.' },
-    { m: 'BDA', who: 'Rotary', d: 'Battle damage assessment after a strike; the report generates the next round of tasking.' },
-    { m: 'Troop insertion', who: 'Rotary', d: 'Air-mobile assault that captures a neutralised installation once its defence collapses.' },
-    { m: 'Escort', who: 'Rotary', d: 'Gunship sections shielding the vulnerable troop-insertion flights to and from the objective.' },
-  ];
+// Mission taxonomy — the EECH manual's task list, matched to what the port actually flies.
+const MISSIONS = [
+	{
+		m: "Recon",
+		who: "Fixed-wing",
+		d: "A recon overflight reveals a fogged sector so a strike can be planned against it. (Rotary recon is the BDA sortie below.)",
+	},
+	{
+		m: "CAP / BARCAP",
+		who: "Fighters",
+		d: "Combat / barrier air patrol, scrambled to defend a threatened base or screen a strike corridor.",
+	},
+	{
+		m: "CAS",
+		who: "Rotary",
+		d: "Close air support — attack helicopters hitting enemy armour along the front line.",
+	},
+	{
+		m: "BAI",
+		who: "Rotary",
+		d: "Battlefield air interdiction — ground forces and columns behind the immediate front.",
+	},
+	{
+		m: "Ground / keysite strike",
+		who: "Fixed-wing",
+		d: "Degrades an enemy installation’s efficiency — factories, refineries, radars, command posts.",
+	},
+	{
+		m: "OCA strike",
+		who: "Fixed-wing",
+		d: "Offensive counter-air against enemy airfields, to suppress their sortie rate.",
+	},
+	{
+		m: "SEAD",
+		who: "Fixed-wing",
+		d: "Suppression of enemy air defences — hunts the radar / EWR emitters before a strike goes in.",
+	},
+	{
+		m: "BDA",
+		who: "Rotary",
+		d: "Battle damage assessment after a strike; the report generates the next round of tasking.",
+	},
+	{
+		m: "Troop insertion",
+		who: "Rotary",
+		d: "Air-mobile assault that captures a neutralised installation once its defence collapses.",
+	},
+	{
+		m: "Escort",
+		who: "Rotary",
+		d: "Gunship sections shielding the vulnerable troop-insertion flights to and from the objective.",
+	},
+];
 
-  // Appendix glossary.
-  const ACRONYMS: [string, string][] = [
-    ['Comanche', 'RAH-66 — Enemy Engaged’s Blue-side namesake. In DCS you fly the AH-64D for Blue Force.'],
-    ['Hokum', 'Ka-50 / Ka-52 — the Red-side namesake. In DCS you fly the Mi-24V for Red Force.'],
-    ['Keysite', 'Any strikeable / capturable installation — airbase, FARP, factory, refinery, port, radar, power, command.'],
-    ['FARP', 'Forward Arming & Refuelling Point — a forward helicopter base.'],
-    ['FLOT', 'Forward Line of Own Troops — the front line, where blue and red territory meet.'],
-    ['CAP / BARCAP', 'Combat / Barrier Air Patrol — defensive fighter cover.'],
-    ['CAS / BAI', 'Close Air Support / Battlefield Air Interdiction — hitting ground forces at and behind the front.'],
-    ['OCA', 'Offensive Counter-Air — strikes against enemy airfields.'],
-    ['SEAD', 'Suppression of Enemy Air Defences.'],
-    ['BDA', 'Battle Damage Assessment — the recon that follows a strike.'],
-    ['EWR', 'Early-Warning Radar — the emitter a radar keysite represents.'],
-    ['Fog of war', 'Sectors with stale reconnaissance; lifted by recon or friendly presence.'],
-  ];
+// Appendix glossary.
+const ACRONYMS: [string, string][] = [
+	[
+		"Comanche",
+		"RAH-66 — Enemy Engaged’s Blue-side namesake. In DCS you fly the AH-64D for Blue Force.",
+	],
+	[
+		"Hokum",
+		"Ka-50 / Ka-52 — the Red-side namesake. In DCS you fly the Mi-24V for Red Force.",
+	],
+	[
+		"Keysite",
+		"Any strikeable / capturable installation — airbase, FARP, factory, refinery, port, radar, power, command, supply depot, or fuel depot.",
+	],
+	["FARP", "Forward Arming & Refuelling Point — a forward helicopter base."],
+	[
+		"FLOT",
+		"Forward Line of Own Troops — the front line, where blue and red territory meet.",
+	],
+	["CAP / BARCAP", "Combat / Barrier Air Patrol — defensive fighter cover."],
+	[
+		"CAS / BAI",
+		"Close Air Support / Battlefield Air Interdiction — hitting ground forces at and behind the front.",
+	],
+	["OCA", "Offensive Counter-Air — strikes against enemy airfields."],
+	["SEAD", "Suppression of Enemy Air Defences."],
+	["BDA", "Battle Damage Assessment — the recon that follows a strike."],
+	["EWR", "Early-Warning Radar — the emitter a radar keysite represents."],
+	[
+		"Fog of war",
+		"Sectors with stale reconnaissance; lifted by recon or friendly presence.",
+	],
+];
 
-  // "Under the hood" subsystems.
-  const SYSTEMS = [
-    { t: 'Keysites & territory', b: 'Everything is built from <b>keysites</b> — airfields, FARPs, factories, refineries, ports, radars, power stations, command posts. Each belongs to a side; the <b>front</b> is simply where blue and red territory meet. Take ground and the front moves.' },
-    { t: 'Force strength', b: 'A running tally of the aircraft and vehicles each side still fields, updated live and read out in the debrief. Watch it swing as bases trade sorties and the front moves — it is the pulse of how each force is holding up.' },
-    { t: 'Reserves, recycle — no production', b: 'Each side draws finite <b>per-role reserve pools</b> from its bases. Every spawn <b>consumes</b> from the pool; a jet that lands is <b>recycled</b> back in. There is no free production — hardware returns only by landing safely, so wear a side’s pools down and its sortie rate falls with them.' },
-    { t: 'The economy', b: '<b>Factories produce ammo, refineries &amp; ports produce fuel.</b> Producers accumulate supply as cargo crates, which <b>transport aircraft physically fly</b> to restock forward bases and replace lost hardware. Bomb an enemy factory and that side slowly starves.' },
-    { t: 'Fog of war & the recon fork', b: 'Per-base fog decays over time and is lifted by friendly units nearby. A strike on a <b>fogged</b> target isn’t thrown away — it launches a <b>recon sortie</b> first, and the strike follows once the recon returns. EECH’s self-healing strike-vs-recon loop.' },
-    { t: 'Reaction chains', b: 'Detect an incoming strike/OCA/recon and the threatened base <b>scrambles CAP/BARCAP</b>. A completed strike sends a <b>BDA helicopter</b>; its report branches into follow-on strikes, fighter sweeps, or a troop insertion — the EECH task-completed chain.' },
-    { t: 'The air war', b: 'Fixed-wing is scarce and flies from <code>airbase</code>s only — OCA strikes, keysite strikes, SEAD. The <b>helicopter war is the core</b>: attack-heli sections fly <b>CAS</b> and <b>BAI</b> against the frontline armour (and will take on enemy helicopters), while gunships <b>escort</b> the vulnerable troop-insertion flights.' },
-    { t: 'The ground front & capture', b: 'One armoured company per frontline base <b>advances</b> toward the nearest enemy base and <b>falls back</b> to a friendly base when its own strength drops below half. Strikes grind a base’s efficiency down; below the minimum it turns <b>capturable</b>, and a troop insertion that reaches it <b>seizes</b> it — flipping the front.' },
-    { t: 'Tasking cadence', b: 'The high command runs on a steady rhythm of staggered cycles — recon, strikes, reactions, the ground push and resupply each on their own beat, so the war keeps generating new sorties around the clock. A campaign or skirmish setting sets the overall tempo.' },
-  ];
+// "Under the hood" subsystems.
+const SYSTEMS = [
+	{
+		t: "Keysites & territory",
+		b: "Everything is built from <b>keysites</b> — airfields, FARPs, factories, refineries, ports, radars, power stations, command posts, supply depots, and fuel depots. Each belongs to a side; the <b>front</b> is simply where blue and red territory meet. Take ground and the front moves.",
+	},
+	{
+		t: "Force strength",
+		b: "A running tally of the aircraft and vehicles each side still fields, updated live and read out in the debrief. Watch it swing as bases trade sorties and the front moves — it is the pulse of how each force is holding up.",
+	},
+	{
+		t: "Reserves, recycle — no production",
+		b: "Each side draws finite <b>per-role reserve pools</b> from its bases. Every spawn <b>consumes</b> from the pool; a jet that lands is <b>recycled</b> back in. There is no free production — hardware returns only by landing safely, so wear a side’s pools down and its sortie rate falls with them.",
+	},
+	{
+		t: "The economy",
+		b: "<b>Factories produce ammo, refineries &amp; ports produce fuel.</b> Producers accumulate supply as cargo crates, which <b>transport aircraft physically fly</b> to restock forward bases and replace lost hardware. Bomb an enemy factory and that side slowly starves.",
+	},
+	{
+		t: "Fog of war & the recon fork",
+		b: "Per-base fog decays over time and is lifted by friendly units nearby. A strike on a <b>fogged</b> target isn’t thrown away — it launches a <b>recon sortie</b> first, and the strike follows once the recon returns. EECH’s self-healing strike-vs-recon loop.",
+	},
+	{
+		t: "Reaction chains",
+		b: "Detect an incoming strike/OCA/recon and the threatened base <b>scrambles CAP/BARCAP</b>. A completed strike sends a <b>BDA helicopter</b>; its report branches into follow-on strikes, fighter sweeps, or a troop insertion — the EECH task-completed chain.",
+	},
+	{
+		t: "The air war",
+		b: "Fixed-wing is scarce and flies from <code>airbase</code>s only — OCA strikes, keysite strikes, SEAD. The <b>helicopter war is the core</b>: attack-heli sections fly <b>CAS</b> and <b>BAI</b> against the frontline armour (and will take on enemy helicopters), while gunships <b>escort</b> the vulnerable troop-insertion flights.",
+	},
+	{
+		t: "The ground front & capture",
+		b: "One armoured company per frontline base <b>advances</b> toward the nearest enemy base and <b>falls back</b> to a friendly base when its own strength drops below half. Strikes grind a base’s efficiency down; below the minimum it turns <b>capturable</b>, and a troop insertion that reaches it <b>seizes</b> it — flipping the front.",
+	},
+	{
+		t: "Tasking cadence",
+		b: "The high command runs on a steady rhythm of staggered cycles — recon, strikes, reactions, the ground push and resupply each on their own beat, so the war keeps generating new sorties around the clock. A campaign or skirmish setting sets the overall tempo.",
+	},
+];
 
-  const TYPES: { key: KeysiteType; eech: string; bases: string; role: string }[] = [
-    { key: 'airbase', eech: 'AIRBASE', bases: 'fixed-wing + heli', role: 'Draw over a real DCS airfield. The few fields fixed-wing flies from.' },
-    { key: 'farp', eech: 'FARP', bases: 'helicopters', role: 'Forward heli base spawned at the zone. The rotary war launches from these.' },
-    { key: 'factory', eech: 'FACTORY', bases: '—', role: 'Produces ammo. Destroy it and the enemy can’t rearm or replace losses.' },
-    { key: 'refinery', eech: 'OIL_REFINERY', bases: '—', role: 'Produces fuel. Fuel-storage / tank farms map here too.' },
-    { key: 'port', eech: 'PORT', bases: '—', role: 'Fuel logistics (coastal). Strategic strike target.' },
-    { key: 'radar', eech: 'RADIO_TRANSMITTER', bases: '—', role: 'Real EWR emitter — a SEAD target and detection node.' },
-    { key: 'power', eech: 'POWER_STATION', bases: '—', role: 'Strategic strike target.' },
-    { key: 'command', eech: 'MILITARY_BASE', bases: '—', role: 'Command / military base. Strategic strike + capture target.' },
-  ];
+const TYPES: { key: KeysiteType; eech: string; bases: string; role: string }[] =
+	[
+		{
+			key: "airbase",
+			eech: "AIRBASE",
+			bases: "fixed-wing + heli",
+			role: "Draw over a real DCS airfield. The few fields fixed-wing flies from.",
+		},
+		{
+			key: "farp",
+			eech: "FARP",
+			bases: "helicopters",
+			role: "Forward heli base spawned at the zone. The rotary war launches from these.",
+		},
+		{
+			key: "factory",
+			eech: "FACTORY",
+			bases: "—",
+			role: "Produces ammo. Destroy it and the enemy can’t rearm or replace losses.",
+		},
+		{
+			key: "refinery",
+			eech: "OIL_REFINERY",
+			bases: "—",
+			role: "Produces fuel. Fuel-storage / tank farms map here too.",
+		},
+		{
+			key: "port",
+			eech: "PORT",
+			bases: "—",
+			role: "Fuel logistics (coastal). Strategic strike target.",
+		},
+		{
+			key: "radar",
+			eech: "RADIO_TRANSMITTER",
+			bases: "—",
+			role: "Real EWR emitter — a SEAD target and detection node.",
+		},
+		{
+			key: "power",
+			eech: "POWER_STATION",
+			bases: "—",
+			role: "Strategic strike target.",
+		},
+		{
+			key: "command",
+			eech: "MILITARY_BASE",
+			bases: "—",
+			role: "Command / military base. Strategic strike + capture target.",
+		},
+		{
+			key: "depot",
+			eech: "MILITARY_BASE",
+			bases: "—",
+			role: "Supply and ammunition depot. Strategic strike + capture target.",
+		},
+		{
+			key: "fuel",
+			eech: "OIL_REFINERY",
+			bases: "—",
+			role: "Fuel-storage depot. Strike and reconnaissance target.",
+		},
+	];
 
-  const EDITS = [
-    { verb: 'Add any keysite', how: 'Draw a trigger zone, name it <code>type_label</code> (e.g. <code>factory_kutaisi</code>), and set its colour blue or red. That’s the whole contract.' },
-    { verb: 'Add an airbase', how: 'Draw an <code>airbase_name</code> zone <b>over a real DCS airfield</b> and colour it. An airfield with no <code>airbase</code> zone is left out.' },
-    { verb: 'Add a FARP', how: 'Draw a <code>farp_name</code> zone in friendly territory — a forward heli base is created at the zone centre.' },
-    { verb: 'Move or resize', how: 'Drag the zone or change its radius. The keysite location follows the zone centre.' },
-    { verb: 'Switch side', how: 'Recolour the zone — blue-dominant → BLUE, red-dominant → RED.' },
-    { verb: 'Remove a keysite', how: 'Delete its zone. (Removing an <code>airbase</code> zone drops that airfield.)' },
-  ];
+const EDITS = [
+	{
+		verb: "Add any keysite",
+		how: "Draw a trigger zone, name it <code>type_label</code> (e.g. <code>factory_kutaisi</code>), and set its colour blue or red. That’s the whole contract.",
+	},
+	{
+		verb: "Add an airbase",
+		how: "Draw an <code>airbase_name</code> zone <b>over a real DCS airfield</b> and colour it. An airfield with no <code>airbase</code> zone is left out.",
+	},
+	{
+		verb: "Add a FARP",
+		how: "Draw a <code>farp_name</code> zone in friendly territory — a forward heli base is created at the zone centre.",
+	},
+	{
+		verb: "Move or resize",
+		how: "Drag the zone or change its radius. The keysite location follows the zone centre.",
+	},
+	{
+		verb: "Switch side",
+		how: "Recolour the zone — blue-dominant → BLUE, red-dominant → RED.",
+	},
+	{
+		verb: "Remove a keysite",
+		how: "Delete its zone. (Removing an <code>airbase</code> zone drops that airfield.)",
+	},
+];
 
-  function onKey(e: KeyboardEvent): void {
-    if (e.key === 'Escape') dispatch('close');
-  }
-  function onBackdrop(e: MouseEvent): void {
-    if (e.target === e.currentTarget) dispatch('close');
-  }
-  function goto(id: string): void {
-    document.getElementById('ch-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+function onKey(e: KeyboardEvent): void {
+	if (e.key === "Escape") dispatch("close");
+}
+function onBackdrop(e: MouseEvent): void {
+	if (e.target === e.currentTarget) dispatch("close");
+}
+function goto(id: string): void {
+	document
+		.getElementById("ch-" + id)
+		?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 </script>
 
 <svelte:window on:keydown={onKey} />
@@ -156,10 +332,26 @@
         </div>
         <div>
           <h3>Build one (this tool)</h3>
-          <p>Use this generator to turn any real-world region into a theatre: draw the area, set the frontline and each side’s main airbase, and it places real airfields and infrastructure as keysites — then ships a playable <code>.miz</code> with the campaign baked in. Open it in DCS and the war starts. See <button class="ilink" on:click={() => goto('editor')}>Editing the theatre</button> to customise it.</p>
+          <p>Use this generator to turn any real-world region into a theatre: assign administrative regions to Blue or Red as rear or close territory, choose each side’s main airbase, and it places real airfields and infrastructure as keysites. FARPs and radar use close territory; producers and command sites use rear territory. It then ships a playable <code>.miz</code> with the campaign baked in. Open it in DCS and the war starts. See <button class="ilink" on:click={() => goto('editor')}>Editing the theatre</button> to customise it.</p>
         </div>
       </div>
       <p class="note">Tip: the side that owns more producers and forward FARPs sustains a higher sortie tempo. If your side is losing, the highest-leverage targets are the enemy’s <b>factories and refineries</b> — starve the economy and the front follows.</p>
+
+      <h3 class="sh">F10 operational picture</h3>
+      <p>
+        The mission ships its own coalition-safe operational picture on the DCS <b>F10 map</b>.
+        It marks friendly bases and installations, objectives, the FLOT, queued and active air
+        tasks, and the main ground formations. Enemy detail appears only as your side gains
+        intelligence; unknown strength, supply, and movements stay hidden. The picture refreshes
+        as the campaign changes, so completed missions and lost contacts clear from the map.
+      </p>
+      <p>
+        Open the radio menu and choose <b>Campaign</b> for coalition reports: <b>Situation</b>,
+        <b>Air Tasking</b>, <b>Logistics &amp; Regen</b>, <b>Intelligence</b>, and
+        <b>Campaign Statistics</b>. These reports use the same live campaign state as the map and
+        are visible only to your coalition. Individual vehicle and building pins are deliberately
+        omitted from the default view to keep the map readable.
+      </p>
     </section>
 
     <!-- 03 mission types -->

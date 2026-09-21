@@ -2,15 +2,11 @@
 // The pipeline is:  bbox + terrain  →  OSM features  →  classified keysites  →
 //   balanced keysites (sides + counts)  →  projected zones  →  .miz file.
 
-/** The EECH keysite variants (colour = side, name first word = type). These are the
- *  eight LAND keysite sub-types EECH defines (en_sbtyp.h:406-414), in the port's
- *  authoring vocabulary (installations.lua:64-71):
+/** The campaign keysite variants (colour = side, name first word = type), including
+ *  the EECH land sub-types and the port's distinct logistics installations:
  *    airbase→AIRBASE  farp→FARP  factory→FACTORY  refinery→OIL_REFINERY  port→PORT
  *    radar→RADIO_TRANSMITTER  power→POWER_STATION  command→MILITARY_BASE
- *  EECH's 9th type, ANCHORAGE, is naval and unused by the land campaign. The port's
- *  `depot` (≡ MILITARY_BASE = command) and `fuel` (≡ OIL_REFINERY = refinery) are
- *  ALIASES of these rows — not distinct keysites — so the generator does not emit them
- *  (the port also auto-attaches depot/fuel/radar per base). */
+ *  EECH's ANCHORAGE type is naval and unused by the land campaign. */
 export type KeysiteType =
   | 'airbase'
   | 'farp'
@@ -19,10 +15,12 @@ export type KeysiteType =
   | 'port'
   | 'radar'
   | 'power'
-  | 'command';
+  | 'command'
+  | 'depot'
+  | 'fuel';
 
 export const KEYSITE_TYPES: KeysiteType[] = [
-  'airbase', 'farp', 'factory', 'refinery', 'port', 'radar', 'power', 'command',
+  'airbase', 'farp', 'factory', 'refinery', 'port', 'radar', 'power', 'command', 'depot', 'fuel',
 ];
 
 export type Side = 'blue' | 'red';
@@ -147,7 +145,7 @@ export interface Terrain {
   /** Playable extent as a lon/lat ring — the real, warped quad reported by DCS.
    *  Selection containment is tested against this polygon (not just the bbox). */
   boundsPolygon: LatLon[];
-  /** Axis-aligned bbox of the polygon — for Overpass queries + quick pre-checks. */
+  /** Axis-aligned bbox of the polygon — for compiled OSM filtering + quick pre-checks. */
   bounds: BBox;
   /** proj4 def string extracted from DCS (reproduces convertLatLonToMeters exactly). */
   projString: string;
@@ -159,12 +157,73 @@ export interface Terrain {
   view: { center: LatLon; zoom: number };
 }
 
-/** A raw feature pulled from OSM/Overpass, already reduced to what we need. */
+/** A feature loaded from the theatre's pre-exported OSM GeoJSON. */
 export interface OsmFeature {
   id: string;                // "node/123", "way/456", "relation/789"
   latlon: LatLon;            // representative point (centroid for ways/relations)
   tags: Record<string, string>;
   name?: string;
+}
+
+/** A named real-world feature that can anchor an operational objective. */
+export interface ObjectiveFeature {
+  id: string;
+  kind: 'settlement' | 'key-terrain';
+  name: string;
+  latlon: LatLon;
+  tags: Record<string, string>;
+}
+
+/** One authored rear-to-forward operation, terminating at a real objective. */
+export interface OperationAxis {
+  id: string;
+  start: LatLon;
+  objective: ObjectiveFeature;
+}
+
+/** Polygon geometry shared by administrative areas. */
+export interface AreaGeometry {
+  geometry: {
+    type: 'Polygon' | 'MultiPolygon';
+    coordinates: number[][][] | number[][][][];
+  };
+}
+
+/** A simplified OSM administrative relation retained for theatre-level planning. */
+export interface AdminBoundary {
+  id: string;
+  name: string;
+  /** OSM's source admin level; level 6 is the current district-level default. */
+  adminLevel: number;
+  geometry: AreaGeometry['geometry'];
+  tags: Record<string, string>;
+}
+
+/** User-authored operational function for an administrative territory. */
+export type TerritoryRole = 'rear' | 'close';
+
+export interface TerritoryAssignment {
+  side: Side;
+  role: TerritoryRole;
+}
+
+/** A selected administrative area carrying its explicit scenario assignment. */
+export interface AssignedTerritory {
+  id: string;
+  name: string;
+  owner: Side;
+  role: TerritoryRole;
+  boundary: AdminBoundary;
+  bounds: BBox;
+  areaKm2: number;
+  representativePoint: LatLon;
+}
+
+/** Immutable territorial input to keysite generation. */
+export interface TerritoryPlan {
+  territories: AssignedTerritory[];
+  bounds: BBox | null;
+  ownerCounts: Record<Side, number>;
 }
 
 /** An OSM feature classified into a candidate keysite (pre-balancing, pre-side). */
@@ -188,6 +247,8 @@ export interface Keysite {
   label: string;             // unique within its type
   radiusM: number;           // zone radius in metres
   name: string;              // human display name (airbase/site name)
+  /** False for generated sites whose position can be adjusted by the designer. */
+  locationTied: boolean;
   /** Whether this is a side's designated main airbase (force-included). */
   isMain?: boolean;
   /** Source detail for the map tooltip (OSM tags, or {category} for a DCS airbase). */
@@ -242,4 +303,6 @@ export interface DesignInput {
   /** Designated main airbase per side (the nearest airbase candidate is used). */
   mainBlue?: LatLon;
   mainRed?: LatLon;
+  /** Unordered named settlements/key terrain that establish the operational frontage. */
+  objectives: ObjectiveFeature[];
 }

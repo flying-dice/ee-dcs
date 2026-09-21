@@ -1,10 +1,10 @@
 # Node / web tooling
 node_modules/
 apps/web/dist/
-# Generated from packages/dist/ by apps/web/scripts/sync-campaign.mjs
+# Generated from root dist/ by apps/web/scripts/sync-campaign.mjs
 apps/web/src/generated/
 
-# TSTL intermediate build output (final bundle lives in packages/dist/)
+# TSTL intermediate build output (final bundle lives in root dist/)
 packages/ee-mission/dist/
 
 # Test / tooling artifacts
@@ -15,3 +15,5 @@ scratchpad/
 *.log
 .DS_Store
 Thumbs.db
+apps/web/.osm-cache/
+apps/web/.osm-work/

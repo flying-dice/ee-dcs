@@ -23,6 +23,8 @@ import { latLonToDcs } from './projection';
 import type { UnitTypes } from './units';
 import { unitConfigLua } from './units';
 import { buildClientSlots } from './slots';
+import { controlMeasureGeoJsonFeatures } from './control_measures';
+import type { ScenarioControlMeasures } from './control_measures';
 
 // The built EECH campaign bundle (~1 MB) is mirrored from the repo-root build output by
 // scripts/sync-campaign.mjs (npm pre{dev,build,check} hooks) — rebuild the campaign and
@@ -39,18 +41,16 @@ async function loadCampaignBundle(): Promise<string> {
 const CAMPAIGN_LUA_NAME = 'ee-dcs.lua';
 const INIT_SCRIPT_RESKEY = 'ResKey_initScript_10';
 
-// Coalition/country roster. The campaign spawns everything at runtime via
-// coalition.addGroup for country.id.USA (2, blue) / RUSSIA (0, red) — but DCS rejects
-// addGroup for a country that isn't declared in the mission, failing every spawn with
-// "Can't update mission database". So we declare the full roster exactly like a working
-// ME-saved mission: CJTF Blue/Red hold the blue/red coalitions and every other country
-// (including USA and RUSSIA) sits in neutrals. coalition.<side>.country stays empty (no
-// pre-placed units — the campaign spawns them). Without this, nothing ever spawns.
+// Coalition/country roster. Both runtime spawns and baked Client slots use the
+// Combined Joint Task Force countries. DCS derives physical coalition from the
+// country roster, so these IDs must be declared on their matching mission side.
 const CJTF_BLUE_ID = 80;
 const CJTF_RED_ID = 81;
 const NEUTRAL_COUNTRY_IDS: number[] = [];
 for (let id = 0; id <= 92; id++) {
-  if (id !== 14 && id !== CJTF_BLUE_ID && id !== CJTF_RED_ID) NEUTRAL_COUNTRY_IDS.push(id);
+  if (id !== 14 && id !== CJTF_BLUE_ID && id !== CJTF_RED_ID) {
+    NEUTRAL_COUNTRY_IDS.push(id);
+  }
 }
 
 // ── Lua table serializer (DCS Mission Editor style) ─────────────────────────────
@@ -203,14 +203,17 @@ function zoneToLua(z: DcsZone): LuaObject {
 
 // ── Minimal, valid mission skeleton ──────────────────────────────────────────────
 
-function emptyCoalitionSide(name: string, country?: LuaObject | null): LuaObject {
+function coalitionCountry(id: number, name: string): LuaObject {
+  return { id, name };
+}
+
+function emptyCoalitionSide(name: string, countries: LuaObject[] = []): LuaObject {
   return {
     bullseye: { y: 0, x: 0 },
     nav_points: {},
     name,
     // No campaign units are pre-placed (spawned at runtime), but baked human-flyable
-    // Client slots live here as country[1] when present.
-    country: country ? [country] : {},
+    country: countries,
   };
 }
 
@@ -309,7 +312,11 @@ export function buildMissionTable(
     theatre: terrain.id,
     triggers: { zones: zoneTables },
     map: { centerY, zoom: 100, centerX },
-    coalitions: { blue: [CJTF_BLUE_ID], neutrals: NEUTRAL_COUNTRY_IDS, red: [CJTF_RED_ID] },
+    coalitions: {
+      blue: [CJTF_BLUE_ID],
+      neutrals: NEUTRAL_COUNTRY_IDS,
+      red: [CJTF_RED_ID],
+    },
     descriptionText: '',
     pictureFileNameR: {},
     descriptionBlueTask: '',
@@ -317,9 +324,13 @@ export function buildMissionTable(
     descriptionRedTask: '',
     pictureFileNameB: {},
     coalition: {
-      blue: emptyCoalitionSide('blue', slots?.blue),
+      blue: emptyCoalitionSide('blue', [
+        slots?.blue ?? coalitionCountry(CJTF_BLUE_ID, 'CJTF Blue'),
+      ]),
       neutrals: emptyCoalitionSide('neutrals'),
-      red: emptyCoalitionSide('red', slots?.red),
+      red: emptyCoalitionSide('red', [
+        slots?.red ?? coalitionCountry(CJTF_RED_ID, 'CJTF Red'),
+      ]),
     },
     sortie: '',
     version: 23,
@@ -559,6 +570,8 @@ export interface BuildMizOptions {
   /** Bake 4 human-flyable Client slots per aircraft type at each compatible airbase
    *  (needs terrain parking data — see slots.ts). Default true. */
   bakeSlots?: boolean;
+  /** Operational framework retained in the archive for campaign coordination tooling. */
+  controlMeasures?: ScenarioControlMeasures;
 }
 
 /** Deterministic .miz filename for a terrain, e.g. `eech-caucasus.miz`. */
@@ -600,6 +613,16 @@ export async function buildMiz(
   zip.file('theatre', terrain.id);
   zip.file('l10n/DEFAULT/dictionary', DICTIONARY_LUA);
   zip.file('l10n/DEFAULT/mapResource', bakeCampaign ? MAP_RESOURCE_WITH_INIT : MAP_RESOURCE_EMPTY);
+  if (opts.controlMeasures) {
+    zip.file(
+      'control-measures.geojson',
+      JSON.stringify({
+        type: 'FeatureCollection',
+        properties: { terrain: terrain.id },
+        features: controlMeasureGeoJsonFeatures(opts.controlMeasures),
+      }, null, 2),
+    );
+  }
   if (bakeCampaign) {
     // Prepend any aircraft-type overrides so config.lua reads _G.DMT_CONFIG at load,
     // then the campaign bundle itself.
