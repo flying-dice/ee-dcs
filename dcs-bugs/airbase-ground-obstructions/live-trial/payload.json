@@ -1,0 +1,16 @@
+{
+  "note": "Scoped live-trial payload; NOT the production bundle",
+  "source": "E:\\ee-dcs\\dist\\ee-dcs.lua",
+  "source_sha256": "a8a063dfe85b379b81c07f2e17869069cec0b89590eb439da1cb54fa7e89027d",
+  "payload": "cleanup-trial.lua",
+  "payload_sha256": "63b7f614400a0eb2418090d61d7c9a6ac13feb84a7a428026a27cb74ec3c78a2",
+  "adaptation": "single compiled assignment '_DMT_GEN = (_DMT_GEN or 0) + 1' replaced by 'assert(_DMT_GEN == ____trialGeneration, \"generation changed during trial load\")'",
+  "modules": [
+    "lualib_bundle",
+    "sides",
+    "campaign_state",
+    "airbase_clearance",
+    "airbase_cleanup"
+  ],
+  "bytes": 62345
+}

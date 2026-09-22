@@ -27,11 +27,15 @@ constants and formulas are lifted from that source.
   fields (mirrors EECH `force_percentage`). Losing bases and aircraft drives strength down;
   it is what the win condition watches.
 - **Finite reserves + RTB recycle.** Each side has finite per-role hardware pools seeded
-  from its owned bases. Every spawn *consumes* from the pool; there is no production. When
-  an AI aircraft returns to base it is *recycled* back into the reserve. Run the pools dry
-  and that side can no longer mount those sorties.
-- **Escalation phases.** The campaign moves through early / mid / late phases that scale
-  wave size and cadence, mirroring EECH's escalation.
+  from its owned bases. Every spawn *consumes* from the pool; when an AI aircraft returns to
+  base it is *recycled* back into the reserve (a port reconstruction of `replace_into_force_info`
+  — shipped EECH has zero callers of it, see the `supply.lua` header). Surviving production
+  keysites (factory / refinery / port) accumulate crates that restock consumer keysites and
+  convert surplus into reserve replacement, so killing an enemy factory genuinely starves it.
+  Run the pools dry and that side can no longer mount those sorties.
+- **State-driven campaign tempo.** EECH does not use elapsed-time early / mid / late phases.
+  Task generation, escorts and reactions respond to objectives, threat, fog of war, available
+  reserves, keysite condition and the configured campaign mode.
 - **Fog of war + recon fork.** Per-base, per-side fog decays continuously and is lifted by
   friendly units in proximity. Strike tasks are FOW-gated: a fogged target does not get
   dropped — it spawns a **recon sortie** aimed at the sector so the fog actually lifts and
@@ -139,7 +143,7 @@ from the map's airfields (densest cluster) so it still runs on a bare map.
 
 The scenario **warzone data** — unit type names, countries, weapon payloads, reserve counts,
 installation statics, keysite air-defence rings, and a few documented designer theatre knobs — lives in one place:
-`Scripts/ee-dcs/config.lua`. It mirrors EECH's own split between compiled engine
+`packages/ee-mission/src/config.ts`. It mirrors EECH's own split between compiled engine
 constants (in the C source) and the data files it loads from disk (FORMCOMP.DAT, the WUT tables):
 `config.lua` is the **data layer**.
 
@@ -220,12 +224,14 @@ Before anything spawns, the campaign validates your config and **logs to `dcs.lo
 Anything traceable to the **EECH C source** — cadences, strike/repair/capture formulas,
 `MINIMUM_EFFICIENCY`, escort thresholds, fog-of-war gates, damage fractions, spawn kinematics
 (altitudes/speeds/fuel) — is **deliberately hardcoded** in its module with a `file:line` citation, per
-the project's prime directive (faithful port, not game design). `config.lua` is the warzone-data layer
+the project's prime directive (faithful port, not game design). `config.ts` is the warzone-data layer
 only; it does not expose engine constants.
 
 ## Modules
 
-22 Lua modules in `Scripts/ee-dcs/`, each headed with the EECH source it ports.
+34 TypeScript modules in `packages/ee-mission/src/`, each headed with the EECH source it ports.
+The table below names each module without its extension; the Lua baseline they were ported from
+(`Scripts/ee-dcs/*.lua`) was deleted on 2026-09-21 and is retained in git history.
 
 | Module | EECH source | Role |
 |---|---|---|
@@ -244,13 +250,13 @@ only; it does not expose engine constants.
 | `supply_flight.lua` | `fc_msgs.c` (response_to_force_low_on_supplies), `taskgen.c` (create_supply_task), `ts_dbase.c` (TASK_SUPPLY) | PHYSICAL resupply transports — flies a crate producer→consumer; shot down = crate lost |
 | `imap.lua` | `imaps.c` | 4 influence-map layers (base-distance / air-def / surface-def / importance) |
 | `fog_of_war.lua` | `sector.c`, `highlevl.h` | per-base per-side FOW decay + recon grant |
-| `frontline.lua` | `ai_fline.c`, `highlevl.c` | frontline detection (base-distance adjacency proxy) |
+| `frontline.lua` | `ai_fline.c`, `highlevl.c` | frontline detection (Gabriel-graph base adjacency — parameter-free proxy for EECH's 3x3 sector neighbourhood) |
 | `recon.lua` | `highlevl.c` (create_recon_task), `reaction.c` | recon overflight — the FOW self-heal fork |
 | `installations.lua` | `keysite.h` + keysite_database | non-airbase keysites (depot / fuel / radar) as ground-strike-only targets |
-| `heli_war.lua` | `highlevl.c`, `suitable.c`, `entity/helicopter/*` | rotary-wing war: anti-armour, hunter-killer, escort |
+| `heli_war.lua` | `highlevl.c`, `suitable.c`, `entity/helicopter/*` | shared attack-heli builders (`build_attack_heli`, `spawn_escort`); the rotary frontline fight is CAS/BAI — the invented anti-armour/hunter-killer schedulers were deleted in Cluster H |
 | `map_overlay.lua` | `briefing.c` / `campaign_map.c`, `ai_fline.c` | F-10 campaign map (ownership, task arrows, columns, frontline) |
 | `payloads.lua` | `he_funcs.c`, `fw_funcs.c` | verified DCS pylon / CLSID loadouts |
-| `main.lua` | (port shim) | trigger entry point + legacy supply/CAP/patrol layer + game_loop handoff |
+| `main.lua` | (port shim) | trigger entry point: spawn_queue install → reset.nuke → config validate → single game_loop.start → queue drain |
 | `game_loop.lua` | `highlevl.c` (start_high_level_ai), `update.c`, `ss_updt.c`, `fc_updt.c` | orchestrator: registers all timers with period + offset |
 
 ## Architecture
@@ -260,8 +266,10 @@ state table. Every module reads and writes `S.*` directly — there is no messag
 of `S` sit a handful of registries: the **task registry** (`active_tasks`, the backbone of
 the reaction system), the **force-reserve pools** (finite, consume/recycle), the **FOW
 store**, the **ground-groups** frontline registry, the **keysite** airbase map (`base_*`),
-and the **installations** registry (`keysites[...]`, non-airbase targets). The influence-map
-layers are the one piece of state held outside `S`, module-local in `imap.lua`.
+and the **installations** registry (`keysites[...]`, non-airbase targets). The influence-map layers now
+live on `S` too (`S.imap.raw` / `S.imap.nrm`, moved there in Wave 1 so they are part of the
+persistence surface); `imap.lua` holds module-local *references* into `S.imap`, and consumers
+still read them only through `imap.get()`.
 
 **Dependency layering.** `campaign_state` and `payloads` have no dependencies. Most systems
 depend only on `campaign_state` (plus `keysite` / `supply` for spawners). `game_loop`
@@ -283,7 +291,7 @@ each with a period and an initial offset that staggers load — a direct mirror 
 | troop patrol | 300 s | OCA strike / sweep, BAI | 1800 / 1200 s |
 
 The full 23-row schedule with per-side BLUE/RED offsets is defined in
-`Scripts/ee-dcs/game_loop.lua` (`start()`), mirroring EECH `start_high_level_ai()`.
+`packages/ee-mission/src/game_loop.ts` (`start()`), mirroring EECH `start_high_level_ai()`.
 
 **Re-injection is safe.** `campaign_state` bumps a global generation counter each load;
 every scheduled closure self-cancels when the generation changes, so the bundle can be
@@ -292,11 +300,12 @@ state does not survive a server restart.
 
 ## Running it
 
-**Requirements:** DCS World 2.9+ and the **DCS Studio** app running (it hosts the MCP server
-that provides the build, check, and inject tooling — there is no standalone CLI).
+**Requirements:** Node.js and the installed workspace dependencies for building; DCS World 2.9+
+and DCS Studio for static analysis and live injection.
 
-1. **Build.** Run `lua-cargo build` (via DCS Studio) → produces `dist/ee-dcs.lua`,
-   the single bundled file. Must build with 0 warnings; run `check` for static analysis.
+1. **Build.** Run `npm run build --workspace ee-mission` → produces root `dist/ee-dcs.lua`
+   from the TypeScript sources in `packages/ee-mission/src`. Keep the build free of errors and
+   warnings, then run DCS Studio `check` against the generated bundle before injection.
 2. **Load it,** either:
    - **Inject** into a running mission — `dcs_eval` runs
      `net.dostring_in('server', 'dofile("<path>/dist/ee-dcs.lua")')`; or
@@ -305,6 +314,14 @@ that provides the build, check, and inject tooling — there is no standalone CL
 3. **Watch it.** All logging is `env.info()` → `Saved Games/DCS/Logs/dcs.log`. Phase
    transitions, captures, and the final debrief are also broadcast in-game via
    `trigger.action.outText`, and the F-10 map shows ownership, frontline, and task arrows.
+
+Run `npm test --workspace ee-mission` for differential checks against the retained Lua sources
+and simulated five-minute and 35-minute campaign runs. These require Lua 5.1 on PATH, or
+`LUA_BIN` pointing to its executable. They cover engine calling conventions, timers, spawning,
+persistence and reinjection, including player protection. They do not replace DCS Studio
+analysis or live mission validation. The Lua originals in `Scripts/ee-dcs` were deleted on 2026-09-21 once the port was validated against them; they remain in git history. Regression cover is now the golden fixtures in `packages/ee-mission/test/golden/`, recorded from that baseline. This note previously said they would remain until
+the TypeScript bundle passes live validation; rebuilding them with lua-cargo overwrites the
+same deployment bundle with the old source tree.
 
 ## Multiplayer status
 

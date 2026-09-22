@@ -1,0 +1,16 @@
+{
+  "name": "ee-mission",
+  "scripts": {
+    "build": "tstl",
+    "dev": "tstl --watch",
+    "test": "npm run build && node test/run-tests.cjs"
+  },
+  "dependencies": {
+    "lua-types": "^2.13.1"
+  },
+  "devDependencies": {
+    "@flying-dice/tslua-dcs-mission-types": "^0.33.0",
+    "typescript": "^6.0.2",
+    "typescript-to-lua": "^1.37.1"
+  }
+}

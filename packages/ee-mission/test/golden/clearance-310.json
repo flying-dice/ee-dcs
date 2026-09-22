@@ -1,0 +1,5710 @@
+{
+	"mode": "typescript",
+	"duration": 310,
+	"ticks": 423,
+	"groups": 142,
+	"statics": 19,
+	"group_names": [
+		"AD-Blue Front-2025",
+		"AD-Blue Rear-2041",
+		"AD-Blue Rear-2042",
+		"AD-Blue Rear-2043",
+		"AD-FARP-Blue -2028",
+		"AD-FARP-Blue -2048",
+		"AD-FARP-Red F-2038",
+		"AD-Inst-depot-B-2075",
+		"AD-Inst-depot-B-2087",
+		"AD-Inst-depot-F-2069",
+		"AD-Inst-depot-F-2108",
+		"AD-Inst-depot-F-2120",
+		"AD-Inst-depot-R-2060",
+		"AD-Inst-depot-R-2102",
+		"AD-Inst-factory-2051",
+		"AD-Inst-factory-2111",
+		"AD-Inst-fuel-Bl-2084",
+		"AD-Inst-fuel-Bl-2099",
+		"AD-Inst-fuel-FA-2090",
+		"AD-Inst-fuel-FA-2096",
+		"AD-Inst-fuel-FA-2105",
+		"AD-Inst-fuel-Re-2054",
+		"AD-Inst-fuel-Re-2063",
+		"AD-Inst-radar-B-2057",
+		"AD-Inst-radar-B-2078",
+		"AD-Inst-radar-F-2066",
+		"AD-Inst-radar-F-2081",
+		"AD-Inst-radar-F-2114",
+		"AD-Inst-radar-R-2117",
+		"AD-Inst-radar-R-2123",
+		"AD-Inst-refiner-2072",
+		"AD-Inst-refiner-2093",
+		"AD-Red Front-2022",
+		"AD-Red Rear-2031",
+		"AD-Red Rear-2032",
+		"AD-Red Rear-2033",
+		"Arty-1-2014",
+		"Arty-1-2017",
+		"Arty-1-2020",
+		"Arty-2-2002",
+		"Arty-2-2005",
+		"Arty-2-2008",
+		"Arty-2-2011",
+		"FP-Blue Front-2026",
+		"FP-Blue Front-2027",
+		"FP-Blue Rear-2044",
+		"FP-Blue Rear-2045",
+		"FP-Blue Rear-2046",
+		"FP-Blue Rear-2047",
+		"FP-FARP-Blue -2029",
+		"FP-FARP-Blue -2030",
+		"FP-FARP-Blue -2049",
+		"FP-FARP-Blue -2050",
+		"FP-FARP-Red F-2039",
+		"FP-FARP-Red F-2040",
+		"FP-Inst-depot-B-2076",
+		"FP-Inst-depot-B-2077",
+		"FP-Inst-depot-B-2088",
+		"FP-Inst-depot-B-2089",
+		"FP-Inst-depot-F-2070",
+		"FP-Inst-depot-F-2071",
+		"FP-Inst-depot-F-2109",
+		"FP-Inst-depot-F-2110",
+		"FP-Inst-depot-F-2121",
+		"FP-Inst-depot-F-2122",
+		"FP-Inst-depot-R-2061",
+		"FP-Inst-depot-R-2062",
+		"FP-Inst-depot-R-2103",
+		"FP-Inst-depot-R-2104",
+		"FP-Inst-factory-2052",
+		"FP-Inst-factory-2053",
+		"FP-Inst-factory-2112",
+		"FP-Inst-factory-2113",
+		"FP-Inst-fuel-Bl-2085",
+		"FP-Inst-fuel-Bl-2086",
+		"FP-Inst-fuel-Bl-2100",
+		"FP-Inst-fuel-Bl-2101",
+		"FP-Inst-fuel-FA-2091",
+		"FP-Inst-fuel-FA-2092",
+		"FP-Inst-fuel-FA-2097",
+		"FP-Inst-fuel-FA-2098",
+		"FP-Inst-fuel-FA-2106",
+		"FP-Inst-fuel-FA-2107",
+		"FP-Inst-fuel-Re-2055",
+		"FP-Inst-fuel-Re-2056",
+		"FP-Inst-fuel-Re-2064",
+		"FP-Inst-fuel-Re-2065",
+		"FP-Inst-radar-B-2058",
+		"FP-Inst-radar-B-2059",
+		"FP-Inst-radar-B-2079",
+		"FP-Inst-radar-B-2080",
+		"FP-Inst-radar-F-2067",
+		"FP-Inst-radar-F-2068",
+		"FP-Inst-radar-F-2082",
+		"FP-Inst-radar-F-2083",
+		"FP-Inst-radar-F-2115",
+		"FP-Inst-radar-F-2116",
+		"FP-Inst-radar-R-2118",
+		"FP-Inst-radar-R-2119",
+		"FP-Inst-radar-R-2124",
+		"FP-Inst-radar-R-2125",
+		"FP-Inst-refiner-2073",
+		"FP-Inst-refiner-2074",
+		"FP-Inst-refiner-2094",
+		"FP-Inst-refiner-2095",
+		"FP-Red Front-2023",
+		"FP-Red Front-2024",
+		"FP-Red Rear-2034",
+		"FP-Red Rear-2035",
+		"FP-Red Rear-2036",
+		"FP-Red Rear-2037",
+		"GndCol-1-2013",
+		"GndCol-1-2016",
+		"GndCol-1-2019",
+		"GndCol-2-2001",
+		"GndCol-2-2004",
+		"GndCol-2-2007",
+		"GndCol-2-2010",
+		"GndSec-1-2015",
+		"GndSec-1-2018",
+		"GndSec-1-2021",
+		"GndSec-2-2003",
+		"GndSec-2-2006",
+		"GndSec-2-2009",
+		"GndSec-2-2012",
+		"Heli-CAS-1-2135",
+		"Inst-radar-Blue Front",
+		"Inst-radar-Blue Rear",
+		"Inst-radar-FARP-Blue Front",
+		"Inst-radar-FARP-Blue Rear",
+		"Inst-radar-FARP-Red Front",
+		"Inst-radar-Red Front",
+		"Inst-radar-Red Rear",
+		"Patrol-Blue Front-2126",
+		"Patrol-Blue Rear-2128",
+		"Patrol-FARP-Blue -2127",
+		"Patrol-FARP-Blue -2129",
+		"Patrol-FARP-Red F-2133",
+		"Patrol-Red Front-2131",
+		"Patrol-Red Rear-2132",
+		"Recon-1-2134",
+		"Recon-2-2130"
+	],
+	"static_names": [
+		"FARP-Blue Front",
+		"FARP-Blue Rear",
+		"FARP-Red Front",
+		"Inst-depot-Blue Front",
+		"Inst-depot-FARP-Blue Front",
+		"Inst-depot-FARP-Blue Rear",
+		"Inst-depot-FARP-Red Front",
+		"Inst-depot-Red Front",
+		"Inst-depot-Red Rear",
+		"Inst-factory-Blue Rear",
+		"Inst-fuel-Blue Front",
+		"Inst-fuel-Blue Rear",
+		"Inst-fuel-FARP-Blue Front",
+		"Inst-fuel-FARP-Blue Rear",
+		"Inst-fuel-FARP-Red Front",
+		"Inst-fuel-Red Front",
+		"Inst-fuel-Red Rear",
+		"Inst-refinery-Blue Rear",
+		"Inst-refinery-Red Rear"
+	],
+	"orders": [
+		{
+			"call": "addStatic",
+			"category": "Heliports",
+			"country": 81,
+			"group": "FARP-Red Front",
+			"heading": 0,
+			"shape_name": "FARPS",
+			"type": "FARP",
+			"x": -11496.769,
+			"y": -7797.881
+		},
+		{
+			"call": "addStatic",
+			"category": "Heliports",
+			"country": 80,
+			"group": "FARP-Blue Front",
+			"heading": 0,
+			"shape_name": "FARPS",
+			"type": "FARP",
+			"x": 6676.513,
+			"y": -1836.764
+		},
+		{
+			"call": "addStatic",
+			"category": "Heliports",
+			"country": 80,
+			"group": "FARP-Blue Rear",
+			"heading": 0,
+			"shape_name": "FARPS",
+			"type": "FARP",
+			"x": -70493.849,
+			"y": 8008.336
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "GndCol-2-2001",
+			"route": [
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -27474.661,
+					"y": 11763.254
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -19485.715,
+					"y": 1982.686
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -11496.769,
+					"y": -7797.881
+				}
+			],
+			"units": [
+				{
+					"heading": -0.886,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -27474.661,
+					"y": 11763.254
+				},
+				{
+					"heading": -0.886,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -27444.661,
+					"y": 11778.254
+				},
+				{
+					"heading": -0.886,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": -27414.661,
+					"y": 11793.254
+				},
+				{
+					"heading": -0.886,
+					"skill": "Average",
+					"type": "M1097 Avenger",
+					"x": -27384.661,
+					"y": 11808.254
+				},
+				{
+					"heading": -0.886,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": -27354.661,
+					"y": 11823.254
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Arty-2-2002",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -32206.468,
+					"y": 12134.573
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-109",
+					"x": -32206.468,
+					"y": 12134.573
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-109",
+					"x": -32171.468,
+					"y": 12134.573
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M 818",
+					"x": -32136.468,
+					"y": 12134.573
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M1043 HMMWV Armament",
+					"x": -32101.468,
+					"y": 12134.573
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "GndSec-2-2003",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -32997.841,
+					"y": 12717.946
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -32997.841,
+					"y": 12717.946
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -32967.841,
+					"y": 12732.946
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": -32937.841,
+					"y": 12747.946
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M 818",
+					"x": -32907.841,
+					"y": 12762.946
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -32877.841,
+					"y": 12777.946
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M978 HEMTT Tanker",
+					"x": -32847.841,
+					"y": 12792.946
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M1043 HMMWV Armament",
+					"x": -32817.841,
+					"y": 12807.946
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-113",
+					"x": -32787.841,
+					"y": 12822.946
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -32757.841,
+					"y": 12837.946
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "GndCol-2-2004",
+			"route": [
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": 6229.513,
+					"y": -1408.764
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -2633.628,
+					"y": -4603.323
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -11496.769,
+					"y": -7797.881
+				}
+			],
+			"units": [
+				{
+					"heading": -2.796,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": 6229.513,
+					"y": -1408.764
+				},
+				{
+					"heading": -2.796,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": 6259.513,
+					"y": -1393.764
+				},
+				{
+					"heading": -2.796,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": 6289.513,
+					"y": -1378.764
+				},
+				{
+					"heading": -2.796,
+					"skill": "Average",
+					"type": "M1097 Avenger",
+					"x": 6319.513,
+					"y": -1363.764
+				},
+				{
+					"heading": -2.796,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": 6349.513,
+					"y": -1348.764
+				},
+				{
+					"heading": -2.796,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": 6379.513,
+					"y": -1333.764
+				},
+				{
+					"heading": -2.796,
+					"skill": "Average",
+					"type": "M-113",
+					"x": 6409.513,
+					"y": -1318.764
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Arty-2-2005",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 8023.795,
+					"y": -1213.249
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "MLRS",
+					"x": 8023.795,
+					"y": -1213.249
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "MLRS",
+					"x": 8058.795,
+					"y": -1213.249
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M 818",
+					"x": 8093.795,
+					"y": -1213.249
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M1043 HMMWV Armament",
+					"x": 8128.795,
+					"y": -1213.249
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "GndSec-2-2006",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 10618.266,
+					"y": -636.058
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": 10618.266,
+					"y": -636.058
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": 10648.266,
+					"y": -621.058
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": 10678.266,
+					"y": -606.058
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M 818",
+					"x": 10708.266,
+					"y": -591.058
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": 10738.266,
+					"y": -576.058
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M978 HEMTT Tanker",
+					"x": 10768.266,
+					"y": -561.058
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "GndCol-2-2007",
+			"route": [
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -89377.059,
+					"y": -3016.346
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -50436.914,
+					"y": -5407.114
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -11496.769,
+					"y": -7797.881
+				}
+			],
+			"units": [
+				{
+					"heading": -0.061,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -89377.059,
+					"y": -3016.346
+				},
+				{
+					"heading": -0.061,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -89347.059,
+					"y": -3001.346
+				},
+				{
+					"heading": -0.061,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": -89317.059,
+					"y": -2986.346
+				},
+				{
+					"heading": -0.061,
+					"skill": "Average",
+					"type": "M1097 Avenger",
+					"x": -89287.059,
+					"y": -2971.346
+				},
+				{
+					"heading": -0.061,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": -89257.059,
+					"y": -2956.346
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Arty-2-2008",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -93056.226,
+					"y": 290.485
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-109",
+					"x": -93056.226,
+					"y": 290.485
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-109",
+					"x": -93021.226,
+					"y": 290.485
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M 818",
+					"x": -92986.226,
+					"y": 290.485
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M1043 HMMWV Armament",
+					"x": -92951.226,
+					"y": 290.485
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "GndSec-2-2009",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -94048.411,
+					"y": 539.382
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -94048.411,
+					"y": 539.382
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -94018.411,
+					"y": 554.382
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": -93988.411,
+					"y": 569.382
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M 818",
+					"x": -93958.411,
+					"y": 584.382
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -93928.411,
+					"y": 599.382
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M978 HEMTT Tanker",
+					"x": -93898.411,
+					"y": 614.382
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M1043 HMMWV Armament",
+					"x": -93868.411,
+					"y": 629.382
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "GndCol-2-2010",
+			"route": [
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -70016.849,
+					"y": 7490.336
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -40756.809,
+					"y": -153.773
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -11496.769,
+					"y": -7797.881
+				}
+			],
+			"units": [
+				{
+					"heading": -0.256,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -70016.849,
+					"y": 7490.336
+				},
+				{
+					"heading": -0.256,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -69986.849,
+					"y": 7505.336
+				},
+				{
+					"heading": -0.256,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": -69956.849,
+					"y": 7520.336
+				},
+				{
+					"heading": -0.256,
+					"skill": "Average",
+					"type": "M1097 Avenger",
+					"x": -69926.849,
+					"y": 7535.336
+				},
+				{
+					"heading": -0.256,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": -69896.849,
+					"y": 7550.336
+				},
+				{
+					"heading": -0.256,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -69866.849,
+					"y": 7565.336
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Arty-2-2011",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -71966.75,
+					"y": 8208.519
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "MLRS",
+					"x": -71966.75,
+					"y": 8208.519
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "MLRS",
+					"x": -71931.75,
+					"y": 8208.519
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M 818",
+					"x": -71896.75,
+					"y": 8208.519
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M1043 HMMWV Armament",
+					"x": -71861.75,
+					"y": 8208.519
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "GndSec-2-2012",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -74200.585,
+					"y": 9069.49
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -74200.585,
+					"y": 9069.49
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -74170.585,
+					"y": 9084.49
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M2A2 Bradley",
+					"x": -74140.585,
+					"y": 9099.49
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M 818",
+					"x": -74110.585,
+					"y": 9114.49
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-1 Abrams",
+					"x": -74080.585,
+					"y": 9129.49
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M978 HEMTT Tanker",
+					"x": -74050.585,
+					"y": 9144.49
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M1043 HMMWV Armament",
+					"x": -74020.585,
+					"y": 9159.49
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M-113",
+					"x": -73990.585,
+					"y": 9174.49
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "GndCol-1-2013",
+			"route": [
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": 26906.285,
+					"y": -817.879
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": 16791.399,
+					"y": -1327.321
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": 6676.513,
+					"y": -1836.764
+				}
+			],
+			"units": [
+				{
+					"heading": -3.091,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 26906.285,
+					"y": -817.879
+				},
+				{
+					"heading": -3.091,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 26936.285,
+					"y": -802.879
+				},
+				{
+					"heading": -3.091,
+					"skill": "Average",
+					"type": "BMP-2",
+					"x": 26966.285,
+					"y": -787.879
+				},
+				{
+					"heading": -3.091,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 26996.285,
+					"y": -772.879
+				},
+				{
+					"heading": -3.091,
+					"skill": "Average",
+					"type": "BMP-3",
+					"x": 27026.285,
+					"y": -757.879
+				},
+				{
+					"heading": -3.091,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 27056.285,
+					"y": -742.879
+				},
+				{
+					"heading": -3.091,
+					"skill": "Average",
+					"type": "BTR-80",
+					"x": 27086.285,
+					"y": -727.879
+				},
+				{
+					"heading": -3.091,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 27116.285,
+					"y": -712.879
+				},
+				{
+					"heading": -3.091,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 27146.285,
+					"y": -697.879
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "Arty-1-2014",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 33056.101,
+					"y": 291.796
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SAU Msta",
+					"x": 33056.101,
+					"y": 291.796
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SAU Msta",
+					"x": 33091.101,
+					"y": 291.796
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Ural-375",
+					"x": 33126.101,
+					"y": 291.796
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "UAZ-469",
+					"x": 33161.101,
+					"y": 291.796
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "GndSec-1-2015",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 34042.654,
+					"y": 435.034
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 34042.654,
+					"y": 435.034
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 34072.654,
+					"y": 450.034
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "BMP-3",
+					"x": 34102.654,
+					"y": 465.034
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Ural-375",
+					"x": 34132.654,
+					"y": 480.034
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 34162.654,
+					"y": 495.034
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "ATZ-10",
+					"x": 34192.654,
+					"y": 510.034
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "GndCol-1-2016",
+			"route": [
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": 92172.394,
+					"y": 7691.406
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": 49424.453,
+					"y": 2927.321
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": 6676.513,
+					"y": -1836.764
+				}
+			],
+			"units": [
+				{
+					"heading": -3.031,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 92172.394,
+					"y": 7691.406
+				},
+				{
+					"heading": -3.031,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 92202.394,
+					"y": 7706.406
+				},
+				{
+					"heading": -3.031,
+					"skill": "Average",
+					"type": "BMP-2",
+					"x": 92232.394,
+					"y": 7721.406
+				},
+				{
+					"heading": -3.031,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 92262.394,
+					"y": 7736.406
+				},
+				{
+					"heading": -3.031,
+					"skill": "Average",
+					"type": "BMP-3",
+					"x": 92292.394,
+					"y": 7751.406
+				},
+				{
+					"heading": -3.031,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 92322.394,
+					"y": 7766.406
+				},
+				{
+					"heading": -3.031,
+					"skill": "Average",
+					"type": "BTR-80",
+					"x": 92352.394,
+					"y": 7781.406
+				},
+				{
+					"heading": -3.031,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 92382.394,
+					"y": 7796.406
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "Arty-1-2017",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 93068.619,
+					"y": 10092.088
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Grad-URAL",
+					"x": 93068.619,
+					"y": 10092.088
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Grad-URAL",
+					"x": 93103.619,
+					"y": 10092.088
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Ural-375",
+					"x": 93138.619,
+					"y": 10092.088
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "UAZ-469",
+					"x": 93173.619,
+					"y": 10092.088
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "GndSec-1-2018",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 93959.24,
+					"y": 10569.584
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 93959.24,
+					"y": 10569.584
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 93989.24,
+					"y": 10584.584
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "BMP-3",
+					"x": 94019.24,
+					"y": 10599.584
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Ural-375",
+					"x": 94049.24,
+					"y": 10614.584
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": 94079.24,
+					"y": 10629.584
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "GndCol-1-2019",
+			"route": [
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -12067.769,
+					"y": -7586.881
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": -2695.628,
+					"y": -4711.823
+				},
+				{
+					"action": "On Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 8,
+					"type": "Turning Point",
+					"x": 6676.513,
+					"y": -1836.764
+				}
+			],
+			"units": [
+				{
+					"heading": 0.298,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": -12067.769,
+					"y": -7586.881
+				},
+				{
+					"heading": 0.298,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": -12037.769,
+					"y": -7571.881
+				},
+				{
+					"heading": 0.298,
+					"skill": "Average",
+					"type": "BMP-2",
+					"x": -12007.769,
+					"y": -7556.881
+				},
+				{
+					"heading": 0.298,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": -11977.769,
+					"y": -7541.881
+				},
+				{
+					"heading": 0.298,
+					"skill": "Average",
+					"type": "BMP-3",
+					"x": -11947.769,
+					"y": -7526.881
+				},
+				{
+					"heading": 0.298,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": -11917.769,
+					"y": -7511.881
+				},
+				{
+					"heading": 0.298,
+					"skill": "Average",
+					"type": "BTR-80",
+					"x": -11887.769,
+					"y": -7496.881
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "Arty-1-2020",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -13035.051,
+					"y": -8309.396
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SAU Msta",
+					"x": -13035.051,
+					"y": -8309.396
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SAU Msta",
+					"x": -13000.051,
+					"y": -8309.396
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Ural-375",
+					"x": -12965.051,
+					"y": -8309.396
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "UAZ-469",
+					"x": -12930.051,
+					"y": -8309.396
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "GndSec-1-2021",
+			"route": [
+				{
+					"action": "Off Road",
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -15374.522,
+					"y": -9219.587
+				}
+			],
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": -15374.522,
+					"y": -9219.587
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": -15344.522,
+					"y": -9204.587
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "BMP-3",
+					"x": -15314.522,
+					"y": -9189.587
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Ural-375",
+					"x": -15284.522,
+					"y": -9174.587
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "T-80UD",
+					"x": -15254.522,
+					"y": -9159.587
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "ATZ-10",
+					"x": -15224.522,
+					"y": -9144.587
+				}
+			]
+		},
+		{
+			"call": "addStatic",
+			"category": "Cargos",
+			"country": 81,
+			"group": "Inst-depot-Red Front",
+			"heading": 0,
+			"shape_name": "M92_Container_10ft",
+			"type": "M92_10Ft_Container",
+			"x": 33740.123,
+			"y": 251.228
+		},
+		{
+			"call": "addStatic",
+			"category": "Fortifications",
+			"country": 81,
+			"group": "Inst-fuel-Red Front",
+			"heading": 0,
+			"shape_name": "GSM Rus",
+			"type": "FARP Fuel Depot",
+			"x": 32915.123,
+			"y": 727.542
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "Inst-radar-Red Front",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 32915.123,
+					"y": -225.086
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "55G6 EWR",
+					"x": 32915.123,
+					"y": -225.086
+				}
+			]
+		},
+		{
+			"call": "addStatic",
+			"category": "Cargos",
+			"country": 80,
+			"group": "Inst-depot-Blue Front",
+			"heading": 0,
+			"shape_name": "M92_Container_10ft",
+			"type": "M92_10Ft_Container",
+			"x": -31756.273,
+			"y": 12218.357
+		},
+		{
+			"call": "addStatic",
+			"category": "Fortifications",
+			"country": 80,
+			"group": "Inst-fuel-Blue Front",
+			"heading": 0,
+			"shape_name": "GSM Rus",
+			"type": "FARP Fuel Depot",
+			"x": -32581.273,
+			"y": 12694.671
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Inst-radar-Blue Front",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -32581.273,
+					"y": 11742.043
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Hawk sr",
+					"x": -32581.273,
+					"y": 11742.043
+				}
+			]
+		},
+		{
+			"call": "addStatic",
+			"category": "Cargos",
+			"country": 80,
+			"group": "Inst-depot-FARP-Blue Front",
+			"heading": 0,
+			"shape_name": "M92_Container_10ft",
+			"type": "M92_10Ft_Container",
+			"x": 10267.115,
+			"y": -839.4
+		},
+		{
+			"call": "addStatic",
+			"category": "Fortifications",
+			"country": 80,
+			"group": "Inst-fuel-FARP-Blue Front",
+			"heading": 0,
+			"shape_name": "GSM Rus",
+			"type": "FARP Fuel Depot",
+			"x": 9442.115,
+			"y": -363.086
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Inst-radar-FARP-Blue Front",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 9442.115,
+					"y": -1315.714
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Hawk sr",
+					"x": 9442.115,
+					"y": -1315.714
+				}
+			]
+		},
+		{
+			"call": "addStatic",
+			"category": "Cargos",
+			"country": 81,
+			"group": "Inst-depot-Red Rear",
+			"heading": 0,
+			"shape_name": "M92_Container_10ft",
+			"type": "M92_10Ft_Container",
+			"x": 93718.192,
+			"y": 10450.067
+		},
+		{
+			"call": "addStatic",
+			"category": "Fortifications",
+			"country": 81,
+			"group": "Inst-fuel-Red Rear",
+			"heading": 0,
+			"shape_name": "GSM Rus",
+			"type": "FARP Fuel Depot",
+			"x": 93338.151,
+			"y": 10973.148
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "Inst-radar-Red Rear",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 92723.233,
+					"y": 10773.349
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "55G6 EWR",
+					"x": 92723.233,
+					"y": 10773.349
+				}
+			]
+		},
+		{
+			"call": "addStatic",
+			"category": "Fortifications",
+			"country": 81,
+			"group": "Inst-refinery-Red Rear",
+			"heading": 0,
+			"shape_name": "GSM Rus",
+			"type": "FARP Fuel Depot",
+			"x": 93338.151,
+			"y": 9926.986
+		},
+		{
+			"call": "addStatic",
+			"category": "Cargos",
+			"country": 81,
+			"group": "Inst-depot-FARP-Red Front",
+			"heading": 0,
+			"shape_name": "M92_Container_10ft",
+			"type": "M92_10Ft_Container",
+			"x": -13987.371,
+			"y": -8795.246
+		},
+		{
+			"call": "addStatic",
+			"category": "Fortifications",
+			"country": 81,
+			"group": "Inst-fuel-FARP-Red Front",
+			"heading": 0,
+			"shape_name": "GSM Rus",
+			"type": "FARP Fuel Depot",
+			"x": -14812.371,
+			"y": -8318.932
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "Inst-radar-FARP-Red Front",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -14812.371,
+					"y": -9271.56
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "55G6 EWR",
+					"x": -14812.371,
+					"y": -9271.56
+				}
+			]
+		},
+		{
+			"call": "addStatic",
+			"category": "Fortifications",
+			"country": 80,
+			"group": "Inst-fuel-Blue Rear",
+			"heading": 0,
+			"shape_name": "GSM Rus",
+			"type": "FARP Fuel Depot",
+			"x": -93014.37,
+			"y": 839.387
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Inst-radar-Blue Rear",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -93629.288,
+					"y": 639.588
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Hawk sr",
+					"x": -93629.288,
+					"y": 639.588
+				}
+			]
+		},
+		{
+			"call": "addStatic",
+			"category": "Fortifications",
+			"country": 80,
+			"group": "Inst-factory-Blue Rear",
+			"heading": 0,
+			"shape_name": "kotelnaya_a",
+			"type": "Boiler-house A",
+			"x": -93629.288,
+			"y": -6.976
+		},
+		{
+			"call": "addStatic",
+			"category": "Fortifications",
+			"country": 80,
+			"group": "Inst-refinery-Blue Rear",
+			"heading": 0,
+			"shape_name": "GSM Rus",
+			"type": "FARP Fuel Depot",
+			"x": -93014.37,
+			"y": -206.775
+		},
+		{
+			"call": "setTask",
+			"group": "Arty-2-2011",
+			"task": {
+				"id": "Mission",
+				"param_keys": [
+					"route"
+				],
+				"route": [
+					{
+						"action": "On Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -49237.946,
+						"y": 1157.766
+					},
+					{
+						"action": "Off Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -26509.143,
+						"y": -5892.987
+					}
+				]
+			}
+		},
+		{
+			"call": "setTask",
+			"group": "Arty-2-2008",
+			"task": {
+				"id": "Mission",
+				"param_keys": [
+					"route"
+				],
+				"route": [
+					{
+						"action": "On Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -59641.199,
+						"y": -2018.425
+					},
+					{
+						"action": "Off Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -26226.172,
+						"y": -4327.335
+					}
+				]
+			}
+		},
+		{
+			"call": "setTask",
+			"group": "Arty-2-2005",
+			"task": {
+				"id": "Mission",
+				"param_keys": [
+					"route"
+				],
+				"route": [
+					{
+						"action": "On Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": 4730.85,
+						"y": -213.299
+					},
+					{
+						"action": "Off Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": 1437.906,
+						"y": 786.651
+					}
+				]
+			}
+		},
+		{
+			"call": "setTask",
+			"group": "Arty-2-2002",
+			"task": {
+				"id": "Mission",
+				"param_keys": [
+					"route"
+				],
+				"route": [
+					{
+						"action": "On Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -27255.352,
+						"y": 7369.275
+					},
+					{
+						"action": "Off Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -22304.236,
+						"y": 2603.977
+					}
+				]
+			}
+		},
+		{
+			"call": "setTask",
+			"group": "GndSec-2-2009",
+			"task": {
+				"id": "Mission",
+				"param_keys": [
+					"route"
+				],
+				"route": [
+					{
+						"action": "On Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -97147.988,
+						"y": -728.735
+					},
+					{
+						"action": "Off Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -100247.564,
+						"y": -1996.853
+					}
+				]
+			}
+		},
+		{
+			"call": "setTask",
+			"group": "GndSec-2-2012",
+			"task": {
+				"id": "Mission",
+				"param_keys": [
+					"route"
+				],
+				"route": [
+					{
+						"action": "On Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -77176.887,
+						"y": 9832.856
+					},
+					{
+						"action": "Off Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -80153.189,
+						"y": 10596.221
+					}
+				]
+			}
+		},
+		{
+			"call": "setTask",
+			"group": "GndSec-2-2006",
+			"task": {
+				"id": "Mission",
+				"param_keys": [
+					"route"
+				],
+				"route": [
+					{
+						"action": "On Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": 13632.088,
+						"y": -390.67
+					},
+					{
+						"action": "Off Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": 16645.91,
+						"y": -145.282
+					}
+				]
+			}
+		},
+		{
+			"call": "setTask",
+			"group": "GndSec-2-2003",
+			"task": {
+				"id": "Mission",
+				"param_keys": [
+					"route"
+				],
+				"route": [
+					{
+						"action": "On Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -35622.399,
+						"y": 14284.623
+					},
+					{
+						"action": "Off Road",
+						"alt": 20,
+						"alt_type": "BARO",
+						"speed": 8,
+						"type": "Turning Point",
+						"x": -38246.957,
+						"y": 15851.299
+					}
+				]
+			}
+		},
+		{
+			"call": "addStatic",
+			"category": "Cargos",
+			"country": 80,
+			"group": "Inst-depot-FARP-Blue Rear",
+			"heading": 0,
+			"shape_name": "M92_Container_10ft",
+			"type": "M92_10Ft_Container",
+			"x": -73034.837,
+			"y": 8836.459
+		},
+		{
+			"call": "addStatic",
+			"category": "Fortifications",
+			"country": 80,
+			"group": "Inst-fuel-FARP-Blue Rear",
+			"heading": 0,
+			"shape_name": "GSM Rus",
+			"type": "FARP Fuel Depot",
+			"x": -73859.837,
+			"y": 9312.773
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Inst-radar-FARP-Blue Rear",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -73859.837,
+					"y": 8360.145
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Hawk sr",
+					"x": -73859.837,
+					"y": 8360.145
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Red Front-2022",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 32990,
+					"y": 0
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 32990,
+					"y": 0
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 33020,
+					"y": 0
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Red Front-2023",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 32908.646,
+					"y": -353.097
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 32908.646,
+					"y": -353.097
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Red Front-2024",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 29170.298,
+					"y": -2810.07
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 29170.298,
+					"y": -2810.07
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Blue Front-2025",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -27010,
+					"y": 10000
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -27010,
+					"y": 10000
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -26980,
+					"y": 10000
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Blue Front-2026",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -28742.786,
+					"y": 7353.434
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -28742.786,
+					"y": 7353.434
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Blue Front-2027",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -32608.1,
+					"y": 8664.817
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -32608.1,
+					"y": 8664.817
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-FARP-Blue -2028",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 8176.513,
+					"y": -1836.764
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": 8176.513,
+					"y": -1836.764
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": 8206.513,
+					"y": -1836.764
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-FARP-Blue -2029",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 7188.183,
+					"y": -941.895
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": 7188.183,
+					"y": -941.895
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-FARP-Blue -2030",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 6651.923,
+					"y": -1840.4
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": 6651.923,
+					"y": -1840.4
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Red Rear-2031",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 92990,
+					"y": 10000
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 92990,
+					"y": 10000
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 93020,
+					"y": 10000
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Red Rear-2032",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 88505,
+					"y": 12589.416
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 88505,
+					"y": 12589.416
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 88535,
+					"y": 12589.416
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Red Rear-2033",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 88505,
+					"y": 7410.584
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 88505,
+					"y": 7410.584
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 88535,
+					"y": 7410.584
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Red Rear-2034",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 87140.644,
+					"y": 10639.519
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 87140.644,
+					"y": 10639.519
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Red Rear-2035",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 92880.599,
+					"y": 9464.229
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 92880.599,
+					"y": 9464.229
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Red Rear-2036",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 88210.976,
+					"y": 12320.408
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 88210.976,
+					"y": 12320.408
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Red Rear-2037",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 89920.089,
+					"y": 12928.91
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 89920.089,
+					"y": 12928.91
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-FARP-Red F-2038",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -9996.769,
+					"y": -7797.881
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": -9996.769,
+					"y": -7797.881
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": -9966.769,
+					"y": -7797.881
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-FARP-Red F-2039",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -10527.858,
+					"y": -7950.356
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": -10527.858,
+					"y": -7950.356
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-FARP-Red F-2040",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -12222.118,
+					"y": -8221.109
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": -12222.118,
+					"y": -8221.109
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Blue Rear-2041",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -87010,
+					"y": 0
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -87010,
+					"y": 0
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -86980,
+					"y": 0
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Blue Rear-2042",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -91495,
+					"y": 2589.416
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -91495,
+					"y": 2589.416
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -91465,
+					"y": 2589.416
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Blue Rear-2043",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -91495,
+					"y": -2589.416
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -91495,
+					"y": -2589.416
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -91465,
+					"y": -2589.416
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Blue Rear-2044",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -88476.445,
+					"y": -2502.735
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -88476.445,
+					"y": -2502.735
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Blue Rear-2045",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -88291.887,
+					"y": 2380.599
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -88291.887,
+					"y": 2380.599
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Blue Rear-2046",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -87204.288,
+					"y": 876.866
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -87204.288,
+					"y": 876.866
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Blue Rear-2047",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -92547.808,
+					"y": 1446.92
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -92547.808,
+					"y": 1446.92
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-FARP-Blue -2048",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -68993.849,
+					"y": 8008.336
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -68993.849,
+					"y": 8008.336
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -68963.849,
+					"y": 8008.336
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-FARP-Blue -2049",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -69870.673,
+					"y": 9264.418
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -69870.673,
+					"y": 9264.418
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-FARP-Blue -2050",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -69743.074,
+					"y": 8729.506
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -69743.074,
+					"y": 8729.506
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-factory-2051",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 94223.233,
+					"y": 10126.785
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 94223.233,
+					"y": 10126.785
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 94253.233,
+					"y": 10126.785
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-factory-2052",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 87143.696,
+					"y": 9198.792
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 87143.696,
+					"y": 9198.792
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-factory-2053",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 93317.38,
+					"y": 10209.456
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 93317.38,
+					"y": 10209.456
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-fuel-Re-2054",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 34415.123,
+					"y": 727.542
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 34415.123,
+					"y": 727.542
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 34445.123,
+					"y": 727.542
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-fuel-Re-2055",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 33362.375,
+					"y": 1110.974
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 33362.375,
+					"y": 1110.974
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-fuel-Re-2056",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 34045.314,
+					"y": 122.584
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 34045.314,
+					"y": 122.584
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-radar-B-2057",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -26477.163,
+					"y": 11742.043
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -26477.163,
+					"y": 11742.043
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -26447.163,
+					"y": 11742.043
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-radar-B-2058",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -31707.152,
+					"y": 12532.201
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -31707.152,
+					"y": 12532.201
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-radar-B-2059",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -26537.604,
+					"y": 11669.029
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -26537.604,
+					"y": 11669.029
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-depot-R-2060",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 95218.192,
+					"y": 10450.067
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 95218.192,
+					"y": 10450.067
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 95248.192,
+					"y": 10450.067
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-depot-R-2061",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 94752.549,
+					"y": 11173.244
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 94752.549,
+					"y": 11173.244
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-depot-R-2062",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 94811.302,
+					"y": 10231.101
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 94811.302,
+					"y": 10231.101
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-fuel-Re-2063",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 94838.151,
+					"y": 10973.148
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 94838.151,
+					"y": 10973.148
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 94868.151,
+					"y": 10973.148
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-fuel-Re-2064",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 93282.902,
+					"y": 9635.334
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 93282.902,
+					"y": 9635.334
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-fuel-Re-2065",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 93835.816,
+					"y": 11488.12
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 93835.816,
+					"y": 11488.12
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-radar-F-2066",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 10942.115,
+					"y": -1315.714
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": 10942.115,
+					"y": -1315.714
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": 10972.115,
+					"y": -1315.714
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-radar-F-2067",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 8904.583,
+					"y": -1156.413
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": 8904.583,
+					"y": -1156.413
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-radar-F-2068",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 9566.259,
+					"y": -1890.802
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": 9566.259,
+					"y": -1890.802
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-depot-F-2069",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 11767.115,
+					"y": -839.4
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": 11767.115,
+					"y": -839.4
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": 11797.115,
+					"y": -839.4
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-depot-F-2070",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 9659.249,
+					"y": -898.859
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": 9659.249,
+					"y": -898.859
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-depot-F-2071",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 11049.161,
+					"y": -38.802
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": 11049.161,
+					"y": -38.802
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-refiner-2072",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 94838.151,
+					"y": 9926.986
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 94838.151,
+					"y": 9926.986
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 94868.151,
+					"y": 9926.986
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-refiner-2073",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 93891.835,
+					"y": 10879.165
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 93891.835,
+					"y": 10879.165
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-refiner-2074",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 94659.725,
+					"y": 10449.642
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 94659.725,
+					"y": 10449.642
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-depot-B-2075",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -86991.078,
+					"y": 316.306
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -86991.078,
+					"y": 316.306
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -86961.078,
+					"y": 316.306
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-depot-B-2076",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -93092.096,
+					"y": 1175.37
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -93092.096,
+					"y": 1175.37
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-depot-B-2077",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -87117.299,
+					"y": 1173.668
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -87117.299,
+					"y": 1173.668
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-radar-B-2078",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -86954.074,
+					"y": 639.588
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -86954.074,
+					"y": 639.588
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -86924.074,
+					"y": 639.588
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-radar-B-2079",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -93657.034,
+					"y": 769.505
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -93657.034,
+					"y": 769.505
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-radar-B-2080",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -94158.002,
+					"y": 1356.389
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -94158.002,
+					"y": 1356.389
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-radar-F-2081",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -72359.837,
+					"y": 8360.145
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -72359.837,
+					"y": 8360.145
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -72329.837,
+					"y": 8360.145
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-radar-F-2082",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -73156.68,
+					"y": 8763.317
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -73156.68,
+					"y": 8763.317
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-radar-F-2083",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -73506.171,
+					"y": 8973.483
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -73506.171,
+					"y": 8973.483
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-fuel-Bl-2084",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -86895.313,
+					"y": 839.387
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -86895.313,
+					"y": 839.387
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -86865.313,
+					"y": 839.387
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-fuel-Bl-2085",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -87149.829,
+					"y": -683.548
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -87149.829,
+					"y": -683.548
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-fuel-Bl-2086",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -93715.041,
+					"y": 1419.062
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -93715.041,
+					"y": 1419.062
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-depot-B-2087",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -25936.856,
+					"y": 12218.357
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -25936.856,
+					"y": 12218.357
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -25906.856,
+					"y": 12218.357
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-depot-B-2088",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -31848.892,
+					"y": 12196.069
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -31848.892,
+					"y": 12196.069
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-depot-B-2089",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -28502.683,
+					"y": 7465.985
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -28502.683,
+					"y": 7465.985
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-fuel-FA-2090",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -13312.371,
+					"y": -8318.932
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": -13312.371,
+					"y": -8318.932
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": -13282.371,
+					"y": -8318.932
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-fuel-FA-2091",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -14769.12,
+					"y": -8282.665
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": -14769.12,
+					"y": -8282.665
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-fuel-FA-2092",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -14037.138,
+					"y": -8177.05
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": -14037.138,
+					"y": -8177.05
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-refiner-2093",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -87002.916,
+					"y": -206.775
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -87002.916,
+					"y": -206.775
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -86972.916,
+					"y": -206.775
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-refiner-2094",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -92800.336,
+					"y": -1451.934
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -92800.336,
+					"y": -1451.934
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-refiner-2095",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -93161.755,
+					"y": -257.37
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -93161.755,
+					"y": -257.37
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-fuel-FA-2096",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -72359.837,
+					"y": 9312.773
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -72359.837,
+					"y": 9312.773
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -72329.837,
+					"y": 9312.773
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-fuel-FA-2097",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -74182.559,
+					"y": 8243.959
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -74182.559,
+					"y": 8243.959
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-fuel-FA-2098",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -73622.35,
+					"y": 8667.361
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -73622.35,
+					"y": 8667.361
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-fuel-Bl-2099",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -31081.273,
+					"y": 12694.671
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -31081.273,
+					"y": 12694.671
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -31051.273,
+					"y": 12694.671
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-fuel-Bl-2100",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -33063.824,
+					"y": 13873.494
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -33063.824,
+					"y": 13873.494
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-fuel-Bl-2101",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -28381.116,
+					"y": 7524.13
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -28381.116,
+					"y": 7524.13
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-depot-R-2102",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 35240.123,
+					"y": 251.228
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 35240.123,
+					"y": 251.228
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 35270.123,
+					"y": 251.228
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-depot-R-2103",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 33673.799,
+					"y": 146.55
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 33673.799,
+					"y": 146.55
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-depot-R-2104",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 34230.603,
+					"y": 828.533
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 34230.603,
+					"y": 828.533
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-fuel-FA-2105",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 10942.115,
+					"y": -363.086
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": 10942.115,
+					"y": -363.086
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": 10972.115,
+					"y": -363.086
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-fuel-FA-2106",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 9553.034,
+					"y": -701.717
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": 9553.034,
+					"y": -701.717
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-fuel-FA-2107",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 10126.008,
+					"y": -758.704
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": 10126.008,
+					"y": -758.704
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-depot-F-2108",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -71534.837,
+					"y": 8836.459
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -71534.837,
+					"y": 8836.459
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -71504.837,
+					"y": 8836.459
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-depot-F-2109",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -73326.112,
+					"y": 9050.809
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -73326.112,
+					"y": 9050.809
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-depot-F-2110",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -72728.117,
+					"y": 9181.082
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -72728.117,
+					"y": 9181.082
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "AD-Inst-factory-2111",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -87009.993,
+					"y": -6.976
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "M48 Chaparral",
+					"x": -87009.993,
+					"y": -6.976
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Vulcan",
+					"x": -86979.993,
+					"y": -6.976
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-factory-2112",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -93986.577,
+					"y": 263.42
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier M4",
+					"x": -93986.577,
+					"y": 263.42
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "FP-Inst-factory-2113",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -94508.675,
+					"y": -574.672
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Soldier stinger",
+					"x": -94508.675,
+					"y": -574.672
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-radar-F-2114",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -13312.371,
+					"y": -9271.56
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": -13312.371,
+					"y": -9271.56
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": -13282.371,
+					"y": -9271.56
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-radar-F-2115",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -14705.124,
+					"y": -9277.179
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": -14705.124,
+					"y": -9277.179
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-radar-F-2116",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -13756.038,
+					"y": -8996.813
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": -13756.038,
+					"y": -8996.813
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-radar-R-2117",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 34415.123,
+					"y": -225.086
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 34415.123,
+					"y": -225.086
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 34445.123,
+					"y": -225.086
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-radar-R-2118",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 32782.616,
+					"y": -1029.641
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 32782.616,
+					"y": -1029.641
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-radar-R-2119",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 33143.722,
+					"y": 736.032
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 33143.722,
+					"y": 736.032
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-depot-F-2120",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -12487.371,
+					"y": -8795.246
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": -12487.371,
+					"y": -8795.246
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": -12457.371,
+					"y": -8795.246
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-depot-F-2121",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -12943.863,
+					"y": -9144.653
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": -12943.863,
+					"y": -9144.653
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-depot-F-2122",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": -14309.478,
+					"y": -7880.838
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": -14309.478,
+					"y": -7880.838
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "AD-Inst-radar-R-2123",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 94223.233,
+					"y": 10773.349
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "2S6 Tunguska",
+					"x": 94223.233,
+					"y": 10773.349
+				},
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Strela-10M3",
+					"x": 94253.233,
+					"y": 10773.349
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-radar-R-2124",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 87061.38,
+					"y": 11837.087
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "Infantry AK",
+					"x": 87061.38,
+					"y": 11837.087
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "FP-Inst-radar-R-2125",
+			"route": [
+				{
+					"action": "Off Road",
+					"speed": 0,
+					"type": "Turning Point",
+					"x": 94051.741,
+					"y": 10395.797
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Average",
+					"type": "SA-18 Igla manpad",
+					"x": 94051.741,
+					"y": 10395.797
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Patrol-Blue Front-2126",
+			"route": [
+				{
+					"action": "Turning Point",
+					"speed": 1.4,
+					"type": "Turning Point",
+					"x": -32024.032,
+					"y": 7853.888
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -32024.032,
+					"y": 7853.888
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -32019.032,
+					"y": 7853.888
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -32014.032,
+					"y": 7853.888
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -32009.032,
+					"y": 7853.888
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Patrol-FARP-Blue -2127",
+			"route": [
+				{
+					"action": "Turning Point",
+					"speed": 1.4,
+					"type": "Turning Point",
+					"x": 6644.634,
+					"y": -1493.731
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": 6644.634,
+					"y": -1493.731
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": 6649.634,
+					"y": -1493.731
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": 6654.634,
+					"y": -1493.731
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": 6659.634,
+					"y": -1493.731
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Patrol-Blue Rear-2128",
+			"route": [
+				{
+					"action": "Turning Point",
+					"speed": 1.4,
+					"type": "Turning Point",
+					"x": -92230.951,
+					"y": -1930.119
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -92230.951,
+					"y": -1930.119
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -92225.951,
+					"y": -1930.119
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -92220.951,
+					"y": -1930.119
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -92215.951,
+					"y": -1930.119
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 80,
+			"group": "Patrol-FARP-Blue -2129",
+			"route": [
+				{
+					"action": "Turning Point",
+					"speed": 1.4,
+					"type": "Turning Point",
+					"x": -70325.853,
+					"y": 7755.22
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -70325.853,
+					"y": 7755.22
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -70320.853,
+					"y": 7755.22
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -70315.853,
+					"y": 7755.22
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Soldier M4",
+					"x": -70310.853,
+					"y": 7755.22
+				}
+			]
+		},
+		{
+			"airdromeId": 1,
+			"call": "addGroup",
+			"category": 0,
+			"country": 80,
+			"group": "Recon-2-2130",
+			"route": [
+				{
+					"action": "From Parking Area Hot",
+					"airdromeId": 1,
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "TakeOffParkingHot",
+					"x": -90000,
+					"y": 0
+				},
+				{
+					"action": "Turning Point",
+					"alt": 8000,
+					"alt_type": "BARO",
+					"speed": 300,
+					"type": "Turning Point",
+					"x": 26605.084,
+					"y": 1781.048
+				},
+				{
+					"action": "Fly Over Point",
+					"alt": 8000,
+					"alt_type": "BARO",
+					"speed": 300,
+					"type": "Turning Point",
+					"x": 30000,
+					"y": 0
+				},
+				{
+					"action": "Turning Point",
+					"alt": 8000,
+					"alt_type": "BARO",
+					"speed": 300,
+					"type": "Turning Point",
+					"x": -86604.226,
+					"y": -1780.316
+				},
+				{
+					"action": "Landing",
+					"airdromeId": 1,
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 300,
+					"type": "Land",
+					"x": -90000,
+					"y": 0
+				}
+			],
+			"task": "Reconnaissance",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "High",
+					"type": "F-15C",
+					"x": -90000,
+					"y": 0
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "Patrol-Red Front-2131",
+			"route": [
+				{
+					"action": "Turning Point",
+					"speed": 1.4,
+					"type": "Turning Point",
+					"x": 29462.658,
+					"y": 2900.649
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": 29462.658,
+					"y": 2900.649
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": 29467.658,
+					"y": 2900.649
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": 29472.658,
+					"y": 2900.649
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": 29477.658,
+					"y": 2900.649
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "Patrol-Red Rear-2132",
+			"route": [
+				{
+					"action": "Turning Point",
+					"speed": 1.4,
+					"type": "Turning Point",
+					"x": 87092.328,
+					"y": 10497.942
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": 87092.328,
+					"y": 10497.942
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": 87097.328,
+					"y": 10497.942
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": 87102.328,
+					"y": 10497.942
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": 87107.328,
+					"y": 10497.942
+				}
+			]
+		},
+		{
+			"call": "addGroup",
+			"category": 2,
+			"country": 81,
+			"group": "Patrol-FARP-Red F-2133",
+			"route": [
+				{
+					"action": "Turning Point",
+					"speed": 1.4,
+					"type": "Turning Point",
+					"x": -11528.654,
+					"y": -7499.004
+				}
+			],
+			"task": "Ground Nothing",
+			"units": [
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": -11528.654,
+					"y": -7499.004
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": -11523.654,
+					"y": -7499.004
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": -11518.654,
+					"y": -7499.004
+				},
+				{
+					"heading": 0,
+					"skill": "Good",
+					"type": "Infantry AK",
+					"x": -11513.654,
+					"y": -7499.004
+				}
+			]
+		},
+		{
+			"airdromeId": 4,
+			"call": "addGroup",
+			"category": 0,
+			"country": 81,
+			"group": "Recon-1-2134",
+			"route": [
+				{
+					"action": "From Parking Area Hot",
+					"airdromeId": 4,
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "TakeOffParkingHot",
+					"x": 90000,
+					"y": 10000
+				},
+				{
+					"action": "Turning Point",
+					"alt": 8000,
+					"alt_type": "BARO",
+					"speed": 300,
+					"type": "Turning Point",
+					"x": 9210.02,
+					"y": -2737.991
+				},
+				{
+					"action": "Fly Over Point",
+					"alt": 8000,
+					"alt_type": "BARO",
+					"speed": 300,
+					"type": "Turning Point",
+					"x": 6676.513,
+					"y": -1836.764
+				},
+				{
+					"action": "Turning Point",
+					"alt": 8000,
+					"alt_type": "BARO",
+					"speed": 300,
+					"type": "Turning Point",
+					"x": 87466.492,
+					"y": 10901.227
+				},
+				{
+					"action": "Landing",
+					"airdromeId": 4,
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 300,
+					"type": "Land",
+					"x": 90000,
+					"y": 10000
+				}
+			],
+			"task": "Reconnaissance",
+			"units": [
+				{
+					"heading": -3,
+					"skill": "High",
+					"type": "Su-27",
+					"x": 90000,
+					"y": 10000
+				}
+			]
+		},
+		{
+			"airdromeId": 3,
+			"call": "addGroup",
+			"category": 1,
+			"country": 81,
+			"group": "Heli-CAS-1-2135",
+			"route": [
+				{
+					"action": "From Parking Area Hot",
+					"airdromeId": 3,
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 0,
+					"type": "TakeOffParkingHot",
+					"x": 30000,
+					"y": 0
+				},
+				{
+					"action": "Turning Point",
+					"alt": 60,
+					"alt_type": "RADIO",
+					"speed": 55,
+					"type": "Turning Point",
+					"x": 11767.115,
+					"y": -839.4
+				},
+				{
+					"action": "Landing",
+					"airdromeId": 3,
+					"alt": 20,
+					"alt_type": "BARO",
+					"speed": 55,
+					"type": "Land",
+					"x": 30000,
+					"y": 0
+				}
+			],
+			"task": "CAS",
+			"units": [
+				{
+					"heading": -3.096,
+					"skill": "High",
+					"type": "Mi-24V",
+					"x": 30000,
+					"y": 0
+				},
+				{
+					"heading": -3.096,
+					"skill": "High",
+					"type": "Mi-24V",
+					"x": 30040,
+					"y": 0
+				}
+			]
+		}
+	],
+	"spawn_call_counts": {
+		"addGroup:AD-Blue Front-2025": 1,
+		"addGroup:AD-Blue Rear-2041": 1,
+		"addGroup:AD-Blue Rear-2042": 1,
+		"addGroup:AD-Blue Rear-2043": 1,
+		"addGroup:AD-FARP-Blue -2028": 1,
+		"addGroup:AD-FARP-Blue -2048": 1,
+		"addGroup:AD-FARP-Red F-2038": 1,
+		"addGroup:AD-Inst-depot-B-2075": 1,
+		"addGroup:AD-Inst-depot-B-2087": 1,
+		"addGroup:AD-Inst-depot-F-2069": 1,
+		"addGroup:AD-Inst-depot-F-2108": 1,
+		"addGroup:AD-Inst-depot-F-2120": 1,
+		"addGroup:AD-Inst-depot-R-2060": 1,
+		"addGroup:AD-Inst-depot-R-2102": 1,
+		"addGroup:AD-Inst-factory-2051": 1,
+		"addGroup:AD-Inst-factory-2111": 1,
+		"addGroup:AD-Inst-fuel-Bl-2084": 1,
+		"addGroup:AD-Inst-fuel-Bl-2099": 1,
+		"addGroup:AD-Inst-fuel-FA-2090": 1,
+		"addGroup:AD-Inst-fuel-FA-2096": 1,
+		"addGroup:AD-Inst-fuel-FA-2105": 1,
+		"addGroup:AD-Inst-fuel-Re-2054": 1,
+		"addGroup:AD-Inst-fuel-Re-2063": 1,
+		"addGroup:AD-Inst-radar-B-2057": 1,
+		"addGroup:AD-Inst-radar-B-2078": 1,
+		"addGroup:AD-Inst-radar-F-2066": 1,
+		"addGroup:AD-Inst-radar-F-2081": 1,
+		"addGroup:AD-Inst-radar-F-2114": 1,
+		"addGroup:AD-Inst-radar-R-2117": 1,
+		"addGroup:AD-Inst-radar-R-2123": 1,
+		"addGroup:AD-Inst-refiner-2072": 1,
+		"addGroup:AD-Inst-refiner-2093": 1,
+		"addGroup:AD-Red Front-2022": 1,
+		"addGroup:AD-Red Rear-2031": 1,
+		"addGroup:AD-Red Rear-2032": 1,
+		"addGroup:AD-Red Rear-2033": 1,
+		"addGroup:Arty-1-2014": 1,
+		"addGroup:Arty-1-2017": 1,
+		"addGroup:Arty-1-2020": 1,
+		"addGroup:Arty-2-2002": 1,
+		"addGroup:Arty-2-2005": 1,
+		"addGroup:Arty-2-2008": 1,
+		"addGroup:Arty-2-2011": 1,
+		"addGroup:FP-Blue Front-2026": 1,
+		"addGroup:FP-Blue Front-2027": 1,
+		"addGroup:FP-Blue Rear-2044": 1,
+		"addGroup:FP-Blue Rear-2045": 1,
+		"addGroup:FP-Blue Rear-2046": 1,
+		"addGroup:FP-Blue Rear-2047": 1,
+		"addGroup:FP-FARP-Blue -2029": 1,
+		"addGroup:FP-FARP-Blue -2030": 1,
+		"addGroup:FP-FARP-Blue -2049": 1,
+		"addGroup:FP-FARP-Blue -2050": 1,
+		"addGroup:FP-FARP-Red F-2039": 1,
+		"addGroup:FP-FARP-Red F-2040": 1,
+		"addGroup:FP-Inst-depot-B-2076": 1,
+		"addGroup:FP-Inst-depot-B-2077": 1,
+		"addGroup:FP-Inst-depot-B-2088": 1,
+		"addGroup:FP-Inst-depot-B-2089": 1,
+		"addGroup:FP-Inst-depot-F-2070": 1,
+		"addGroup:FP-Inst-depot-F-2071": 1,
+		"addGroup:FP-Inst-depot-F-2109": 1,
+		"addGroup:FP-Inst-depot-F-2110": 1,
+		"addGroup:FP-Inst-depot-F-2121": 1,
+		"addGroup:FP-Inst-depot-F-2122": 1,
+		"addGroup:FP-Inst-depot-R-2061": 1,
+		"addGroup:FP-Inst-depot-R-2062": 1,
+		"addGroup:FP-Inst-depot-R-2103": 1,
+		"addGroup:FP-Inst-depot-R-2104": 1,
+		"addGroup:FP-Inst-factory-2052": 1,
+		"addGroup:FP-Inst-factory-2053": 1,
+		"addGroup:FP-Inst-factory-2112": 1,
+		"addGroup:FP-Inst-factory-2113": 1,
+		"addGroup:FP-Inst-fuel-Bl-2085": 1,
+		"addGroup:FP-Inst-fuel-Bl-2086": 1,
+		"addGroup:FP-Inst-fuel-Bl-2100": 1,
+		"addGroup:FP-Inst-fuel-Bl-2101": 1,
+		"addGroup:FP-Inst-fuel-FA-2091": 1,
+		"addGroup:FP-Inst-fuel-FA-2092": 1,
+		"addGroup:FP-Inst-fuel-FA-2097": 1,
+		"addGroup:FP-Inst-fuel-FA-2098": 1,
+		"addGroup:FP-Inst-fuel-FA-2106": 1,
+		"addGroup:FP-Inst-fuel-FA-2107": 1,
+		"addGroup:FP-Inst-fuel-Re-2055": 1,
+		"addGroup:FP-Inst-fuel-Re-2056": 1,
+		"addGroup:FP-Inst-fuel-Re-2064": 1,
+		"addGroup:FP-Inst-fuel-Re-2065": 1,
+		"addGroup:FP-Inst-radar-B-2058": 1,
+		"addGroup:FP-Inst-radar-B-2059": 1,
+		"addGroup:FP-Inst-radar-B-2079": 1,
+		"addGroup:FP-Inst-radar-B-2080": 1,
+		"addGroup:FP-Inst-radar-F-2067": 1,
+		"addGroup:FP-Inst-radar-F-2068": 1,
+		"addGroup:FP-Inst-radar-F-2082": 1,
+		"addGroup:FP-Inst-radar-F-2083": 1,
+		"addGroup:FP-Inst-radar-F-2115": 1,
+		"addGroup:FP-Inst-radar-F-2116": 1,
+		"addGroup:FP-Inst-radar-R-2118": 1,
+		"addGroup:FP-Inst-radar-R-2119": 1,
+		"addGroup:FP-Inst-radar-R-2124": 1,
+		"addGroup:FP-Inst-radar-R-2125": 1,
+		"addGroup:FP-Inst-refiner-2073": 1,
+		"addGroup:FP-Inst-refiner-2074": 1,
+		"addGroup:FP-Inst-refiner-2094": 1,
+		"addGroup:FP-Inst-refiner-2095": 1,
+		"addGroup:FP-Red Front-2023": 1,
+		"addGroup:FP-Red Front-2024": 1,
+		"addGroup:FP-Red Rear-2034": 1,
+		"addGroup:FP-Red Rear-2035": 1,
+		"addGroup:FP-Red Rear-2036": 1,
+		"addGroup:FP-Red Rear-2037": 1,
+		"addGroup:GndCol-1-2013": 1,
+		"addGroup:GndCol-1-2016": 1,
+		"addGroup:GndCol-1-2019": 1,
+		"addGroup:GndCol-2-2001": 1,
+		"addGroup:GndCol-2-2004": 1,
+		"addGroup:GndCol-2-2007": 1,
+		"addGroup:GndCol-2-2010": 1,
+		"addGroup:GndSec-1-2015": 1,
+		"addGroup:GndSec-1-2018": 1,
+		"addGroup:GndSec-1-2021": 1,
+		"addGroup:GndSec-2-2003": 1,
+		"addGroup:GndSec-2-2006": 1,
+		"addGroup:GndSec-2-2009": 1,
+		"addGroup:GndSec-2-2012": 1,
+		"addGroup:Heli-CAS-1-2135": 1,
+		"addGroup:Inst-radar-Blue Front": 1,
+		"addGroup:Inst-radar-Blue Rear": 1,
+		"addGroup:Inst-radar-FARP-Blue Front": 1,
+		"addGroup:Inst-radar-FARP-Blue Rear": 1,
+		"addGroup:Inst-radar-FARP-Red Front": 1,
+		"addGroup:Inst-radar-Red Front": 1,
+		"addGroup:Inst-radar-Red Rear": 1,
+		"addGroup:Patrol-Blue Front-2126": 1,
+		"addGroup:Patrol-Blue Rear-2128": 1,
+		"addGroup:Patrol-FARP-Blue -2127": 1,
+		"addGroup:Patrol-FARP-Blue -2129": 1,
+		"addGroup:Patrol-FARP-Red F-2133": 1,
+		"addGroup:Patrol-Red Front-2131": 1,
+		"addGroup:Patrol-Red Rear-2132": 1,
+		"addGroup:Recon-1-2134": 1,
+		"addGroup:Recon-2-2130": 1,
+		"addStatic:FARP-Blue Front": 1,
+		"addStatic:FARP-Blue Rear": 1,
+		"addStatic:FARP-Red Front": 1,
+		"addStatic:Inst-depot-Blue Front": 1,
+		"addStatic:Inst-depot-FARP-Blue Front": 1,
+		"addStatic:Inst-depot-FARP-Blue Rear": 1,
+		"addStatic:Inst-depot-FARP-Red Front": 1,
+		"addStatic:Inst-depot-Red Front": 1,
+		"addStatic:Inst-depot-Red Rear": 1,
+		"addStatic:Inst-factory-Blue Rear": 1,
+		"addStatic:Inst-fuel-Blue Front": 1,
+		"addStatic:Inst-fuel-Blue Rear": 1,
+		"addStatic:Inst-fuel-FARP-Blue Front": 1,
+		"addStatic:Inst-fuel-FARP-Blue Rear": 1,
+		"addStatic:Inst-fuel-FARP-Red Front": 1,
+		"addStatic:Inst-fuel-Red Front": 1,
+		"addStatic:Inst-fuel-Red Rear": 1,
+		"addStatic:Inst-refinery-Blue Rear": 1,
+		"addStatic:Inst-refinery-Red Rear": 1
+	},
+	"task_creations": {
+		"cas": 2,
+		"recon": 13
+	},
+	"generator_liveness": {
+		"bai": 2,
+		"cas": 2,
+		"sead": 2
+	}
+}

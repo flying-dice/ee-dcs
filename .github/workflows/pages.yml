@@ -1,0 +1,116 @@
+name: Deploy web app to GitHub Pages
+
+# Replaces Cloudflare Pages. The Pages source is set to "GitHub Actions" in
+# Settings > Pages, so this workflow is the only thing that publishes the site.
+#
+# The app is a static Vite/Svelte build. vite.config.js already sets `base: './'`,
+# so the bundle works from the project-pages subpath (flying-dice.github.io/ee-dcs/)
+# without a base-path override here.
+
+on:
+  push:
+    branches: [main]
+    # Only rebuild when something the site actually contains changes.
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "apps/web/**"
+      - "packages/ee-mission/**"
+      - "dist/ee-dcs.lua"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race. Don't cancel a run that is already publishing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Build the campaign bundle from TypeScript source rather than trusting the
+      # committed dist/ee-dcs.lua. apps/web's `prebuild` copies that file into the
+      # site, so building it here guarantees the deployed page ships the campaign
+      # that matches this commit instead of a stale artifact.
+      - name: Build campaign bundle
+        run: npm run build --workspace ee-mission
+
+      # Fail loudly instead of deploying a broken site.
+      #
+      # The app needs TWO theatre asset sets, loaded by different mechanisms:
+      #
+      #   1. apps/web/src/theatres/<Id>.geojson  - BUILD time. terrains.ts:24 globs
+      #      `../theatres/*.geojson`. An empty dir still BUILDS (the glob matches
+      #      nothing); the app just has no theatres.
+      #   2. apps/web/public/osm/<Id>.geojson.gz - RUN time. osm.ts:11 fetches
+      #      `${BASE_URL}osm/<Id>.geojson.gz` and gunzips it client-side. Vite copies
+      #      public/ verbatim, so a missing file is a 404 only when a theatre is
+      #      selected - long after the pipeline has gone green.
+      #
+      # Either way the build SUCCEEDS and the site deploys broken. Check the
+      # paired export contract for every theatre, not just the presence of one
+      # file in each directory.
+      - name: Verify theatre assets are committed
+        run: |
+          theatres=(apps/web/src/theatres/*.geojson)
+          if [ ! -f "${theatres[0]}" ]; then
+            echo "::error::No theatre GeoJSON is committed. The site would deploy without a selectable theatre."
+            exit 1
+          fi
+          for theatre in "${theatres[@]}"; do
+            id=$(basename "$theatre" .geojson)
+            osm="apps/web/public/osm/$id.geojson.gz"
+            if [ ! -f "$osm" ]; then
+              echo "::error::Missing paired OSM export for $id: $osm"
+              exit 1
+            fi
+            echo "$id: paired theatre and OSM assets present"
+          done
+
+      - name: Build site
+        run: npm run build --workspace dcs-eech-mapgen
+
+      # public/ is copied verbatim by Vite. Confirm every runtime asset reached
+      # the artifact, not just any one gzip file.
+      - name: Verify runtime assets reached the build output
+        run: |
+          for theatre in apps/web/src/theatres/*.geojson; do
+            id=$(basename "$theatre" .geojson)
+            osm="apps/web/dist/osm/$id.geojson.gz"
+            if [ ! -s "$osm" ]; then
+              echo "::error::Missing built OSM export for $id: $osm"
+              exit 1
+            fi
+            echo "$id: compressed export copied into build output"
+          done
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
