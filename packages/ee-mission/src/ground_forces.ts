@@ -28,6 +28,7 @@
 -- the front paces itself through vehicle speed rather than a per-tick node step.
 */
 
+import * as clearance from "./airbase_clearance";
 import * as mode from "./campaign_mode";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
@@ -275,7 +276,7 @@ function spawnPrimary(
 	const types = composition(side, PRIMARY_SLOTS);
 	const id = cs.next_id();
 	const name = string.format("GndCol-%d-%d", side, id);
-	const start = cs.snap_land(
+	const candidate = cs.snap_land(
 		home.x +
 			math.random(-PRIMARY_SPAWN_JITTER_METRES, PRIMARY_SPAWN_JITTER_METRES),
 		home.z +
@@ -283,6 +284,16 @@ function spawnPrimary(
 		home.x,
 		home.z,
 	);
+	const start = clearance.find_clear(
+		home,
+		candidate,
+		types.length * PRIMARY_UNIT_SPACING_X_METRES,
+		name,
+	);
+	if (start === undefined) {
+		supply.recycle_side(side, "vehicle", 1);
+		return false;
+	}
 	const units = makeUnits(
 		name,
 		types,
@@ -390,7 +401,7 @@ function spawnSupport(
 	// shifts every GndSec spawn origin and group size off the baseline. Ordering is not an EECH
 	// constant, so there is no citation here - this exists purely to keep the port stream-identical
 	// to the baseline the golden fixtures were recorded from.
-	const start = spawnOrigin(
+	const candidate = spawnOrigin(
 		side,
 		home,
 		artillery
@@ -408,6 +419,17 @@ function spawnSupport(
 		side,
 		id,
 	);
+	const start = clearance.find_clear(
+		home,
+		candidate,
+		types.length *
+			(artillery ? ARTY_UNIT_SPACING_X_METRES : PRIMARY_UNIT_SPACING_X_METRES),
+		name,
+	);
+	if (start === undefined) {
+		supply.recycle_side(side, "vehicle", 1);
+		return false;
+	}
 	const units = makeUnits(name, types, start, 0, artillery);
 	const [ok, group] = pcall(() =>
 		coalition.addGroup(COUNTRY_OF[side], Group.Category.GROUND, {
@@ -701,7 +723,7 @@ export function respawn_saved(
 	const slots = KIND_SLOTS[summary.kind];
 	const side = summary.side;
 	const count = Math.max(1, Math.min(summary.n_alive ?? 1, slots.length));
-	const start = cs.snap_land(
+	const candidate = cs.snap_land(
 		summary.lead.x,
 		summary.lead.z,
 		summary.lead.x,
@@ -710,6 +732,13 @@ export function respawn_saved(
 	const name =
 		summary.name ??
 		string.format("Gnd-%s-%d-%d", summary.kind, side, cs.next_id());
+	const start = clearance.find_clear(
+		summary.lead,
+		candidate,
+		count * PRIMARY_UNIT_SPACING_X_METRES,
+		name,
+	);
+	if (start === undefined) return false;
 	const units = makeUnits(
 		name,
 		composition(side, slots, count),

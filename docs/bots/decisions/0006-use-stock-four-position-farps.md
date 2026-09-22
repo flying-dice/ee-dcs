@@ -36,7 +36,9 @@ category = "Heliports"
 ```
 
 All helicopter builders pass departures and returns through one DCS adapter.
-For a FARP it writes `TakeOffParking`, links the route point with `helipadId`
+For a FARP it preserves the requested parking start mode (`TakeOffParkingHot`
+for campaign hot starts, `TakeOffParking` for explicit cold starts), uses the
+matching action, and links the route point with `helipadId`
 and `linkUnit`, removes `airdromeId`, moves the group, waypoint and units to the
 heliport origin as DCS's exporter does, and assigns the aircraft to positions
 `1` through `4`. Actual runway airbases retain `airdromeId` behavior.
@@ -51,3 +53,16 @@ heliport origin as DCS's exporter does, and assigns the aircraft to positions
   spawn paths use the same encoding.
 - Existing running missions retain their embedded older bundle. A newly
   generated mission is required to observe the change in DCS.
+
+## 2026-09-22 correction and evidence boundary
+
+The Mission Editor exporter's cold default must not override the builder's hot
+start request. Issue #3's full log confirms the named RED groups used dynamic
+FARPs, but does not establish their post-submission state. The adapter correction
+and [spawn diagnostics](../helicopter-spawn-diagnostics.md) are offline-tested;
+the subsequent live comparison is recorded in
+[ADR 0007](0007-bake-farps-before-mission-load.md): mission-loaded FARP initial and
+recycled AH-64D pairs fly, while a fresh runtime FARP fails with the same aircraft
+specification. Full generated campaign acceptance remains pending. The four-position rotation
+is still not an occupancy-aware allocator; this change does not claim to fix
+exhaustion or asynchronous launch accounting.

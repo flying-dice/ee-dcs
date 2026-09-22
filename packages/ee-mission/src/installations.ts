@@ -22,6 +22,8 @@
 --   • AUTO (fallback, no zones): installations are placed PROCEDURALLY around each airbase (legacy).
 --     Kept intact so an empty Caucasus mission still boots a scenario; this path still spawns.
 */
+
+import * as clearance from "./airbase_clearance";
 import * as cs from "./campaign_state";
 import type {
 	KeysiteFlags,
@@ -198,6 +200,10 @@ function spawn_installation(
 	const spec = KINDS[kind];
 	const cid = COUNTRY[side];
 	if (!spec || cid === undefined || !SPAWN_PHYSICAL) return spec?.spawn;
+	if (!clearance.is_clear(pos.x, pos.z)) {
+		cs.dbg("clearance", "%s SKIP: installation inside airbase grounds", kname);
+		return undefined;
+	}
 	if (spec.spawn === "static") {
 		pcall(coalition.addStaticObject, cid, {
 			heading: 0,
@@ -344,6 +350,10 @@ function spawn_palette_static(
 	const p = PALETTE[token];
 	const cid = COUNTRY[side];
 	if (!p || cid === undefined) return undefined;
+	if (!clearance.is_clear(x, z)) {
+		cs.dbg("clearance", "%s SKIP: static inside airbase grounds", name);
+		return undefined;
+	}
 	pcall(coalition.addStaticObject, cid, {
 		heading: 0,
 		type: p[0],
@@ -364,6 +374,10 @@ function spawn_ground(
 ): void {
 	const cid = COUNTRY[side];
 	if (cid === undefined || types.length === 0) return;
+	if (!clearance.is_clear(pos.x, pos.z, types.length * 30)) {
+		cs.dbg("clearance", "%s SKIP: garrison inside airbase grounds", name);
+		return;
+	}
 	const units: UnitData[] = types.map((t, i) => {
 		const ux = pos.x + (i % 3) * 30;
 		const uz = pos.z + math.floor(i / 3) * 30;

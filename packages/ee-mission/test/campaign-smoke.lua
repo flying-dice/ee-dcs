@@ -7,8 +7,11 @@ local duration = tonumber(arg[3]) or 310
 -- pre-deletion commit extracted into a scratch directory, without restoring that tree into
 -- the repository working copy.
 local lua_root = arg[4] or root
+local clearance_enabled = arg[5] == 'clearance'
 local now, next_id = 100, 1000
 local logs, timers, groups, statics, handlers, marks = {}, {}, {}, {}, {}, {}
+-- Diagnostic timers are tested separately; parity measures campaign scheduling.
+_DMT_DEBUG = false
 
 -- ORDER LOG -------------------------------------------------------------------------------
 -- The name/tick comparison in run-tests.cjs is blind to WHERE a group is sent: it only sees
@@ -76,6 +79,7 @@ local function object(name, x,z,side,kind)
     function o:getPosition() assert(self==o); return position(self.x,self.z) end
     function o:getPoint() assert(self==o); return self:getPosition().p end
     function o:getCoalition() assert(self==o); return self.side end
+    function o:getPlayerName() assert(self==o); return nil end
     function o:getTypeName() assert(self==o); return self.kind end
     function o:getDesc() assert(self==o); return descriptor(self.kind) end
     function o:getCategory() assert(self==o); return 1 end
@@ -133,6 +137,8 @@ local bases={}
 for i,spec in ipairs({{'Blue Rear',-90000,0,2},{'Blue Front',-30000,10000,2},{'Red Front',30000,0,1},{'Red Rear',90000,10000,1}}) do
     local ab=object(spec[1],spec[2],spec[3],spec[4]); ab.id=i
     function ab:getDesc() return {category=0} end
+    function ab:getRunways() return {{position={x=self.x,y=20,z=self.z},length=2500,width=60,course=0,Name='TEST'}} end
+    function ab:getParking() return {{vTerminalPos={x=self.x+300,y=20,z=self.z+200}}} end
     function ab:getWarehouse() return {getInventory=function() return {aircraft={}} end} end
     bases[#bases+1]=ab
 end
@@ -442,7 +448,7 @@ if mode=='typescript' then
     assert(farp_spec~=nil,'multi-helicopter FARP group was not queued')
     local farp_depart=farp_spec.route.points[1]
     assert(farp_spec.airdromeId==nil,'FARP group incorrectly used group airdromeId')
-    assert(farp_depart.type=='TakeOffParking' and farp_depart.action=='From Parking Area','FARP departure did not use parking takeoff')
+    assert(farp_depart.type=='TakeOffParkingHot' and farp_depart.action=='From Parking Area Hot','FARP adapter changed the requested hot start')
     assert(farp_depart.helipadId==7654 and farp_depart.linkUnit==7654 and farp_depart.airdromeId==nil,'FARP departure did not link to its heliport object')
     assert(farp_spec.x==12345 and farp_spec.y==67890 and farp_depart.x==12345 and farp_depart.y==67890,'FARP group and departure were not moved to the heliport origin')
     assert(#farp_spec.units==2,'FARP regression did not exercise a helicopter section')
@@ -459,6 +465,7 @@ if mode=='typescript' then
         if item.kind=='group' and item.name==second_farp_group:getName() then second_farp_spec=item.data; second_farp_queue_index=index; break end
     end
     assert(second_farp_spec~=nil,'second FARP section was not queued')
+    assert(second_farp_spec.route.points[1].type=='TakeOffParkingHot','second FARP section lost its hot start')
     assert(second_farp_spec.units[1].parking=='3' and second_farp_spec.units[2].parking=='4','successive FARP sections did not rotate onto the remaining parking slots')
     table.remove(state.spawn_queue,second_farp_queue_index)
     mission_require('map_overlay').remove_task_arrow(second_farp_group:getName())
@@ -475,9 +482,57 @@ if mode=='typescript' then
     assert(runway_spec~=nil,'airbase helicopter control group was not queued')
     local runway_depart=runway_spec.route.points[1]
     assert(runway_spec.airdromeId==1 and runway_depart.airdromeId==1,'real airbase helicopter departure lost airdromeId')
+    assert(runway_depart.type=='TakeOffParkingHot' and runway_depart.action=='From Parking Area Hot','ordinary-airfield hot start changed')
     assert(runway_depart.helipadId==nil and runway_spec.units[1].parking==nil,'real airbase was incorrectly encoded as a FARP')
     table.remove(state.spawn_queue,runway_queue_index)
     mission_require('map_overlay').remove_task_arrow(runway_group:getName())
+
+    -- Mission-loaded FARPs must be reused before any spawn queue drain occurs.
+    -- Keep this separate from the missing-object fallback and hot-start probes above.
+    local authored_name='FARP-Mission-Loaded-Regression'
+    local authored_airbase=object(authored_name,-25000,12000,coalition.side.BLUE,'FARP')
+    authored_airbase.id=8765
+    function authored_airbase:getDesc() return {category=Airbase.Category.HELIPAD} end
+    bases[#bases+1]=authored_airbase
+    local original_zones=env.mission.triggers.zones
+    env.mission.triggers.zones={{name='farp_Mission Loaded Regression',type=0,x=-25000,y=12000,radius=500,color={0,0,1,1}}}
+    zones.load()
+    state.base_kind[authored_name]='farp'
+    state.base_owner[authored_name]=coalition.side.BLUE
+    state.base_pos[authored_name]={x=-25000,z=12000}
+    state.base_health[authored_name]=0.75
+    assert(StaticObject.getByName(authored_name)==nil,'reuse fixture must exercise Airbase lookup without a static object')
+    for attempt=1,2 do
+        mission_require('farps').init(function() end)
+        for _,item in ipairs(state.spawn_queue) do
+            assert(not (item.kind=='static' and item.name==authored_name),'mission-loaded FARP queued a duplicate static on init '..attempt)
+        end
+        assert(Airbase.getByName(authored_name)==authored_airbase,'mission-loaded FARP object was replaced')
+        assert(state.base_kind[authored_name]=='farp' and state.base_owner[authored_name]==coalition.side.BLUE,'mission-loaded FARP lost its logical role or owner')
+        assert(state.base_pos[authored_name].x==-25000 and state.base_pos[authored_name].z==12000 and state.base_health[authored_name]==0.75,'mission-loaded FARP reset its logical position or health')
+    end
+    local authored_group=mission_require('heli_war').build_attack_heli(
+        coalition.side.BLUE,authored_name,{x=-15000,z=12000},'anti_armour',function() end)
+    assert(authored_group~=nil,'mission-loaded FARP helicopter group did not spawn')
+    local authored_spec,authored_queue_index
+    for index,item in ipairs(state.spawn_queue) do
+        if item.kind=='group' and item.name==authored_group:getName() then authored_spec=item.data; authored_queue_index=index; break end
+    end
+    assert(authored_spec~=nil,'mission-loaded FARP helicopter group was not queued')
+    local authored_depart=authored_spec.route.points[1]
+    assert(authored_depart.type=='TakeOffParkingHot' and authored_depart.action=='From Parking Area Hot','mission-loaded FARP helicopter lost its hot start')
+    assert(authored_depart.helipadId==authored_airbase:getID() and authored_depart.linkUnit==authored_airbase:getID(),'mission-loaded FARP helicopter did not link to the existing object')
+    assert(authored_depart.airdromeId==nil and authored_spec.airdromeId==nil,'mission-loaded FARP helicopter incorrectly used airdromeId')
+    table.remove(state.spawn_queue,authored_queue_index)
+    mission_require('map_overlay').remove_task_arrow(authored_group:getName())
+    table.remove(bases)
+    state.base_kind[authored_name]=nil
+    state.base_owner[authored_name]=nil
+    state.base_pos[authored_name]=nil
+    state.base_health[authored_name]=nil
+    state.farp_active[authored_name]=nil
+    env.mission.triggers.zones=original_zones
+    zones.load()
 
     local pilots=mission_require('pilots')
     state.base_owner['Intel-Known']=coalition.side.RED
@@ -558,6 +613,85 @@ if mode=='typescript' then
     assert(regen_after==regen_before,'neutral unit was assigned to a combat-side regen queue')
 end
 local generation=_DMT_GEN
+if mode=='typescript' and clearance_enabled then
+    local clearance=mission_require('airbase_clearance')
+    local cleanup=mission_require('airbase_cleanup')
+    local checked=0
+    local campaign_set={}; for _,name in ipairs(campaign_group_names) do campaign_set[name]=true end
+    for name,group in pairs(groups) do
+        if campaign_set[name] and (name:match('^FP%-') or name:match('^AD%-') or name:match('^GndCol%-') or name:match('^GndSec%-') or name:match('^Arty%-') or name:match('^Patrol%-')) then
+            for _,unit in ipairs(group.units) do
+                assert(clearance.is_clear(unit.x,unit.z),'generated ground unit obstructs airfield: '..name)
+                checked=checked+1
+            end
+        end
+    end
+    assert(checked>0,'no generated ground units checked')
+    local blue=bases[2]
+    local north=clearance.find_clear({x=blue.x,z=blue.z},{x=blue.x,z=blue.z+100},0,'north-ring')
+    local south=clearance.find_clear({x=blue.x,z=blue.z},{x=blue.x,z=blue.z-100},0,'south-ring')
+    assert(north and south and north.z>blue.z and south.z<blue.z,'ring bearings collapsed onto one relocation point')
+    assert(not clearance.is_clear(blue.x+2400,blue.z),'runway endpoint was accepted')
+    assert(clearance.is_clear(blue.x+8000,blue.z),'safe ground was rejected')
+    local remote=object('Neutral-Off-Centre',200000,200000,0); remote.id=999
+    function remote:getDesc() return {category=Airbase.Category.AIRDROME} end
+    function remote:getRunways() return {{position={x=self.x+7000,y=20,z=self.z},length=3500,width=60,course=0,Name='LONG'}} end
+    function remote:getParking() return {{vTerminalPos={x=self.x+500,y=20,z=self.z+300}}} end
+    bases[#bases+1]=remote
+    assert(not clearance.is_clear(remote.x+10000,remote.z),'off-centre long runway was accepted')
+    local fob=object('FOB-Airdrome',250000,250000,2); fob.id=1000
+    function fob:getDesc() return {category=Airbase.Category.AIRDROME} end
+    function fob:getRunways() return {} end
+    function fob:getParking() return {} end
+    bases[#bases+1]=fob
+    state.base_kind[fob.name]='fob'
+    assert(not clearance.is_clear(fob.x+2000,fob.z),'FOB fallback airfield was accepted')
+    local stale=object('Stale-Airdrome',300000,300000,0); stale.id=1001
+    function stale:getDesc() return {category=Airbase.Category.AIRDROME} end
+    function stale:getRunways() return {} end
+    function stale:getParking() return {} end
+    bases[#bases+1]=stale
+    assert(not clearance.is_clear(stale.x,stale.z),'known stale airfield was not cached')
+    stale.getDesc=function() error('stale airbase descriptor') end
+    local unknown=object('Unknown-Airdrome',350000,350000,0); unknown.id=1002
+    unknown.getName=function() error('unknown stale airbase') end
+    bases[#bases+1]=unknown
+    local reporting_pcall=pcall; pcall=native_pcall
+    local prior_warnings=0
+    for _,line in ipairs(logs) do if line:match('airbase geometry read failed') then prior_warnings=prior_warnings+1 end end
+    for _=1,3 do
+        assert(not clearance.is_clear(blue.x,blue.z),'healthy airfield lost protection beside stale airbase')
+        assert(not clearance.is_clear(stale.x,stale.z),'last-known stale bounds were lost')
+    end
+    local warnings=0
+    for _,line in ipairs(logs) do if line:match('airbase geometry read failed') then warnings=warnings+1 end end
+    assert(warnings-prior_warnings==2,'stale airbase failures were not logged once each')
+    local stuck=__dmt_real_addGroup(2,Group.Category.GROUND,{name='Clearance-Test',units={{name='Clearance-Test-1',type='M-1 Abrams',x=blue.x,y=blue.z}}})
+    local player=__dmt_real_addGroup(2,Group.Category.GROUND,{name='Clearance-Player-Test',units={{name='Clearance-Player-Test-1',type='M-1 Abrams',x=blue.x,y=blue.z}}})
+    player.units[1].getPlayerName=function() return 'Player' end
+    cleanup.sweep(function() end)
+    local route=stuck.controller.task and stuck.controller.task.params.route.points
+    assert(route and #route==2 and clearance.is_clear(route[2].x,route[2].y),'ground evacuation route missing or unsafe')
+    assert(player.controller.task==nil,'player group was rerouted')
+    local first_task=stuck.controller.task
+    cleanup.sweep(function() end)
+    assert(stuck.controller.task==first_task,'cleanup churned an active route')
+    now=now+121
+    cleanup.sweep(function() end)
+    assert(stuck.controller.task~=first_task,'stalled evacuation was never retried')
+    local retried_task=stuck.controller.task
+    local water=land.getSurfaceType
+    land.getSurfaceType=function() return land.SurfaceType.WATER end
+    assert(clearance.find_clear({x=blue.x,z=blue.z},{x=blue.x,z=blue.z},0,'water-test')==nil,'failed search returned unsafe water waypoint')
+    land.getSurfaceType=water
+    stuck.units[1].x=route[2].x; stuck.units[1].z=route[2].y
+    cleanup.sweep(function() end)
+    assert(stuck.controller.task==retried_task,'cleared group was rerouted')
+    table.remove(bases); table.remove(bases); table.remove(bases); table.remove(bases)
+    pcall=reporting_pcall
+    state.base_kind[fob.name]=nil
+    print('PASS airbase clearance: runway, off-centre, dispersed ring, FOB fallback, stale-airbase isolation, evacuation, player exclusion, no churn, stall retry, bounded failure')
+end
 local old_timers={}; for _,t in ipairs(timers) do old_timers[#old_timers+1]=t end
 inject(); assert(_DMT_GEN==generation+1,'reinjection generation did not increment'); assert(player_group.alive,'reset destroyed a human player group'); assert(author_static.alive,'reset destroyed an author static')
 for _,t in ipairs(old_timers) do if t.time then assert(t.fn(t.arg,t.time)==nil,'stale timer survived reinjection') end end
@@ -628,14 +762,14 @@ for _,entry in ipairs(campaign_orders) do
     end
 end
 
-print(string.format(
+if not clearance_enabled then print(string.format(
     'SUMMARY_JSON {"mode":%s,"duration":%d,"ticks":%d,"groups":%d,"statics":%d,"group_names":%s,"static_names":%s,'..
     '"orders":%s,"spawn_call_counts":%s,"task_creations":%s,"generator_liveness":%s}',
     json_string(mode), duration, ticks, campaign_groups, campaign_statics,
     json_string_array(campaign_group_names), json_string_array(campaign_static_names),
     json_array(campaign_orders), json_object(spawn_call_counts), json_object(campaign_task_creations),
     json_object(liveness)
-))
+)) end
 
 -- Reported last, on purpose: SUMMARY_JSON above is already on stdout, so run-tests.cjs can
 -- still diff the order log and show WHICH waypoints moved alongside these fixture failures.
@@ -643,11 +777,3 @@ if #fixture_failures>0 then
     for _,message in ipairs(fixture_failures) do print('FIXTURE FAILED: '..message) end
     error(#fixture_failures..' campaign-smoke fixture(s) failed in mode '..mode, 0)
 end
-
-
-
-
-
-
-
-

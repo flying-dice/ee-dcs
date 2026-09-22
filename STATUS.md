@@ -1,10 +1,10 @@
 # Campaign TypeScript migration and OSM output
 
-- Goal / health: The TypeScript campaign port and web generator pass offline checks; live DCS acceptance remains outstanding. Territory uses one H3 resolution-5 paintbrush level rather than administrative borders.
-- Now: [GeoJSON design save/import](boards/project-backlog/25-import-export-design-geojson.md) passes lint, type-check, tests and build; the user confirmed the browser flow. H3-5 is the first published format. Open PR #1 is ready for a fresh review of the branch.
-- Next: Review PR #1, then revisit strategic-site distribution on the visible terrain.
+- Goal / health: The TypeScript campaign port and web generator pass offline checks, but live DCS acceptance has found aircraft-departure defects. Territory uses one H3 resolution-5 paintbrush level rather than administrative borders.
+- Now: [Issue #3](https://github.com/flying-dice/ee-dcs/issues/3): authored FARP initial/recycled AH-64D pairs fly; fresh runtime FARP fails with the same specification. Generator now bakes stock FARPs and matching warehouses; offline checks and focused review pass. [ED report/workarounds](dcs-bugs/runtime-farp-spawning/README.md) retain the minimal mission, scripts and evidence. Issue #2 remains separate.
+- Next: FARP fix passes observed RED/BLUE campaign departures. Ground placement exclusion and a 30-second cleanup loop pass tests/review; guarded live trial routed 23 groups and confirmed physical movement without repeated orders. Loop remains active in the current mission. Full outside-envelope clearance and fresh production mission startup remain unobserved. [Obstruction evidence/workaround](dcs-bugs/airbase-ground-obstructions/README.md).
 - Later: No credible military radar is tagged in the current Caucasus source, so automatic radar remains unfilled rather than using a weather radar. Revisit if better source data or an authored fallback is available. [Road-graph card](boards/project-backlog/11-road-graph-from-osm-close-structural-limits.md) is separate; OSM place enrichment may need its own future export. Remove original Lua only after live validation.
-- Blocker: DCS Studio tools are not registered in this session and the configured local MCP endpoint is not listening; offline verification cannot establish live DCS acceptance.
-- Working state: 2026-09-21 23:15 BST, branch `feat/ts-port-validated-lua-removed`; outgoing checks pass and PR #1 is open. No live DCS acceptance has been performed.
+- Validation: Build, 27 core checks, diagnostics, exact clearance-enabled issued orders at 310/2100 s, focused evacuation checks, and web checks/build pass. Historical Lua fixtures remain unchanged; deliberate order changes are listed in `packages/ee-mission/test/golden/CLEARANCE-DELTA.md`. No clearance bypass remains in normal tests. Studio static-analysis is not exposed by this bridge.
+- Working state: 2026-09-22, branch `feat/ts-port-validated-lua-removed`, integrated against `74bbadc`. Source and rebuilt bundle are included together in this change. No push requested. Full automatic outside-envelope clearance and fresh production mission startup remain unverified.
 
-See [sprint](docs/bots/sprints/2026-09-20-sprint-01.md).
+See [current sprint](docs/bots/sprints/2026-09-22-sprint-03.md).

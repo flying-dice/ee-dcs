@@ -45,6 +45,7 @@
 -- feed the AIR_DEFENCE imap by attribute (desired). Tracked in S.base_fp_groups; re-manned on capture.
 */
 
+import * as clearance from "./airbase_clearance";
 import * as cs from "./campaign_state";
 import type { WorldPoint } from "./campaign_types";
 import * as config from "./config";
@@ -110,12 +111,19 @@ function spawnRing(
 	let placed = 0;
 	for (let index = 0; index < count; index++) {
 		const angle = index * ((2 * math.pi) / count);
-		const spawnPos = cs.snap_land(
+		const candidate = cs.snap_land(
 			pos.x + math.cos(angle) * DEF.ring_radius,
 			pos.z + math.sin(angle) * DEF.ring_radius,
 			pos.x,
 			pos.z,
 		);
+		const spawnPos = clearance.find_clear(
+			pos,
+			candidate,
+			prototype.length * 30,
+			`${tag} AA`,
+		);
+		if (spawnPos === undefined) continue;
 		const groupName = string.format("AD-%s-%d", tag, cs.next_id());
 		const units: UnitData[] = [];
 		for (let unitIndex = 0; unitIndex < prototype.length; unitIndex++) {
@@ -195,12 +203,19 @@ function spawnFiringPoints(
 		const unitType = index % 2 === 0 ? machineGun : manpad;
 		const angle = math.random() * 2 * math.pi;
 		const radius = math.random() * DEF.ring_radius;
-		const spawnPos = cs.snap_land(
+		const candidate = cs.snap_land(
 			pos.x + math.cos(angle) * radius,
 			pos.z + math.sin(angle) * radius,
 			pos.x,
 			pos.z,
 		);
+		const spawnPos = clearance.find_clear(
+			pos,
+			candidate,
+			0,
+			`${tag} firing point`,
+		);
+		if (spawnPos === undefined) continue;
 		const altitude = land.getHeight({ x: spawnPos.x, y: spawnPos.z });
 		const groupName = string.format("FP-%s-%d", tag, cs.next_id());
 		const [ok] = pcall(() =>

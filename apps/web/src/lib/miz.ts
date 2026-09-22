@@ -217,6 +217,119 @@ function emptyCoalitionSide(name: string, countries: LuaObject[] = []): LuaObjec
   };
 }
 
+const COUNTRY_BY_SIDE: Record<Side, { id: number; name: string }> = {
+  blue: { id: CJTF_BLUE_ID, name: 'CJTF Blue' },
+  red: { id: CJTF_RED_ID, name: 'CJTF Red' },
+};
+
+interface FarpResult {
+  groups: Record<Side, LuaValue[]>;
+  warehouses: LuaObject;
+}
+
+function highestId(value: LuaValue | undefined, key: 'groupId' | 'unitId'): number {
+  if (value === undefined || typeof value !== 'object' || value === null) return 0;
+  if (Array.isArray(value)) return Math.max(0, ...value.map((entry) => highestId(entry, key)));
+  const direct = typeof value[key] === 'number' ? value[key] as number : 0;
+  return Math.max(direct, ...Object.values(value).map((entry) => highestId(entry, key)));
+}
+
+function unlimitedFarpWarehouse(side: Side): LuaObject {
+  return {
+    gasoline: { InitFuel: 100 },
+    unlimitedMunitions: true,
+    methanol_mixture: { InitFuel: 100 },
+    OperatingLevel_Air: 10,
+    diesel: { InitFuel: 100 },
+    speed: 16.666666,
+    dynamicSpawn: false,
+    unlimitedAircrafts: true,
+    periodicity: 30,
+    jet_fuel: { InitFuel: 100 },
+    size: 100,
+    suppliers: {},
+    coalition: side,
+    dynamicCargo: true,
+    OperatingLevel_Eqp: 10,
+    allowHotStart: false,
+    aircrafts: {},
+    weapons: {},
+    OperatingLevel_Fuel: 10,
+    unlimitedFuel: true,
+  };
+}
+
+function buildFarps(zones: DcsZone[], slots?: { blue: LuaObject | null; red: LuaObject | null }): FarpResult {
+  const groups: Record<Side, LuaValue[]> = { blue: [], red: [] };
+  const warehouses: LuaObject = {};
+  let groupId = Math.max(
+    highestId(slots?.blue ?? undefined, 'groupId'),
+    highestId(slots?.red ?? undefined, 'groupId'),
+  ) + 1;
+  let unitId = Math.max(
+    highestId(slots?.blue ?? undefined, 'unitId'),
+    highestId(slots?.red ?? undefined, 'unitId'),
+  ) + 1;
+
+  for (const zone of zones) {
+    if (zone.type !== 'farp') continue;
+    // zones.keysites() retains the whole trigger-zone name as label. The campaign's
+    // Airbase lookup therefore requires this exact static unit name.
+    const logicalName = `FARP-${zone.name}`;
+    const staticGroupName = `Static ${logicalName}`;
+    const thisGroupId = groupId++;
+    const thisUnitId = unitId++;
+    groups[zone.side].push({
+      heading: 0,
+      route: {
+        points: [{
+          alt: 0,
+          type: '',
+          name: '',
+          y: zone.y,
+          speed: 0,
+          x: zone.x,
+          formation_template: '',
+          action: '',
+        }],
+      },
+      groupId: thisGroupId,
+      units: [{
+        tasks: {},
+        category: 'Heliports',
+        shape_name: 'FARPS',
+        type: 'FARP',
+        unitId: thisUnitId,
+        heliport_frequency: '127.5',
+        y: zone.y,
+        x: zone.x,
+        name: logicalName,
+        heliport_modulation: 0,
+        heliport_callsign_id: 1,
+        heading: 0,
+      }],
+      y: zone.y,
+      x: zone.x,
+      name: staticGroupName,
+      dead: false,
+    });
+    warehouses[`[${thisUnitId}]`] = unlimitedFarpWarehouse(zone.side);
+  }
+  return { groups, warehouses };
+}
+
+function countryWithFarps(
+  side: Side,
+  slots: LuaObject | null | undefined,
+  groups: LuaValue[],
+): LuaObject {
+  const country = {
+    ...(slots ?? coalitionCountry(COUNTRY_BY_SIDE[side].id, COUNTRY_BY_SIDE[side].name)),
+  };
+  if (groups.length > 0) country.static = { group: groups };
+  return country;
+}
+
 /**
  * Build a minimal but valid DCS mission table for an otherwise-empty theatre carrying
  * only the given trigger zones. Mirrors the key set the Mission Editor requires: a
@@ -233,6 +346,7 @@ export function buildMissionTable(
   terrain: Terrain,
   initScriptFile = '',
   slots?: { blue: LuaObject | null; red: LuaObject | null },
+  farps: FarpResult = buildFarps(zones, slots),
 ): LuaObject {
   const zoneTables: LuaValue[] = zones.map(zoneToLua);
 
@@ -325,11 +439,11 @@ export function buildMissionTable(
     pictureFileNameB: {},
     coalition: {
       blue: emptyCoalitionSide('blue', [
-        slots?.blue ?? coalitionCountry(CJTF_BLUE_ID, 'CJTF Blue'),
+        countryWithFarps('blue', slots?.blue, farps.groups.blue),
       ]),
       neutrals: emptyCoalitionSide('neutrals'),
       red: emptyCoalitionSide('red', [
-        slots?.red ?? coalitionCountry(CJTF_RED_ID, 'CJTF Red'),
+        countryWithFarps('red', slots?.red, farps.groups.red),
       ]),
     },
     sortie: '',
@@ -542,8 +656,9 @@ const OPTIONS_LUA = `options =
 } -- end of options
 `;
 
-/** Minimal valid warehouses file: no airport/warehouse economy defined. */
-const WAREHOUSES_LUA = serializeNamed('warehouses', { warehouses: {}, airports: {} });
+function warehousesLua(farps: FarpResult): string {
+  return serializeNamed('warehouses', { warehouses: farps.warehouses, airports: {} });
+}
 
 /** Empty localization dictionary — the mission carries no DictKey references. */
 const DICTIONARY_LUA = 'dictionary = \n{\n} -- end of dictionary\n';
@@ -603,13 +718,14 @@ export async function buildMiz(
     console.info(`miz: baked ${slots.slotCount} Client slot(s)`);
     if (slots.notes.length) console.info('miz slot notes:\n  ' + slots.notes.join('\n  '));
   }
-  const mission = buildMissionTable(zones, terrain, initScriptFile, slots);
+  const farps = buildFarps(zones, slots);
+  const mission = buildMissionTable(zones, terrain, initScriptFile, slots, farps);
   const missionLua = serializeNamed('mission', mission);
 
   const zip = new JSZip();
   zip.file('mission', missionLua);
   zip.file('options', OPTIONS_LUA);
-  zip.file('warehouses', WAREHOUSES_LUA);
+  zip.file('warehouses', warehousesLua(farps));
   zip.file('theatre', terrain.id);
   zip.file('l10n/DEFAULT/dictionary', DICTIONARY_LUA);
   zip.file('l10n/DEFAULT/mapResource', bakeCampaign ? MAP_RESOURCE_WITH_INIT : MAP_RESOURCE_EMPTY);

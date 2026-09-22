@@ -53,8 +53,12 @@ export function configureDeparture(
 				group.units.length,
 			),
 		);
-	departure.type = "TakeOffParking";
-	departure.action = "From Parking Area";
+	// Preserve the builder's hot/cold choice. The ME exporter supplies cold
+	// defaults, but campaign builders deliberately request hot ramp starts.
+	departure.action =
+		departure.type === "TakeOffParkingHot"
+			? "From Parking Area Hot"
+			: "From Parking Area";
 	delete group.airdromeId;
 	delete departure.airdromeId;
 	departure.helipadId = baseId;

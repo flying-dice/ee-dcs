@@ -41,6 +41,7 @@
 --   MAX_HIGHLEVEL_TARGET_CHECKS       = 160 (highlevl.c line 84)
 */
 
+import * as clearance from "./airbase_clearance";
 import * as mode from "./campaign_mode";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
@@ -390,12 +391,19 @@ function spawnPatrol(baseName: string, side: Side, logFn: LogFn): void {
 	if (base === undefined) return;
 	const angle = math.random() * Math.PI * 2,
 		radius = PATROL_RADIUS_METRES + math.random() * PATROL_JITTER_METRES;
-	const start = cs.snap_land(
+	const candidate = cs.snap_land(
 		base.x + Math.cos(angle) * radius,
 		base.z + Math.sin(angle) * radius,
 		base.x,
 		base.z,
 	);
+	const start = clearance.find_clear(
+		base,
+		candidate,
+		PATROL_COUNT * PATROL_UNIT_SPACING_METRES,
+		`Patrol ${baseName}`,
+	);
+	if (start === undefined) return;
 	const cfg = INFANTRY[side],
 		id = cs.next_id(),
 		name = string.format("Patrol-%s-%d", string.sub(baseName, 1, 10), id);

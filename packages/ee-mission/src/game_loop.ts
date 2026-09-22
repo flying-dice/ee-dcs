@@ -31,6 +31,7 @@
 --   game_loop       ← start_high_level_ai orchestrator (requires all above)
 */
 
+import * as airbase_cleanup from "./airbase_cleanup";
 import * as atk from "./attack_waves";
 import * as base_defenses from "./base_defenses";
 import * as sched from "./campaign_mode";
@@ -141,6 +142,7 @@ export function start(): void {
 		);
 	inst_m.init(info);
 	base_defenses.init(info);
+	airbase_cleanup.schedule(info);
 	pilots_m.init(info);
 	if (restored) persist.restore_world(info);
 	info(

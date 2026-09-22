@@ -21,3 +21,5 @@
 - The selectable theatre area is the bounding box of all exported DCS airfields plus a 100 km buffer, clamped to the DCS theatre bounds. Administrative polygons are clipped to this envelope before assignment, so territory ownership and candidate placement cannot extend into the large unused edges of a DCS map.
 - Generated FARPs use deterministic interior points distributed across the side's assigned Close administrative territories. Generation no longer depends on OSM land-use surfaces or settlement-clearance masks; spacing progressively relaxes only when necessary to satisfy the requested count within small territories.
 - Unselected OSM keysite candidates render only in Edit on map mode; DCS airbases remain visible in every mode.
+
+- Live DCS lesson (2026-09-22): Group/Unit existence and life can describe inactive scheduled placeholders. Spawn acceptance requires Unit:isActive() as well as survival and takeoff evidence. Studio VS Code bridge 0.4.0 exposes mission eval through port 25570 /rpc, not the older desktop /mcp endpoint.

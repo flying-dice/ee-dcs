@@ -10,6 +10,12 @@
    MP playout — and now more so: sprint 02 found the SEAD and BAI generators were silently dead in
    the TypeScript port, and reactivating them is a real behavioural change no offline test can
    fully validate.
+   Issue #3 is now reproduced live: FARP helicopter groups disappear within one
+   second; the same AH-64D specification works initially and after aircraft
+   recycling at an authored FARP. Generator now bakes stock FARPs before load;
+   checks pass and observed RED/BLUE campaign sections have taken off. Ground
+   clearance also has a tested automatic evacuation loop. Retain
+   [ED evidence and workarounds](../../dcs-bugs/runtime-farp-spawning/README.md).
 
 ## Web scenario authoring
 

@@ -96,72 +96,25 @@ function loadGolden(duration) {
 	return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
+function loadClearance(duration) {
+	const file = path.join(__dirname, "golden", `clearance-${duration}.json`);
+	if (!fs.existsSync(file)) {
+		console.error(
+			`Missing reviewed clearance fixture ${file}. Run --record-clearance and review its order delta.`,
+		);
+		process.exit(1);
+	}
+	return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
 function setDiff(a, b) {
 	const bSet = new Set(b);
 	return a.filter((x) => !bSet.has(x));
 }
 
-// ---------------------------------------------------------------------------------------
-// KNOWN BASELINE DIVERGENCES
-//
-// The golden fixtures are recorded from the lua tree at its PINNED pre-deletion commit
-// 232b9f5. Three deliberate changes landed in 7700054 — the very commit that deleted that
-// tree — so the baseline recording predates them and can never be re-recorded with them.
-// They are rewritten onto the EXPECTED (baseline) side here rather than being excluded from
-// the comparison, so the port is still held to an exact value: if the typescript tree ever
-// reverts to the old value, the rewritten expectation no longer matches and the suite
-// fails. Excluding the fields would have silently permitted both values.
-//
-// A fourth divergence is NOT deliberate and is reported to Lead rather than fixed here
-// (fixing it means touching packages/ee-mission/src, which is out of scope for this task).
-const BASELINE_DIVERGENCES = {
-	// 1. config.countries: USA(2)/RUSSIA(0) → CJTF_BLUE(80)/CJTF_RED(81).
-	//    src/config.ts:180 vs Scripts/ee-dcs/config.lua:67 at 232b9f5. Introduced in 7700054.
-	country: { 2: 80, 0: 81 },
-	// 2. Stock DCS FARP heliport shape: "FARP" → "FARPS".
-	//    DCS MissionEditor/modules/me_exportToMiz.lua:895-944; introduced in 7700054 and
-	//    already asserted directly by the authored-FARP fixture in campaign-smoke.lua.
-	shape_name: { FARP: "FARPS" },
-	// 3. Hot ramp starts. CLAUDE.md guardrail: `type` is what the sim honours, so the old
-	//    type="TakeOff" + action="From Parking Area" pair spawned aircraft on the RUNWAY.
-	//    Introduced in 7700054 ("hot ramp starts replacing runway starts across 13 sites").
-	routePointType: { TakeOff: "TakeOffParkingHot" },
-	routePointAction: { "From Parking Area": "From Parking Area Hot" },
-};
-
-// 4. FIXED (was: secondary-group RNG draw-order divergence). The port called composition()
-//    before spawnOrigin(), consuming the same COUNT of math.random draws in a different ORDER
-//    from the Lua baseline's spawn_sec_group, which shifted every GndSec-* spawn origin and
-//    group size. src/ground_forces.ts now draws in baseline order, so GndSec-* entries compare
-//    EXACTLY like everything else. The 400 m jitter tolerance and the prefix/envelope leniency
-//    that stood in for this have been removed rather than left dormant - a tolerance nobody
-//    needs is a place a future regression can hide. Verified: the suite passes with zero
-//    tolerance, and reverting numericSuffix() still fails these entries.
+// Historical Lua and current clearance expectations are compared as recorded.
+// No order rewriting or positional tolerance is applied.
 const POSITION_FIELDS = new Set(["x", "y", "alt"]);
-
-function toleranceFor() {
-	return 0;
-}
-
-// Rewrites one recorded order from the pinned baseline into what the current port is
-// expected to emit, applying only the enumerated deliberate changes above.
-function applyDivergences(value, key) {
-	if (Array.isArray(value)) return value.map((v) => applyDivergences(v));
-	if (value !== null && typeof value === "object") {
-		const out = {};
-		for (const k of Object.keys(value)) out[k] = applyDivergences(value[k], k);
-		return out;
-	}
-	if (key === "country" && BASELINE_DIVERGENCES.country[value] !== undefined)
-		return BASELINE_DIVERGENCES.country[value];
-	if (key === "shape_name" && BASELINE_DIVERGENCES.shape_name[value])
-		return BASELINE_DIVERGENCES.shape_name[value];
-	if (key === "type" && BASELINE_DIVERGENCES.routePointType[value])
-		return BASELINE_DIVERGENCES.routePointType[value];
-	if (key === "action" && BASELINE_DIVERGENCES.routePointAction[value])
-		return BASELINE_DIVERGENCES.routePointAction[value];
-	return value;
-}
 
 // Deep compare that reports FIELD PATHS, so a failure names the waypoint that moved rather
 // than dumping two order blobs at the reader. `tolerance` is metres and applies only to the
@@ -212,8 +165,7 @@ function deepDiff(expected, actual, tolerance, path, out) {
 function compareOrders(expected, actual, expectedLabel, actualLabel, failures) {
 	if (!Array.isArray(expected) || !Array.isArray(actual)) {
 		failures.push(
-			`order log missing (${expectedLabel}=${typeof expected}, ${actualLabel}=${typeof actual}).` +
-				" Re-record the golden fixtures: node test/run-tests.cjs --record-golden <lua-tree-root>",
+			`order log missing (${expectedLabel}=${typeof expected}, ${actualLabel}=${typeof actual}). Inspect the fixture producer; preserve the pinned Lua baseline.`,
 		);
 		return;
 	}
@@ -224,7 +176,7 @@ function compareOrders(expected, actual, expectedLabel, actualLabel, failures) {
 		);
 	let reported = 0;
 	for (let i = 0; i < Math.min(expected.length, actual.length); i += 1) {
-		const want = applyDivergences(expected[i]);
+		const want = expected[i];
 		const have = actual[i];
 		// Every order, GndSec-* included, is compared EXACTLY — see note 4 above.
 		const diff = deepDiff(want, have, 0, "", []);
@@ -394,18 +346,39 @@ if (process.argv[2] === "--record-golden") {
 	process.exit(0);
 }
 
+// Deliberately records the current TypeScript campaign with real airbase
+// clearance. The pre-deletion Lua baseline files above remain immutable.
+if (process.argv[2] === "--record-clearance") {
+	for (const duration of ["310", "2100"]) {
+		const args = ["typescript", duration];
+		const summary = parseSummary(
+			run("campaign-smoke.lua", args),
+			"campaign-smoke.lua",
+			args,
+		);
+		if (!summary || !ok) process.exit(1);
+		const file = path.join(__dirname, "golden", `clearance-${duration}.json`);
+		fs.writeFileSync(file, `${JSON.stringify(summary, null, "\t")}\n`);
+		console.log(
+			`recorded ${file} (${summary.orders.length} exact issued orders)`,
+		);
+	}
+	process.exit(0);
+}
+
 run("core-parity.lua", []);
+run("spawn-diagnostics.lua", []);
 
 if (!luaTreePresent) {
 	console.log(
 		`\nSKIP lua legs: ${path.relative(root, luaTreeEntry)} is not present.` +
-			"\n     The lua baseline has been deleted; the typescript run is asserted against the" +
-			"\n     committed golden fixtures in test/golden/ instead.",
+			"\n     The current TypeScript campaign is asserted against reviewed clearance fixtures." +
+			"\n     Pinned pre-deletion Lua fixtures remain for historical provenance.",
 	);
 }
 
 for (const duration of ["310", "2100"]) {
-	const golden = loadGolden(duration);
+	const clearance = loadClearance(duration);
 	const tsArgs = ["typescript", duration];
 	const tsSummary = parseSummary(
 		run("campaign-smoke.lua", tsArgs),
@@ -413,15 +386,16 @@ for (const duration of ["310", "2100"]) {
 		tsArgs,
 	);
 
-	// Leg 1 — the durable net.
+	// Current behavior: compare every real issued order and count exactly.
 	if (
 		tsSummary &&
-		!compareSummaries(duration, golden, tsSummary, "golden", "typescript")
+		!compareSummaries(duration, clearance, tsSummary, "clearance", "typescript")
 	)
 		ok = false;
 
-	// Leg 2 — live differential, only while the lua tree exists.
+	// Historical provenance leg, only while the pinned Lua tree exists.
 	if (luaTreePresent) {
+		const golden = loadGolden(duration);
 		const luaArgs = ["lua", duration];
 		const luaSummary = parseSummary(
 			run("campaign-smoke.lua", luaArgs),
@@ -433,13 +407,11 @@ for (const duration of ["310", "2100"]) {
 			!compareSummaries(duration, golden, luaSummary, "golden", "lua")
 		)
 			ok = false;
-		if (
-			luaSummary &&
-			tsSummary &&
-			!compareSummaries(duration, luaSummary, tsSummary, "lua", "typescript")
-		)
-			ok = false;
 	}
 }
+
+// Additional full integration leg exercises clearance geometry, evacuation,
+// failure handling, and reinjection with live module behavior.
+run("campaign-smoke.lua", ["typescript", "310", root, "clearance"]);
 
 if (!ok) process.exit(1);

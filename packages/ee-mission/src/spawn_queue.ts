@@ -18,12 +18,17 @@
 -- replays them on drain (ground_forces / cas artillery set a task immediately after spawning).
 */
 import * as cs from "./campaign_state";
+import * as diagnostics from "./spawn_diagnostics";
+
 const S = cs.S;
 const DRAIN_PER_TICK = 4;
 const DRAIN_INTERVAL = 1.0;
 export type LogFunction = (this: void, message: string) => void;
+
 import type { SpawnItem } from "./campaign_types";
+
 export type { SpawnItem } from "./campaign_types";
+
 S.spawn_queue = S.spawn_queue ?? [];
 S._spawn_seq = S._spawn_seq ?? 0;
 _G.__dmt_real_addGroup = _G.__dmt_real_addGroup ?? coalition.addGroup;
@@ -137,11 +142,16 @@ export function drain(log_fn: LogFunction = env.info): number {
 		let g: Group | StaticObject | undefined;
 		let spawned: Group | undefined;
 		if (item.kind === "group") {
+			const probe = diagnostics.begin(item, log_fn);
 			const [ok, res] = pcall(
 				real_addGroup,
 				item.country,
 				item.category,
 				item.data,
+			);
+			diagnostics.finish(
+				probe,
+				ok ? (res !== undefined ? "returned" : "nil") : "threw",
 			);
 			if (ok) {
 				g = res;
@@ -166,7 +176,7 @@ export function drain(log_fn: LogFunction = env.info): number {
 		}
 		log_fn(
 			string.format(
-				"[spawn_queue] <<< OK #%d name=%s spawned=%s",
+				"[spawn_queue] <<< API RESULT #%d name=%s api_returned=%s",
 				item.seq,
 				item.name,
 				tostring(g !== undefined),
@@ -178,7 +188,7 @@ export function drain(log_fn: LogFunction = env.info): number {
 		S._spawn_drain_reported = true;
 		log_fn(
 			string.format(
-				"[spawn_queue] DRAIN COMPLETE — all %d queued spawns executed and survived the loop",
+				"[spawn_queue] DRAIN COMPLETE — all %d queued spawn requests processed (not proof of live units)",
 				S._spawn_seq,
 			),
 		);
