@@ -18,14 +18,15 @@
 -- keysite grants fog-of-war to the recon side via fog_of_war.lua's per-unit recon scan. It draws
 -- from the side's "recon" reserve pool, RTBs, and is recycled on landing (supply.make_land_handler).
 */
-import * as board from "./task_board";
+
+import * as cs from "./campaign_state";
+import type { Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
 import * as croute from "./croute";
-import * as cs from "./campaign_state";
 import * as ov from "./map_overlay";
-import type { WorldPoint } from "./campaign_types";
+import { BLUE, RED } from "./sides";
+import * as board from "./task_board";
 
-import type { Side } from "./campaign_types";
 type LogFunction = (this: void, message: string) => void;
 
 export interface ReconObjective {
@@ -41,7 +42,7 @@ interface ReconAircraft {
 }
 
 const AC: Record<number, ReconAircraft> = {};
-for (const side of [coalition.side.BLUE, coalition.side.RED]) {
+for (const side of [BLUE, RED]) {
 	AC[side] = {
 		country: config.C.countries[side],
 		recon: config.C.types.aircraft[side].recon,

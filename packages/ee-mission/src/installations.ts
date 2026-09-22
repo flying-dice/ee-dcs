@@ -23,15 +23,17 @@
 --     Kept intact so an empty Caucasus mission still boots a scenario; this path still spawns.
 */
 import * as cs from "./campaign_state";
-import * as config from "./config";
-import * as zones from "./zones";
 import type {
-	Side,
-	WorldPoint,
+	KeysiteFlags,
 	KeysiteRecord,
 	SceneryAssetRecord,
-	KeysiteFlags,
+	Side,
+	WorldPoint,
 } from "./campaign_types";
+import * as config from "./config";
+import { BLUE, RED } from "./sides";
+import * as zones from "./zones";
+
 type LogFunction = (this: void, message: string) => void;
 const S = cs.S;
 const SPAWN_PHYSICAL = true;
@@ -242,7 +244,7 @@ function spawn_installation(
 }
 function pick_producer_bases(): Record<string, boolean> {
 	const producer: Record<string, boolean> = {};
-	for (const side of [coalition.side.BLUE, coalition.side.RED] as const) {
+	for (const side of [BLUE, RED] as const) {
 		const owned: string[] = [];
 		let any_rear = false;
 		for (const [base, owner] of pairs(S.base_owner))
@@ -727,7 +729,7 @@ export function init(log_fn: LogFunction = () => {}): void {
 	let n = 0;
 	let np = 0;
 	for (const [base, owner] of pairs(S.base_owner)) {
-		if (owner !== coalition.side.BLUE && owner !== coalition.side.RED) continue;
+		if (owner !== BLUE && owner !== RED) continue;
 		const rear = rear_offset_pos(base, owner);
 		if (!rear) continue;
 		const loadout = [...BASE_LOADOUT];

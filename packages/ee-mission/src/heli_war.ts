@@ -27,6 +27,7 @@ const S = cs.S;
 type LogFn = (message: string) => void;
 
 import type { Side } from "./campaign_types";
+import { BLUE, RED } from "./sides";
 
 type Role = "anti_armour" | "hunter_killer" | "cas" | "bai";
 
@@ -42,11 +43,11 @@ const noop: LogFn = () => undefined;
 // ── Attack helicopter roster (hoisted to config: attack_heli type + payloads.attack_heli pylons) ──
 // fuel is a spawn-kinematics amount (not warzone type/economy data) → kept module-local per side.
 const HELI_FUEL: Record<number, number> = {
-	[coalition.side.BLUE]: 1600,
-	[coalition.side.RED]: 1500,
+	[BLUE]: 1600,
+	[RED]: 1500,
 };
 const ATTACK: Record<number, AttackConfig> = {};
-for (const side of [coalition.side.BLUE, coalition.side.RED]) {
+for (const side of [BLUE, RED]) {
 	ATTACK[side] = {
 		country: config.C.countries[side],
 		type: config.C.types.aircraft[side].attack_heli,
@@ -264,7 +265,7 @@ export function build_attack_heli(
 		);
 		cs.dbg(
 			"heli",
-			"%s %s heli section #%d spawned from %s (ground_start=%s)",
+			"%s %s heli section #%d queued from %s (ground_start=%s)",
 			cs.SIDE_NAME[side],
 			role,
 			sid,
@@ -426,7 +427,7 @@ function buildEscort(
 		);
 		cs.dbg(
 			"heli",
-			"%s escort #%d spawned from %s",
+			"%s escort #%d queued from %s",
 			cs.SIDE_NAME[side],
 			sid,
 			baseName,

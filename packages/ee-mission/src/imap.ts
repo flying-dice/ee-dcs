@@ -24,6 +24,8 @@
 */
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
+import { BLUE, RED } from "./sides";
+
 const S = cs.S;
 export const BASE_DISTANCE = "BASE_DISTANCE";
 export const AIR_DEFENCE = "AIR_DEFENCE";
@@ -49,17 +51,17 @@ const LAYERS: Layer[] = [
 	SURFACE_DEFENCE,
 	IMPORTANCE,
 ];
-const SIDES: Side[] = [coalition.side.BLUE, coalition.side.RED];
+const SIDES: Side[] = [BLUE, RED];
 
 function ensureTables(): void {
 	for (const layer of LAYERS) {
 		S.imap.raw[layer] ??= {
-			[coalition.side.BLUE]: {},
-			[coalition.side.RED]: {},
+			[BLUE]: {},
+			[RED]: {},
 		};
 		S.imap.nrm[layer] ??= {
-			[coalition.side.BLUE]: {},
-			[coalition.side.RED]: {},
+			[BLUE]: {},
+			[RED]: {},
 		};
 		for (const side of SIDES) {
 			S.imap.raw[layer][side] ??= {};
@@ -222,8 +224,8 @@ export function schedule_update(
 					"imap",
 					"layer %s refreshed: BLUE=%d entries, RED=%d entries",
 					label,
-					Object.keys(nrm(layer, coalition.side.BLUE)).length,
-					Object.keys(nrm(layer, coalition.side.RED)).length,
+					Object.keys(nrm(layer, BLUE)).length,
+					Object.keys(nrm(layer, RED)).length,
 				);
 				return time + UPDATE_PERIOD;
 			},

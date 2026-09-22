@@ -65,7 +65,6 @@
 */
 
 import * as mode from "./campaign_mode";
-import { matches } from "./lua_interop";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
@@ -74,8 +73,10 @@ import * as fow from "./fog_of_war";
 import * as frontline from "./frontline";
 import * as imap from "./imap";
 import * as installations from "./installations";
+import { matches } from "./lua_interop";
 import * as overlay from "./map_overlay";
 import * as recon from "./recon";
+import { BLUE, RED } from "./sides";
 import * as supply from "./supply";
 import * as board from "./task_board";
 
@@ -168,7 +169,7 @@ const STRIKER_COUNTERMEASURE_COUNT = 60;
 const PAYLOAD_GUN_PERCENT = 100;
 const MIN_SCHEDULER_DELAY_SECONDS = 1;
 const AC: Record<number, AircraftConfig> = {};
-for (const side of [coalition.side.BLUE, coalition.side.RED])
+for (const side of [BLUE, RED])
 	AC[side] = {
 		country: config.C.countries[side],
 		striker: config.C.types.aircraft[side].striker,

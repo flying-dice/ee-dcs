@@ -29,10 +29,11 @@
 */
 
 import * as mode from "./campaign_mode";
-import { numericSuffix } from "./lua_interop";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
+import { numericSuffix } from "./lua_interop";
+import { BLUE, RED } from "./sides";
 import * as supply from "./supply";
 
 const S = cs.S;
@@ -76,8 +77,8 @@ const GROUPS_PER_FRONTLINE_BASE = 3;
 const PERCENT_SCALE = 100;
 const COUNTRY_OF = config.C.countries;
 const SIDE_COL: Record<number, number> = {
-	[coalition.side.BLUE]: 0,
-	[coalition.side.RED]: 1,
+	[BLUE]: 0,
+	[RED]: 1,
 };
 const PRIMARY_SLOTS = config.C.types.ground.primary_slots;
 const SECONDARY_SLOTS = config.C.types.ground.secondary_slots;
@@ -464,10 +465,10 @@ function spawnSupport(
 }
 
 export function init_oob(logFn: LogFn = () => undefined): void {
-	S.ground_groups = { [coalition.side.BLUE]: {}, [coalition.side.RED]: {} };
-	S.arty_groups = { [coalition.side.BLUE]: {}, [coalition.side.RED]: {} };
-	S.sec_groups = { [coalition.side.BLUE]: {}, [coalition.side.RED]: {} };
-	for (const side of [coalition.side.BLUE, coalition.side.RED] as Side[]) {
+	S.ground_groups = { [BLUE]: {}, [RED]: {} };
+	S.arty_groups = { [BLUE]: {}, [RED]: {} };
+	S.sec_groups = { [BLUE]: {}, [RED]: {} };
+	for (const side of [BLUE, RED] as Side[]) {
 		const bases = frontlineBases(side);
 		const demand = GROUPS_PER_FRONTLINE_BASE * bases.length;
 		const have = supply.reserve_side(side, "vehicle");
@@ -511,7 +512,6 @@ function nearestUnoccupiedEnemy(
 	}
 	return best;
 }
-
 
 function advanceRetreat(side: Side, logFn: LogFn): void {
 	const groups = S.ground_groups[side];
@@ -694,8 +694,7 @@ export function respawn_saved(
 	_logFn: LogFn = () => undefined,
 ): boolean {
 	if (
-		(summary.side !== coalition.side.BLUE &&
-			summary.side !== coalition.side.RED) ||
+		(summary.side !== BLUE && summary.side !== RED) ||
 		summary.lead === undefined
 	)
 		return false;

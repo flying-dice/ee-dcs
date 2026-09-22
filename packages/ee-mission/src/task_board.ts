@@ -54,6 +54,7 @@ const S = cs.S;
 type LogFn = (message: string) => void;
 
 import type { BoardRole, BoardTask, BoardTaskSpec } from "./campaign_types";
+import { BLUE, RED } from "./sides";
 
 export type {
 	BoardRole,
@@ -478,7 +479,7 @@ export function tick(logFn: LogFn = () => undefined): void {
 	skipPass = {};
 	let skipped = 0;
 	for (const [name, owner] of Object.entries(S.base_owner)) {
-		if (owner !== coalition.side.BLUE && owner !== coalition.side.RED) continue;
+		if (owner !== BLUE && owner !== RED) continue;
 		if ((S.base_health[name] ?? 1) >= 1) delete S.base_assign_toggle[name];
 		else {
 			const skip = !S.base_assign_toggle[name];
@@ -527,7 +528,7 @@ export function tick(logFn: LogFn = () => undefined): void {
 			a.priority * (a.critical ? CRITICAL_PRIORITY_MULTIPLIER : 1),
 	);
 	let humansPresent = false;
-	for (const side of [coalition.side.BLUE, coalition.side.RED]) {
+	for (const side of [BLUE, RED]) {
 		const [ok, players] = pcall(() => coalition.getPlayers(side));
 		if (ok && players !== undefined && players.length > 0) {
 			humansPresent = true;

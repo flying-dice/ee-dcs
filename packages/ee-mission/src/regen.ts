@@ -36,6 +36,7 @@ import type { RegenEntry, Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
 import * as farpParking from "./farp_parking";
 import * as keysite from "./keysite";
+import { BLUE, RED } from "./sides";
 import type { Role } from "./supply";
 import * as supply from "./supply";
 
@@ -58,20 +59,20 @@ const PLAYER_LANDED_RADIUS = 2000;
 const REGEN_SPEED = 0;
 const FULL_SUPPLY_PERCENT = 100; // EECH supply/rearming levels are percentages.
 const TYPES: RegenRole[] = ["striker", "escort", "heli"];
-const SIDES: Side[] = [coalition.side.BLUE, coalition.side.RED];
+const SIDES: Side[] = [BLUE, RED];
 
 const AC: Record<Side, AircraftConfig> = {
-	[coalition.side.BLUE]: {
-		country: config.C.countries[coalition.side.BLUE],
-		striker: config.C.types.aircraft[coalition.side.BLUE].striker,
-		escort: config.C.types.aircraft[coalition.side.BLUE].escort,
-		heli: config.C.types.aircraft[coalition.side.BLUE].attack_heli,
+	[BLUE]: {
+		country: config.C.countries[BLUE],
+		striker: config.C.types.aircraft[BLUE].striker,
+		escort: config.C.types.aircraft[BLUE].escort,
+		heli: config.C.types.aircraft[BLUE].attack_heli,
 	},
-	[coalition.side.RED]: {
-		country: config.C.countries[coalition.side.RED],
-		striker: config.C.types.aircraft[coalition.side.RED].striker,
-		escort: config.C.types.aircraft[coalition.side.RED].escort,
-		heli: config.C.types.aircraft[coalition.side.RED].attack_heli,
+	[RED]: {
+		country: config.C.countries[RED],
+		striker: config.C.types.aircraft[RED].striker,
+		escort: config.C.types.aircraft[RED].escort,
+		heli: config.C.types.aircraft[RED].attack_heli,
 	},
 };
 
@@ -142,8 +143,8 @@ function playerLandedAt(baseName: string, side: Side): boolean {
 
 export function init(logFn: LogFunction = () => undefined): void {
 	S.regen_queue = {
-		[coalition.side.BLUE]: { striker: [], escort: [], heli: [] },
-		[coalition.side.RED]: { striker: [], escort: [], heli: [] },
+		[BLUE]: { striker: [], escort: [], heli: [] },
+		[RED]: { striker: [], escort: [], heli: [] },
 	};
 	logFn(
 		string.format(
@@ -270,11 +271,7 @@ export function make_dead_handler(
 			const unit = group.getUnit(1);
 			if (unit === undefined || !unit.isExist()) return;
 			const coalitionId = unit.getCoalition();
-			if (
-				coalitionId !== coalition.side.BLUE &&
-				coalitionId !== coalition.side.RED
-			)
-				return;
+			if (coalitionId !== BLUE && coalitionId !== RED) return;
 			const side: Side = coalitionId;
 			const home = nearestFriendly(side, unit.getPosition().p);
 			if (home === undefined) {

@@ -44,11 +44,13 @@
 -- the generator SEAD's get_enemy_aa_targets (highlevl.c:1981 wants air_attack==10 site AA). MANPADs still
 -- feed the AIR_DEFENCE imap by attribute (desired). Tracked in S.base_fp_groups; re-manned on capture.
 */
-import * as config from "./config";
+
 import * as cs from "./campaign_state";
-import * as installations from "./installations";
-import * as zones from "./zones";
 import type { WorldPoint } from "./campaign_types";
+import * as config from "./config";
+import * as installations from "./installations";
+import { BLUE, RED } from "./sides";
+import * as zones from "./zones";
 
 type LogFunction = (this: void, message: string) => void;
 
@@ -58,7 +60,7 @@ const GROUP_UNITS: Record<number, string[]> = {};
 const MG_TYPE: Record<number, string> = {};
 const MANPAD_TYPE: Record<number, string> = {};
 
-for (const side of [coalition.side.BLUE, coalition.side.RED]) {
+for (const side of [BLUE, RED]) {
 	GROUP_UNITS[side] = DEF.group[side];
 	MG_TYPE[side] = DEF.mg[side];
 	MANPAD_TYPE[side] = DEF.manpad[side];
@@ -250,7 +252,7 @@ export function init(logFn: LogFunction = () => undefined): void {
 	let firingPointCount = 0;
 
 	for (const [baseName, side] of pairs(S.base_owner)) {
-		if (side === coalition.side.BLUE || side === coalition.side.RED) {
+		if (side === BLUE || side === RED) {
 			const kind = S.base_kind?.[baseName] ?? "airbase";
 			const pos = S.base_pos[baseName];
 			const tag = string.sub(baseName, 1, 10);
@@ -287,7 +289,7 @@ export function init(logFn: LogFunction = () => undefined): void {
 				(record.home_base !== undefined
 					? S.base_owner[record.home_base]
 					: undefined);
-			if (side === coalition.side.BLUE || side === coalition.side.RED) {
+			if (side === BLUE || side === RED) {
 				const tag = string.sub(keysiteName, 1, 12);
 				const placed = spawnRing(
 					keysiteName,

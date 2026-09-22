@@ -23,7 +23,7 @@
 --
 --   SIDE-KEYED tables use the STRING keys "blue" / "red" in DMT_CONFIG (NOT coalition.side numbers —
 --   those collide with array indices and would break the deep-merge). `config.C` re-keys them to
---   coalition.side.BLUE / coalition.side.RED for the consuming modules. See README "Configuring the
+--   BLUE / RED for the consuming modules. See README "Configuring the
 --   campaign (DMT_CONFIG)".
 --
 -- BOOT VALIDATION:
@@ -46,6 +46,7 @@
 import * as cs from "./campaign_state";
 import type { InventoryLedger, Side } from "./campaign_types";
 import * as payloads from "./payloads";
+import { BLUE, RED } from "./sides";
 
 export interface AircraftRoster {
 	striker: string;
@@ -115,8 +116,8 @@ export interface CampaignConfig {
 		manpad: Record<number, string>;
 	};
 }
-const B = coalition.side.BLUE;
-const R = coalition.side.RED;
+const B = BLUE;
+const R = RED;
 // Stock DCS four-position heliport. MissionEditor/modules/me_exportToMiz.lua:922-950
 // enumerates exactly four parking positions for this FARP subtype; the single
 // and invisible FARP variants do not satisfy the campaign's section launches.

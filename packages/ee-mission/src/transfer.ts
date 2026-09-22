@@ -33,6 +33,7 @@
 
 import * as mode from "./campaign_mode";
 import * as cs from "./campaign_state";
+import type { Side } from "./campaign_types";
 import * as imap from "./imap";
 import type { Role } from "./supply";
 import * as supply from "./supply";
@@ -99,7 +100,7 @@ function idleFraction(baseName: string): number {
 
 // rating = base_dist*4 + (1-idle_fraction)*4. Commented-out EECH importance/defence terms remain
 // excluded. IMAP_BASE_DISTANCE is queried for the enemy side.
-function scoreBase(baseName: string, enemySide: number): number {
+function scoreBase(baseName: string, enemySide: Side): number {
 	const basePos = S.base_pos[baseName];
 	if (basePos === undefined) return 0;
 	const health = S.base_health[baseName] ?? 0;

@@ -13,6 +13,7 @@
 -- Human players are never touched.
 */
 import * as cs from "./campaign_state";
+import { BLUE, NEUTRAL, RED } from "./sides";
 
 // Reserved F10/map-overlay ID ranges owned by the campaign modules. These match
 // the allocation blocks in task, column, frontline, installation, base and asset overlays.
@@ -53,11 +54,7 @@ export function nuke(
 	_G.__dmt_handlers = [];
 	let destroyed = 0;
 	let skipped = 0;
-	for (const side of [
-		coalition.side.NEUTRAL,
-		coalition.side.RED,
-		coalition.side.BLUE,
-	]) {
+	for (const side of [NEUTRAL, RED, BLUE]) {
 		const [ok, groups] = pcall(coalition.getGroups, side);
 		if (ok && groups) {
 			for (const g of groups) {
@@ -70,11 +67,7 @@ export function nuke(
 		}
 	}
 	let ds = 0;
-	for (const side of [
-		coalition.side.NEUTRAL,
-		coalition.side.RED,
-		coalition.side.BLUE,
-	]) {
+	for (const side of [NEUTRAL, RED, BLUE]) {
 		const [ok, objs] = pcall(coalition.getStaticObjects, side);
 		if (ok && objs) {
 			for (const so of objs) {

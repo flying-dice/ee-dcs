@@ -49,6 +49,7 @@ import * as persist from "./persist";
 import * as pilots_m from "./pilots";
 import * as react_m from "./reaction";
 import * as regen_m from "./regen";
+import { BLUE, RED } from "./sides";
 import * as sup from "./supply";
 import * as sf_m from "./supply_flight";
 import * as board_m from "./task_board";
@@ -102,8 +103,8 @@ function schedule_admin(): void {
 				string.format(
 					"STATUS T+%dm BLUE=%d RED=%d | %s",
 					elapsed,
-					S.strength[coalition.side.BLUE],
-					S.strength[coalition.side.RED],
+					S.strength[BLUE],
+					S.strength[RED],
 					parts.join("  "),
 				),
 			);
@@ -145,8 +146,8 @@ export function start(): void {
 	info(
 		string.format(
 			"Campaign live — BLUE str=%d RED str=%d",
-			S.strength[coalition.side.BLUE],
-			S.strength[coalition.side.RED],
+			S.strength[BLUE],
+			S.strength[RED],
 		),
 	);
 	let n_bases = 0;
@@ -185,100 +186,56 @@ export function start(): void {
 	imap_m.schedule_update(info);
 	frontl.schedule_update(info);
 	farps.schedule(info);
-	atk.schedule_keysite_strikes(
-		coalition.side.BLUE,
-		sched.SCHED.keysite_strike.blue,
-		info,
-	);
-	atk.schedule_keysite_strikes(
-		coalition.side.RED,
-		sched.SCHED.keysite_strike.red,
-		info,
-	);
+	atk.schedule_keysite_strikes(BLUE, sched.SCHED.keysite_strike.blue, info);
+	atk.schedule_keysite_strikes(RED, sched.SCHED.keysite_strike.red, info);
 	roster("keysite_strike/BLUE", sched.SCHED.keysite_strike.blue);
 	roster("keysite_strike/RED", sched.SCHED.keysite_strike.red);
-	atk.schedule_oca_strikes(
-		coalition.side.BLUE,
-		sched.SCHED.oca_strike.blue,
-		info,
-	);
-	atk.schedule_oca_strikes(
-		coalition.side.RED,
-		sched.SCHED.oca_strike.red,
-		info,
-	);
+	atk.schedule_oca_strikes(BLUE, sched.SCHED.oca_strike.blue, info);
+	atk.schedule_oca_strikes(RED, sched.SCHED.oca_strike.red, info);
 	roster("oca_strike/BLUE", sched.SCHED.oca_strike.blue);
 	roster("oca_strike/RED", sched.SCHED.oca_strike.red);
-	gnd.schedule_ground(coalition.side.BLUE, sched.SCHED.ground.blue, info);
-	gnd.schedule_ground(coalition.side.RED, sched.SCHED.ground.red, info);
+	gnd.schedule_ground(BLUE, sched.SCHED.ground.blue, info);
+	gnd.schedule_ground(RED, sched.SCHED.ground.red, info);
 	roster("ground/BLUE", sched.SCHED.ground.blue);
 	roster("ground/RED", sched.SCHED.ground.red);
-	troop_m.schedule_patrol(coalition.side.BLUE, sched.SCHED.patrol.blue, info);
-	troop_m.schedule_patrol(coalition.side.RED, sched.SCHED.patrol.red, info);
+	troop_m.schedule_patrol(BLUE, sched.SCHED.patrol.blue, info);
+	troop_m.schedule_patrol(RED, sched.SCHED.patrol.red, info);
 	roster("patrol/BLUE", sched.SCHED.patrol.blue);
 	roster("patrol/RED", sched.SCHED.patrol.red);
-	cas_m.schedule_cas(coalition.side.BLUE, sched.SCHED.cas.blue, info);
-	cas_m.schedule_cas(coalition.side.RED, sched.SCHED.cas.red, info);
+	cas_m.schedule_cas(BLUE, sched.SCHED.cas.blue, info);
+	cas_m.schedule_cas(RED, sched.SCHED.cas.red, info);
 	roster("cas/BLUE", sched.SCHED.cas.blue);
 	roster("cas/RED", sched.SCHED.cas.red);
-	cas_m.schedule_artillery(
-		coalition.side.BLUE,
-		sched.SCHED.artillery.blue,
-		info,
-	);
-	cas_m.schedule_artillery(coalition.side.RED, sched.SCHED.artillery.red, info);
+	cas_m.schedule_artillery(BLUE, sched.SCHED.artillery.blue, info);
+	cas_m.schedule_artillery(RED, sched.SCHED.artillery.red, info);
 	roster("artillery/BLUE", sched.SCHED.artillery.blue);
 	roster("artillery/RED", sched.SCHED.artillery.red);
 	troop_m.schedule_troop_insertion(
-		coalition.side.BLUE,
+		BLUE,
 		sched.SCHED.troop_insertion.blue,
 		info,
 	);
-	troop_m.schedule_troop_insertion(
-		coalition.side.RED,
-		sched.SCHED.troop_insertion.red,
-		info,
-	);
+	troop_m.schedule_troop_insertion(RED, sched.SCHED.troop_insertion.red, info);
 	roster("troop_insertion/BLUE", sched.SCHED.troop_insertion.blue);
 	roster("troop_insertion/RED", sched.SCHED.troop_insertion.red);
-	cas_m.schedule_sead(coalition.side.BLUE, sched.SCHED.sead.blue, info);
-	cas_m.schedule_sead(coalition.side.RED, sched.SCHED.sead.red, info);
+	cas_m.schedule_sead(BLUE, sched.SCHED.sead.blue, info);
+	cas_m.schedule_sead(RED, sched.SCHED.sead.red, info);
 	roster("sead/BLUE", sched.SCHED.sead.blue);
 	roster("sead/RED", sched.SCHED.sead.red);
-	cas_m.schedule_bai(coalition.side.BLUE, sched.SCHED.bai.blue, info);
-	cas_m.schedule_bai(coalition.side.RED, sched.SCHED.bai.red, info);
+	cas_m.schedule_bai(BLUE, sched.SCHED.bai.blue, info);
+	cas_m.schedule_bai(RED, sched.SCHED.bai.red, info);
 	roster("bai/BLUE", sched.SCHED.bai.blue);
 	roster("bai/RED", sched.SCHED.bai.red);
-	cas_m.schedule_oca_sweep(
-		coalition.side.BLUE,
-		sched.SCHED.oca_sweep.blue,
-		info,
-	);
-	cas_m.schedule_oca_sweep(coalition.side.RED, sched.SCHED.oca_sweep.red, info);
+	cas_m.schedule_oca_sweep(BLUE, sched.SCHED.oca_sweep.blue, info);
+	cas_m.schedule_oca_sweep(RED, sched.SCHED.oca_sweep.red, info);
 	roster("oca_sweep/BLUE", sched.SCHED.oca_sweep.blue);
 	roster("oca_sweep/RED", sched.SCHED.oca_sweep.red);
-	xfer_m.schedule_hc_transfer(
-		coalition.side.BLUE,
-		sched.SCHED.hc_transfer.blue,
-		info,
-	);
-	xfer_m.schedule_hc_transfer(
-		coalition.side.RED,
-		sched.SCHED.hc_transfer.red,
-		info,
-	);
+	xfer_m.schedule_hc_transfer(BLUE, sched.SCHED.hc_transfer.blue, info);
+	xfer_m.schedule_hc_transfer(RED, sched.SCHED.hc_transfer.red, info);
 	roster("hc_transfer/BLUE", sched.SCHED.hc_transfer.blue);
 	roster("hc_transfer/RED", sched.SCHED.hc_transfer.red);
-	xfer_m.schedule_fw_transfer(
-		coalition.side.BLUE,
-		sched.SCHED.fw_transfer.blue,
-		info,
-	);
-	xfer_m.schedule_fw_transfer(
-		coalition.side.RED,
-		sched.SCHED.fw_transfer.red,
-		info,
-	);
+	xfer_m.schedule_fw_transfer(BLUE, sched.SCHED.fw_transfer.blue, info);
+	xfer_m.schedule_fw_transfer(RED, sched.SCHED.fw_transfer.red, info);
 	roster("fw_transfer/BLUE", sched.SCHED.fw_transfer.blue);
 	roster("fw_transfer/RED", sched.SCHED.fw_transfer.red);
 	inst_m.schedule_scenery_poll(info);

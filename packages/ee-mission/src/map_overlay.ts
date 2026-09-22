@@ -4,9 +4,10 @@
 import * as cs from "./campaign_state";
 import type { BoardTask, Side, WorldPoint } from "./campaign_types";
 import * as fow from "./fog_of_war";
+import { BLUE, RED } from "./sides";
 
 const S = cs.S;
-const SIDES: Side[] = [coalition.side.BLUE, coalition.side.RED];
+const SIDES: Side[] = [BLUE, RED];
 const UPDATE_PERIOD_SECONDS = 30,
 	OVERLAY_INITIAL_DELAY_SECONDS = 5,
 	HEALTH_BAR_SEGMENTS = 5,
@@ -596,10 +597,7 @@ export function add_task_arrow(
 			from,
 			to,
 			side,
-			color:
-				side === coalition.side.BLUE
-					? [0.2, 0.45, 1, 0.75]
-					: [1, 0.2, 0.2, 0.75],
+			color: side === BLUE ? [0.2, 0.45, 1, 0.75] : [1, 0.2, 0.2, 0.75],
 		})
 	) {
 		release(TASK_LINE_POOL, lineId);

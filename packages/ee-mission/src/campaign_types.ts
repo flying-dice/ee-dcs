@@ -2,10 +2,6 @@
 
 import type {
 	ControllerAction,
-	MissionCommandPath,
-	TriggerColor,
-	WorldMarkPanel,
-	WorldVolume,
 	l_Airbase,
 	l_Controller,
 	l_Group,
@@ -18,7 +14,12 @@ import type {
 	l_Warehouse,
 	l_WorldEvent,
 	l_WorldEventHandler,
+	MissionCommandPath,
+	TriggerColor,
+	WorldMarkPanel,
+	WorldVolume,
 } from "@flying-dice/tslua-dcs-mission-types";
+import type { AnyCoalition, Neutral, Side } from "./sides";
 
 /**
  * DCS mission-scripting surface.
@@ -168,7 +169,12 @@ declare global {
 		flare?: number;
 		chaff?: number;
 		pylons?: PylonData[];
-		unlimited?: { fuel: boolean; guns: boolean; flares: boolean; chaff: boolean };
+		unlimited?: {
+			fuel: boolean;
+			guns: boolean;
+			flares: boolean;
+			chaff: boolean;
+		};
 	}
 
 	interface MissionZoneVertex {
@@ -288,13 +294,14 @@ declare module "@flying-dice/tslua-dcs-mission-types" {
 }
 
 /**
- * A combatant coalition: `coalition.side.RED` (1) or `coalition.side.BLUE` (2).
+ * A combatant coalition: RED (1) or BLUE (2).
  *
- * The DCS types package models `coalition.side.*` as plain `number` rather than
- * a TS enum, so this alias can no longer keep RED and BLUE apart at compile
- * time the way the hand-rolled declarations did.
+ * Re-exported from `./sides`, which owns the closed RED/BLUE domain and the
+ * single validated narrowing of the DCS `coalition.side` table. Import the
+ * `RED` / `BLUE` constants from `./sides` rather than reading
+ * `coalition.side.*`, which the types package widens to plain `number`.
  */
-export type Side = number;
+export type { AnyCoalition, Neutral, Side };
 export type WorldPoint = { x: number; z: number; y?: number };
 export type TaskResult = "success" | "partial" | "failure";
 export type TaskTermination = "route_complete" | "terminated";

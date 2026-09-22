@@ -49,6 +49,7 @@ import * as fow from "./fog_of_war";
 import * as frontl from "./frontline";
 import * as imap from "./imap";
 import type { PilotRecord } from "./pilot_types";
+import { BLUE, RED } from "./sides";
 import * as supply from "./supply";
 import * as board from "./task_board";
 
@@ -243,9 +244,7 @@ function player_name(u: DcsObject | undefined): string | undefined {
 }
 function unit_side(u: DcsObject): Side | undefined {
 	const [ok, side] = pcall(() => u.getCoalition?.());
-	return ok && (side === coalition.side.BLUE || side === coalition.side.RED)
-		? side
-		: undefined;
+	return ok && (side === BLUE || side === RED) ? side : undefined;
 }
 export function on_kill(event: DcsEvent): void {
 	if (event.id !== world.event.S_EVENT_KILL) return;
@@ -997,7 +996,7 @@ export function build_menus(log_fn: LogFunction = () => {}): void {
 		log_fn("pilots: missionCommands unavailable — F-10 menu skipped");
 		return;
 	}
-	for (const side of [coalition.side.BLUE, coalition.side.RED] as const) {
+	for (const side of [BLUE, RED] as const) {
 		const [ok] = pcall(() => {
 			const root = missionCommands.addSubMenuForCoalition(side, "Campaign");
 			missionCommands.addCommandForCoalition(

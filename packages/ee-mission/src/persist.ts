@@ -40,6 +40,7 @@ import type {
 	WorldPoint,
 } from "./campaign_types";
 import * as config from "./config";
+import { BLUE, RED } from "./sides";
 
 const S = cs.S;
 const SAVE_VERSION = 1;
@@ -424,7 +425,7 @@ function valid(v: unknown, schema: Schema): boolean {
 	return true;
 }
 const combatSide: Schema = {
-	oneOf: [{ literal: coalition.side.BLUE }, { literal: coalition.side.RED }],
+	oneOf: [{ literal: BLUE }, { literal: RED }],
 };
 const point = fields({ x: num, z: num, y: optional(num) });
 const ledger = fields({
@@ -621,10 +622,10 @@ export function restore_data(log_fn: LogFunction = () => {}): boolean {
 	for (const [name, age] of pairs(d.base_last_strike_age))
 		S.base_last_strike[name] = now - age;
 	const rq: CampaignState["regen_queue"] = {
-		[coalition.side.BLUE]: {},
-		[coalition.side.RED]: {},
+		[BLUE]: {},
+		[RED]: {},
 	};
-	for (const side of [coalition.side.BLUE, coalition.side.RED]) {
+	for (const side of [BLUE, RED]) {
 		const byt = d.regen_queue[side];
 		if (byt !== undefined) {
 			const entries: Record<string, RegenEntry[]> = {};
@@ -658,8 +659,8 @@ export function restore_data(log_fn: LogFunction = () => {}): boolean {
 		key_count(d.regen_queue),
 		key_count(d.pilots),
 		key_count(d.fow),
-		S.strength[coalition.side.BLUE] ?? 0,
-		S.strength[coalition.side.RED] ?? 0,
+		S.strength[BLUE] ?? 0,
+		S.strength[RED] ?? 0,
 		tostring(S.game_over),
 	);
 	return true;

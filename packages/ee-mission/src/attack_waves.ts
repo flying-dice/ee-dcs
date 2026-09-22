@@ -18,19 +18,23 @@
 -- campaign phase (the old phase-scaling wave table was removed). Strike cadence is mode-selected
 -- (campaign vs skirmish) via campaign_mode.lua.
 */
-import * as cs from "./campaign_state";
-import * as keysite from "./keysite";
-import * as croute from "./croute";
-import * as supply from "./supply";
-import * as ov from "./map_overlay";
-import * as config from "./config";
-import * as board from "./task_board";
-import * as recon from "./recon";
-import * as fow from "./fog_of_war";
+
 import * as mode from "./campaign_mode";
+import * as cs from "./campaign_state";
+import * as config from "./config";
+import * as croute from "./croute";
+import * as fow from "./fog_of_war";
+import * as keysite from "./keysite";
+import * as ov from "./map_overlay";
+import * as recon from "./recon";
+import * as supply from "./supply";
+import * as board from "./task_board";
 
 const S = cs.S;
+
 import type { Side } from "./campaign_types";
+import { BLUE, RED } from "./sides";
+
 type LogFn = (message: string) => void;
 type Intent = "oca" | "ground";
 const noop: LogFn = () => undefined;
@@ -47,7 +51,7 @@ interface InstallationModule {
 const FOW_OCA_THRESHOLD = 0.25; // highlevl.c:1433
 const PYLON = config.C.payloads;
 const AC: Record<number, AircraftConfig> = {};
-for (const side of [coalition.side.BLUE, coalition.side.RED]) {
+for (const side of [BLUE, RED]) {
 	AC[side] = {
 		country: config.C.countries[side],
 		striker: config.C.types.aircraft[side].striker,

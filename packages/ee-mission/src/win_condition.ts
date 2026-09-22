@@ -24,16 +24,17 @@
 -- (which modelled the DEAD fc_updt.c system) are REMOVED — EECH has no time-based end.
 */
 import * as cs from "./campaign_state";
+import type { Side } from "./campaign_types";
 import * as keysite from "./keysite";
 import * as persist from "./persist";
 import * as pilots from "./pilots";
+import { BLUE, RED } from "./sides";
 import * as supply from "./supply";
-import type { Side } from "./campaign_types";
 
 type LogFunction = (this: void, message: string) => void;
 
 const S = cs.S;
-const SIDES: Side[] = [coalition.side.BLUE, coalition.side.RED];
+const SIDES: Side[] = [BLUE, RED];
 const CAMPAIGN_END_MESSAGE_SECONDS = 120;
 
 function finish(winner: Side, reason: string, logFn: LogFunction): void {
@@ -42,8 +43,8 @@ function finish(winner: Side, reason: string, logFn: LogFunction): void {
 	let blueOwned = 0;
 	let redOwned = 0;
 	for (const [, owner] of pairs(S.base_owner)) {
-		if (owner === coalition.side.BLUE) blueOwned++;
-		else if (owner === coalition.side.RED) redOwned++;
+		if (owner === BLUE) blueOwned++;
+		else if (owner === RED) redOwned++;
 	}
 	const message = string.format(
 		"══════════ CAMPAIGN OVER ══════════\n%s VICTORY — %s\nBases: BLUE %d  RED %d   |   Strength: BLUE %d%%  RED %d%%",
@@ -51,8 +52,8 @@ function finish(winner: Side, reason: string, logFn: LogFunction): void {
 		reason,
 		blueOwned,
 		redOwned,
-		S.strength[coalition.side.BLUE],
-		S.strength[coalition.side.RED],
+		S.strength[BLUE],
+		S.strength[RED],
 	);
 	logFn(message);
 	trigger.action.outText(message, CAMPAIGN_END_MESSAGE_SECONDS);
@@ -63,8 +64,8 @@ function finish(winner: Side, reason: string, logFn: LogFunction): void {
 		reason,
 		blueOwned,
 		redOwned,
-		S.strength[coalition.side.BLUE],
-		S.strength[coalition.side.RED],
+		S.strength[BLUE],
+		S.strength[RED],
 	);
 
 	// WAVE 2 persistence: checkpoint the decided campaign so restarts preserve game_over/winner.
@@ -200,15 +201,13 @@ export function make_kill_handler(
 			pcall(() => {
 				if (event.initiator?.getCoalition !== undefined) {
 					const side = event.initiator.getCoalition?.();
-					if (side === coalition.side.BLUE || side === coalition.side.RED)
-						killerSide = side;
+					if (side === BLUE || side === RED) killerSide = side;
 				}
 			});
 			pcall(() => {
 				if (target.getCoalition !== undefined) {
 					const side = target.getCoalition();
-					if (side === coalition.side.BLUE || side === coalition.side.RED)
-						victimSide = side;
+					if (side === BLUE || side === RED) victimSide = side;
 				}
 			});
 			cs.stat_kill(killerSide, victimSide, cs.unit_category(target));

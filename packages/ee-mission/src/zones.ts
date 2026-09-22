@@ -9,6 +9,8 @@
 */
 import * as cs from "./campaign_state";
 import type { SceneryAssetRecord, Side, WorldPoint } from "./campaign_types";
+import { BLUE, NEUTRAL, RED } from "./sides";
+
 interface LoadedZone {
 	name: string;
 	color?: number[];
@@ -130,11 +132,7 @@ export function contains(name: string, wx: number, wz: number): boolean {
 }
 export function statics_in_zone(zone_name: string): string[] {
 	const result: string[] = [];
-	for (const side of [
-		coalition.side.BLUE,
-		coalition.side.RED,
-		coalition.side.NEUTRAL,
-	]) {
+	for (const side of [BLUE, RED, NEUTRAL]) {
 		try {
 			for (const object of coalition.getStaticObjects(side) ?? []) {
 				const point = object.getPoint();
@@ -241,11 +239,7 @@ export function side_of_color(zone: unknown): Side | undefined {
 	// Raw numeric keys preserve sparse Lua color tables; Array.isArray requires index 1.
 	const red = typeof color[1] === "number" ? color[1] : 0;
 	const blue = typeof color[3] === "number" ? color[3] : 0;
-	return blue > red
-		? coalition.side.BLUE
-		: red > blue
-			? coalition.side.RED
-			: undefined;
+	return blue > red ? BLUE : red > blue ? RED : undefined;
 }
 export function keysites(): KeysiteZone[] {
 	const result: KeysiteZone[] = [];

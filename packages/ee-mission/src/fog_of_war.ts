@@ -22,6 +22,8 @@
 */
 import * as cs from "./campaign_state";
 import type { Side } from "./campaign_types";
+import { BLUE, RED } from "./sides";
+
 const S = cs.S;
 const FOW_DECAY_RATE = 30.0;
 const FOW_MAX = 4.0 * 3600;
@@ -42,7 +44,7 @@ const RECON = {
 };
 export const THRESHOLD_TASK = 0.25;
 export const THRESHOLD_TROOP = 0.2;
-const SIDES: Side[] = [coalition.side.BLUE, coalition.side.RED];
+const SIDES: Side[] = [BLUE, RED];
 
 function reconRadius(unit: Unit, category: number | undefined): number {
 	const a = unit.getDesc()?.attributes ?? {};

@@ -42,11 +42,13 @@
 -- reserve gate is identical (EECH gates vehicle regen on reserves too, rg_updt.c:291). Production's
 -- convert_reserves also replenishes the vehicle/troop pools, so factory loss starves the ground war.
 */
-import * as config from "./config";
-import { matches } from "./lua_interop";
+
 import * as cs from "./campaign_state";
 import type { InventoryLedger, Side } from "./campaign_types";
+import * as config from "./config";
 import * as keysite from "./keysite";
+import { matches } from "./lua_interop";
+import { BLUE, RED } from "./sides";
 
 export type Role =
 	| "striker"
@@ -65,7 +67,7 @@ export interface PrefixRole {
 }
 
 const S = cs.S;
-const SIDES: Side[] = [coalition.side.BLUE, coalition.side.RED];
+const SIDES: Side[] = [BLUE, RED];
 const LANDED_GROUP_CLEANUP_DELAY_SECONDS = 30;
 
 export const ROLES: Role[] = [
@@ -114,7 +116,6 @@ export const PREFIX_ROLES: PrefixRole[] = [
 	{ pattern: "^BDA%-", role: "heli", regen: true },
 ];
 
-
 export function classify_role(name: string): Role | undefined {
 	for (const entry of PREFIX_ROLES) {
 		if (matches(name, entry.pattern)) return entry.role;
@@ -133,7 +134,7 @@ export function classify_group(name: string): Role | undefined {
 export function init(logFn: LogFunction = () => undefined): void {
 	S.base_ledger = {};
 	for (const [name, owner] of pairs(S.base_owner)) {
-		if (owner === coalition.side.BLUE || owner === coalition.side.RED) {
+		if (owner === BLUE || owner === RED) {
 			const kind = S.base_kind[name];
 			const helicopterOnly = kind === "fob" || kind === "farp";
 			const ledger: InventoryLedger = {
@@ -160,7 +161,7 @@ export function init(logFn: LogFunction = () => undefined): void {
 		}
 	}
 	S.production = {
-		[coalition.side.BLUE]: {
+		[BLUE]: {
 			ammo: 0,
 			fuel: 0,
 			ammo_rr: 0,
@@ -168,7 +169,7 @@ export function init(logFn: LogFunction = () => undefined): void {
 			ammo_earmark: 0,
 			fuel_earmark: 0,
 		},
-		[coalition.side.RED]: {
+		[RED]: {
 			ammo: 0,
 			fuel: 0,
 			ammo_rr: 0,
@@ -552,16 +553,9 @@ export function make_land_handler(
 			S._recycled[groupName] = true;
 
 			const [sideRead, coalitionSide] = pcall(() => unit.getCoalition?.());
-			if (
-				!sideRead ||
-				(coalitionSide !== coalition.side.BLUE &&
-					coalitionSide !== coalition.side.RED)
-			)
+			if (!sideRead || (coalitionSide !== BLUE && coalitionSide !== RED))
 				return;
-			const side =
-				coalitionSide === coalition.side.BLUE
-					? coalition.side.BLUE
-					: coalition.side.RED;
+			const side = coalitionSide === BLUE ? BLUE : RED;
 			const survivors = group.getUnits();
 			const survivorCount = survivors?.length ?? 1;
 			const landingPos = unit.getPosition().p;

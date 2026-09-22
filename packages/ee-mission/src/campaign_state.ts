@@ -21,6 +21,7 @@ import type {
 	TaskTermination,
 	WorldPoint,
 } from "./campaign_types";
+import { BLUE, RED } from "./sides";
 
 export const MINIMUM_EFFICIENCY = 0.3; // eech ks_dbase.c; ks_float.c:285-291
 export const HEALTH_NEUTRALISED = MINIMUM_EFFICIENCY;
@@ -77,11 +78,11 @@ export const S: CampaignState = {
 	base_kind: {},
 	objectives: {},
 	strength: {
-		[coalition.side.BLUE]: PERCENT_SCALE,
-		[coalition.side.RED]: PERCENT_SCALE,
+		[BLUE]: PERCENT_SCALE,
+		[RED]: PERCENT_SCALE,
 	},
-	ground_groups: { [coalition.side.BLUE]: {}, [coalition.side.RED]: {} },
-	arty_groups: { [coalition.side.BLUE]: {}, [coalition.side.RED]: {} },
+	ground_groups: { [BLUE]: {}, [RED]: {} },
+	arty_groups: { [BLUE]: {}, [RED]: {} },
 	counter_battery: {},
 	base_ledger: {},
 	base_inflight: {},
@@ -93,8 +94,8 @@ export const S: CampaignState = {
 	board_failed: 0,
 	farp_active: {},
 	stats: {
-		[coalition.side.BLUE]: freshStats(),
-		[coalition.side.RED]: freshStats(),
+		[BLUE]: freshStats(),
+		[RED]: freshStats(),
 	},
 	pending_captures: {},
 	imap: { raw: {}, nrm: {} },
@@ -114,7 +115,7 @@ export const S: CampaignState = {
 	base_last_strike: {},
 	base_ad_groups: {},
 	base_fp_groups: {},
-	sec_groups: { [coalition.side.BLUE]: {}, [coalition.side.RED]: {} },
+	sec_groups: { [BLUE]: {}, [RED]: {} },
 	keysite_assist_timer: {},
 	supply_delivered: {},
 	supply_heavy_flag: false,
@@ -124,12 +125,12 @@ export const S: CampaignState = {
 };
 
 export const SIDE_NAME: Record<number, string> = {
-	[coalition.side.BLUE]: "BLUE",
-	[coalition.side.RED]: "RED",
+	[BLUE]: "BLUE",
+	[RED]: "RED",
 };
 export const ENEMY: Record<number, Side> = {
-	[coalition.side.BLUE]: coalition.side.RED,
-	[coalition.side.RED]: coalition.side.BLUE,
+	[BLUE]: RED,
+	[RED]: BLUE,
 };
 
 let sequence = FIRST_DYNAMIC_ENTITY_ID;
@@ -193,16 +194,16 @@ export function count_current_hardware(side: Side): number {
 
 // fc_updt.c:140-161 balance-of-power formula.
 export function recalc_strength(): void {
-	const blue = count_current_hardware(coalition.side.BLUE);
-	const red = count_current_hardware(coalition.side.RED);
-	S.force_current[coalition.side.BLUE] = blue;
-	S.force_current[coalition.side.RED] = red;
+	const blue = count_current_hardware(BLUE);
+	const red = count_current_hardware(RED);
+	S.force_current[BLUE] = blue;
+	S.force_current[RED] = red;
 	const total = blue + red;
-	S.strength[coalition.side.BLUE] =
+	S.strength[BLUE] =
 		total > 0
 			? Math.floor((blue / total) * PERCENT_SCALE + PERCENT_ROUNDING_OFFSET)
 			: BALANCED_FORCE_PERCENT;
-	S.strength[coalition.side.RED] =
+	S.strength[RED] =
 		total > 0
 			? Math.floor((red / total) * PERCENT_SCALE + PERCENT_ROUNDING_OFFSET)
 			: BALANCED_FORCE_PERCENT;
@@ -283,8 +284,8 @@ function statTotal(values: Partial<Record<StatCategory, number>>): number {
 	return total;
 }
 export function stats_summary_line(): string {
-	const b = S.stats[coalition.side.BLUE];
-	const r = S.stats[coalition.side.RED];
+	const b = S.stats[BLUE];
+	const r = S.stats[RED];
 	return string.format(
 		"STATS kills B=%d R=%d | losses B=%d R=%d | tasks(ok/part/fail) B=%d/%d/%d R=%d/%d/%d | sorties B=%d R=%d",
 		statTotal(b.kills),
@@ -327,7 +328,7 @@ export function stats_text(): string {
 			value.tasks_failed,
 		);
 	};
-	return `=== CAMPAIGN STATS ===\n${block(coalition.side.BLUE)}\n${block(coalition.side.RED)}`;
+	return `=== CAMPAIGN STATS ===\n${block(BLUE)}\n${block(RED)}`;
 }
 
 // Faithful structural task.c:110-502 completion assessment.

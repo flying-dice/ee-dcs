@@ -33,11 +33,12 @@
 -- • S.base_ammo[name] uses 0–100 scale to match EECH's ammo_supply_level.
 */
 import * as cs from "./campaign_state";
-import * as installations from "./installations";
-import * as supply from "./supply";
-import type { Commodity } from "./supply";
-import * as supplyFlight from "./supply_flight";
 import type { Side } from "./campaign_types";
+import * as installations from "./installations";
+import { BLUE, RED } from "./sides";
+import type { Commodity } from "./supply";
+import * as supply from "./supply";
+import * as supplyFlight from "./supply_flight";
 
 type LogFunction = (this: void, message: string) => void;
 type Need = Record<Side, Record<Commodity, string[]>>;
@@ -62,7 +63,7 @@ const FARP_FUEL_USAGE_PER_TICK = -0.03; // line 240
 const REPAIR_RATE_PER_TICK = 1.0 / 100.0;
 // Proxy for repair-task creation, assignment and delivery (ks_updt.c:169-222).
 const STRIKE_SUPPRESS_TIME = 480.0;
-const SIDES: Side[] = [coalition.side.BLUE, coalition.side.RED];
+const SIDES: Side[] = [BLUE, RED];
 const COMMODITIES: Commodity[] = ["ammo", "fuel"];
 
 export function init(logFn: LogFunction = () => undefined): void {
@@ -102,11 +103,13 @@ function tick(logFn: LogFunction): void {
 	}
 
 	const need: Need = {
-		[coalition.side.BLUE]: { ammo: [], fuel: [] },
-		[coalition.side.RED]: { ammo: [], fuel: [] },
+		[BLUE]: { ammo: [], fuel: [] },
+		[RED]: { ammo: [], fuel: [] },
 	};
-	for (const [name, owner] of pairs(S.base_owner)) {
-		if (owner === coalition.side.BLUE || owner === coalition.side.RED) {
+	for (const [name, ownerValue] of pairs(S.base_owner)) {
+		// `pairs()` erases the value type to `any`; S.base_owner is Record<string, Side>.
+		const owner = ownerValue as Side | undefined;
+		if (owner === BLUE || owner === RED) {
 			const kind = S.base_kind[name];
 			const isFarp = kind === "farp" || kind === "fob";
 			const ammoRate = isFarp
@@ -159,7 +162,7 @@ function tick(logFn: LogFunction): void {
 	let suppressedCount = 0;
 	let fullOrDead = 0;
 	for (const [name, owner] of pairs(S.base_owner)) {
-		if (owner === coalition.side.BLUE || owner === coalition.side.RED) {
+		if (owner === BLUE || owner === RED) {
 			const health = S.base_health[name] ?? 1;
 			const lastStrike = S.base_last_strike[name];
 			const suppressed =

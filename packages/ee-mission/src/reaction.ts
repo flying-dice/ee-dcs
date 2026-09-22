@@ -42,6 +42,7 @@ import * as fow from "./fog_of_war";
 import * as imap from "./imap";
 import * as installations from "./installations";
 import * as keysite from "./keysite";
+import { BLUE, RED } from "./sides";
 import type { Role } from "./supply";
 import * as supply from "./supply";
 
@@ -142,7 +143,7 @@ const FARP_FLAGS: Flags = {
 	recon_target: true,
 };
 const AC: Record<number, AircraftConfig> = {};
-for (const side of [coalition.side.BLUE, coalition.side.RED])
+for (const side of [BLUE, RED])
 	AC[side] = {
 		country: config.C.countries[side],
 		escort: config.C.types.aircraft[side].escort,

@@ -21,6 +21,7 @@
 import * as cs from "./campaign_state";
 import type { Side } from "./campaign_types";
 import * as config from "./config";
+import { BLUE, RED } from "./sides";
 import * as zones from "./zones";
 
 type LogFunction = (this: void, message: string) => void;
@@ -34,7 +35,7 @@ interface FieldOwner {
 }
 
 const S = cs.S;
-const SIDES: Side[] = [coalition.side.BLUE, coalition.side.RED];
+const SIDES: Side[] = [BLUE, RED];
 const FIXED_WING_PER_SIDE = config.C.theatre.fixed_wing_per_side;
 const FRONT_DIST = config.C.theatre.farp_front_dist;
 // DCS adapter placement envelope in metres; EECH uses authored FARP objects rather than offsets.
@@ -231,7 +232,7 @@ export function init(logFn: LogFunction = () => undefined): void {
 			const owner = S.base_owner[name];
 			const position = S.base_pos[name];
 			if (
-				(owner === coalition.side.BLUE || owner === coalition.side.RED) &&
+				(owner === BLUE || owner === RED) &&
 				position !== undefined &&
 				ensurePhysicalFarp(name, owner, position)
 			)

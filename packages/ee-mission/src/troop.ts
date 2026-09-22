@@ -42,7 +42,6 @@
 */
 
 import * as mode from "./campaign_mode";
-import { matches } from "./lua_interop";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
@@ -51,6 +50,8 @@ import * as farpParking from "./farp_parking";
 import * as fow from "./fog_of_war";
 import * as imap from "./imap";
 import * as keysite from "./keysite";
+import { matches } from "./lua_interop";
+import { BLUE, RED } from "./sides";
 import * as board from "./task_board";
 
 const S = cs.S;
@@ -93,7 +94,7 @@ const PATROL_UNIT_SPACING_METRES = 5;
 const PATROL_WALK_SPEED_METRES_PER_SECOND = 1.4;
 const TRANSPORT: Record<number, { country: number; type: string }> = {};
 const INFANTRY: Record<number, { country: number; type: string }> = {};
-for (const side of [coalition.side.BLUE, coalition.side.RED]) {
+for (const side of [BLUE, RED]) {
 	TRANSPORT[side] = {
 		country: config.C.countries[side],
 		type: config.C.types.aircraft[side].transport_heli,

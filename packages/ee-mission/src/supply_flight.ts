@@ -49,13 +49,14 @@
 */
 
 import * as cs from "./campaign_state";
-import { matches } from "./lua_interop";
 import type { Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
 import * as croute from "./croute";
 import * as farpParking from "./farp_parking";
 import * as installations from "./installations";
 import * as keysite from "./keysite";
+import { matches } from "./lua_interop";
+import { BLUE, RED } from "./sides";
 import type { Commodity } from "./supply";
 import * as supply from "./supply";
 import * as board from "./task_board";
@@ -83,7 +84,7 @@ const FULL_SUPPLY_PERCENT = 100; // keysite.c:337-467; one delivered crate fully
 const BACKSTOP_MIN_SPEED_METRES_PER_SECOND = 40;
 const BACKSTOP_MARGIN_SECONDS = 10 * 60;
 const SUPPLY_PREFIX = "Supply";
-const SIDES: Side[] = [coalition.side.BLUE, coalition.side.RED];
+const SIDES: Side[] = [BLUE, RED];
 
 export function has_pending(
 	side: Side,

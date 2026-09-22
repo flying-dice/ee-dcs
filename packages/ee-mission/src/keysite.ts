@@ -13,9 +13,10 @@
 -- Mirrors KEYSITE entity: sub_type=AIRBASE, side, keysite_strength, keysite_usable_state.
 */
 import * as cs from "./campaign_state";
+import type { KeysiteRecord, Side, WorldPoint } from "./campaign_types";
 import * as imap from "./imap";
 import * as installations from "./installations";
-import type { KeysiteRecord, Side, WorldPoint } from "./campaign_types";
+import { BLUE, NEUTRAL, RED } from "./sides";
 import * as zones from "./zones";
 
 type LogFunction = (this: void, message: string) => void;
@@ -81,7 +82,7 @@ interface PersistModule {
 }
 
 const S = cs.S;
-const SIDES: Side[] = [coalition.side.BLUE, coalition.side.RED];
+const SIDES: Side[] = [BLUE, RED];
 const MIN_TASK_CREATION_RATIO = 0.75; // highlevl.c:88
 const FOW_RECON_THRESHOLD = 0.25; // highlevl.c:1179
 // DCS theatre-adapter safety floors: ignore authored/scoped subsets too small to
@@ -97,11 +98,7 @@ const CAPTURE_MESSAGE_SECONDS = 20;
 function allAirdromes(): Airbase[] {
 	const result: Airbase[] = [];
 	const seen: Record<string, boolean> = {};
-	for (const side of [
-		coalition.side.NEUTRAL,
-		coalition.side.BLUE,
-		coalition.side.RED,
-	]) {
+	for (const side of [NEUTRAL, BLUE, RED]) {
 		for (const airbase of coalition.getAirbases(side) ?? []) {
 			const name = airbase.getName();
 			// getDesc().category is the correct airbase-category surface; getCategory() is Object.BASE.
@@ -258,9 +255,9 @@ export function init_base_state(logFn: LogFunction = () => undefined): void {
 		for (const airbase of all) {
 			const pos = airbase.getPosition().p;
 			const side = zones.contains("BLUE", pos.x, pos.z)
-				? coalition.side.BLUE
+				? BLUE
 				: zones.contains("RED", pos.x, pos.z)
-					? coalition.side.RED
+					? RED
 					: undefined;
 			if (side !== undefined) {
 				scoped.push(airbase);
@@ -338,8 +335,8 @@ export function init_base_state(logFn: LogFunction = () => undefined): void {
 	all.sort((left, right) => left.getPosition().p.x - right.getPosition().p.x);
 	const half = math.floor(all.length / 2);
 	const counts: Record<Side, number> = {
-		[coalition.side.BLUE]: 0,
-		[coalition.side.RED]: 0,
+		[BLUE]: 0,
+		[RED]: 0,
 	};
 	for (let index = 0; index < all.length; index++) {
 		const airbase = all[index];
@@ -348,9 +345,7 @@ export function init_base_state(logFn: LogFunction = () => undefined): void {
 		S.base_health[name] = 1;
 		S.base_pos[name] = { x: pos.x, z: pos.z };
 		const side =
-			zoneOwner[name] ??
-			assigned[name] ??
-			(index < half ? coalition.side.BLUE : coalition.side.RED);
+			zoneOwner[name] ?? assigned[name] ?? (index < half ? BLUE : RED);
 		S.base_owner[name] = side;
 		counts[side]++;
 		logFn(string.format("  keysite %s → %s", name, cs.SIDE_NAME[side] ?? "?"));
@@ -358,16 +353,16 @@ export function init_base_state(logFn: LogFunction = () => undefined): void {
 	logFn(
 		string.format(
 			"keysites initialised: BLUE=%d RED=%d total=%d",
-			counts[coalition.side.BLUE],
-			counts[coalition.side.RED],
+			counts[BLUE],
+			counts[RED],
 			all.length,
 		),
 	);
 	cs.dbg(
 		"keysite",
 		"init_base_state (auto theatre): BLUE=%d RED=%d total=%d",
-		counts[coalition.side.BLUE],
-		counts[coalition.side.RED],
+		counts[BLUE],
+		counts[RED],
 		all.length,
 	);
 	designate_objectives(logFn);
@@ -378,8 +373,8 @@ export function designate_objectives(
 	logFn: LogFunction = () => undefined,
 ): void {
 	S.objectives = {
-		[coalition.side.BLUE]: [],
-		[coalition.side.RED]: [],
+		[BLUE]: [],
+		[RED]: [],
 	};
 	for (const side of SIDES) {
 		const enemy = cs.ENEMY[side];
@@ -1011,11 +1006,7 @@ export function try_capture(logFn: LogFunction = () => undefined): void {
 		const basePos = S.base_pos[baseName];
 		if (basePos === undefined) continue;
 		for (const [side, groups] of pairs(S.ground_groups)) {
-			if (
-				side === owner ||
-				(side !== coalition.side.BLUE && side !== coalition.side.RED)
-			)
-				continue;
+			if (side === owner || (side !== BLUE && side !== RED)) continue;
 			for (const [, record] of pairs(groups)) {
 				const column = record.grp;
 				if (!cs.group_is_alive(column)) continue;

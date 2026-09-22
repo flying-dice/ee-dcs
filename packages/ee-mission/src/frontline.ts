@@ -37,10 +37,12 @@
 */
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
+import { BLUE, RED } from "./sides";
+
 const S = cs.S;
 const flags: Record<number, Record<string, boolean>> = {
-	[coalition.side.BLUE]: {},
-	[coalition.side.RED]: {},
+	[BLUE]: {},
+	[RED]: {},
 };
 function adjacent(
 	a: WorldPoint,
@@ -63,7 +65,7 @@ function adjacent(
 	return true;
 }
 export function rebuild(): void {
-	const sides: Side[] = [coalition.side.BLUE, coalition.side.RED];
+	const sides: Side[] = [BLUE, RED];
 	for (const side of sides) {
 		flags[side] = {};
 		const enemy = cs.ENEMY[side];
@@ -88,8 +90,8 @@ export function rebuild(): void {
 	cs.dbg(
 		"frontline",
 		"rebuild: BLUE frontline=%d bases, RED frontline=%d bases",
-		count(coalition.side.BLUE),
-		count(coalition.side.RED),
+		count(BLUE),
+		count(RED),
 	);
 }
 export function recompute(): void {
