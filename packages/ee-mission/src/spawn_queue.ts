@@ -16,7 +16,20 @@
 -- Callers keep working: addGroup returns a lazy PROXY that delegates to the real DCS group (by name)
 -- once the queued spawn drains. getController() before the real spawn captures setTask/pushTask and
 -- replays them on drain (ground_forces / cas artillery set a task immediately after spawning).
+--
+-- The proxy is non-nil the instant it is handed back, so "addGroup succeeded" is NOT something a
+-- caller can learn here. Aircraft callers that need the real answer opt in via aircraft_lifecycle:
+-- they link the queued request to their allocation, drain reports the true API outcome back, and
+-- only a PROVEN no-creation reverses the allocation. Untracked callers (ground, statics) attach no
+-- attempt and no allocation, so nothing below refunds, re-lists or settles anything for them.
+--
+-- ONE behaviour they do share (epic #17 P4): destroying a proxy handle BEFORE the queued spawn
+-- drains cancels the request for every caller. It used to be a silent no-op unless the request
+-- was a tracked aircraft, so a ground group or static torn down inside the drain window spawned
+-- anyway, minutes later, with nobody holding it. "Destroy it before it exists" now means it is
+-- never created, whoever asked.
 */
+import * as aircraft from "./aircraft_lifecycle";
 import * as cs from "./campaign_state";
 import * as diagnostics from "./spawn_diagnostics";
 
@@ -38,7 +51,7 @@ const real_addStatic = _G.__dmt_real_addStatic;
 function make_proxy(
 	name: string,
 	item: SpawnItem,
-): Group & { __queued: boolean } {
+): Group & { __queued: boolean; __item: SpawnItem } {
 	function live(): Group | undefined {
 		return Group.getByName(name);
 	}
@@ -48,6 +61,9 @@ function make_proxy(
 	// deliberately partial implementation, hence the assertion.
 	return {
 		__queued: true,
+		// The deferred request behind this handle. aircraft_lifecycle.track() reads it to link a
+		// submission to the allocation that paid for it; nothing else may rely on it.
+		__item: item,
 		getName(this: Group) {
 			return name;
 		},
@@ -73,7 +89,21 @@ function make_proxy(
 			return live()?.getCoalition();
 		},
 		destroy(this: Group) {
-			live()?.destroy();
+			const g = live();
+			if (g !== undefined) {
+				g.destroy();
+				return;
+			}
+			// Nothing exists yet, so "destroy" can only mean "do not create it" -- otherwise the
+			// group drains into the world minutes later with nobody holding it.
+			//
+			// Epic #17 P4: this is now honoured for EVERY caller, not just lifecycle-tracked
+			// aircraft. Marking the queued item cancelled is what `drain` reads; it needs no
+			// allocation, so a ground column or a static that is torn down inside the drain
+			// window is genuinely never spawned. Aircraft additionally reverse their allocation
+			// below, which is the part only a tracked request can do.
+			item.cancelled = true;
+			aircraft.cancel_item(item, "group handle destroyed before drain");
 		},
 		getController(this: Group): Controller {
 			const g = live();
@@ -92,7 +122,7 @@ function make_proxy(
 				setOption(this: Controller) {},
 			} as unknown as Controller;
 		},
-	} as unknown as Group & { __queued: boolean };
+	} as unknown as Group & { __queued: boolean; __item: SpawnItem };
 }
 coalition.addGroup = (country_id, category, data) => {
 	S._spawn_seq++;
@@ -127,6 +157,21 @@ export function drain(log_fn: LogFunction = env.info): number {
 	while (q.length > 0 && n < DRAIN_PER_TICK) {
 		const item = q.shift();
 		if (!item) break;
+		if (item.cancelled === true || aircraft.is_cancelled(item)) {
+			// Cancelled between enqueue and drain, by the caller destroying its handle. For a
+			// tracked aircraft the allocation has already been reversed by aircraft_lifecycle;
+			// for every other caller the intent alone is enough. Either way, spending an API
+			// call here would spawn a group nobody owns.
+			log_fn(
+				string.format(
+					"[spawn_queue] --- CANCELLED #%d name=%s (never submitted to DCS)",
+					item.seq,
+					item.name,
+				),
+			);
+			n++;
+			continue;
+		}
 		const utype =
 			item.kind === "group" ? (item.data.units[0]?.type ?? "?") : "?";
 		log_fn(
@@ -142,6 +187,9 @@ export function drain(log_fn: LogFunction = env.info): number {
 		let g: Group | StaticObject | undefined;
 		let spawned: Group | undefined;
 		if (item.kind === "group") {
+			// Registered BEFORE the real API so a BIRTH raised inside addGroup is correlated, and
+			// before diagnostics so reconciliation never depends on debug being enabled.
+			const attempt = aircraft.prepare_submission(item);
 			const probe = diagnostics.begin(item, log_fn);
 			const [ok, res] = pcall(
 				real_addGroup,
@@ -149,10 +197,14 @@ export function drain(log_fn: LogFunction = env.info): number {
 				item.category,
 				item.data,
 			);
-			diagnostics.finish(
-				probe,
-				ok ? (res !== undefined ? "returned" : "nil") : "threw",
+			const outcome = ok ? (res !== undefined ? "returned" : "nil") : "threw";
+			aircraft.settle_submission(
+				attempt,
+				outcome,
+				ok ? res : undefined,
+				ok ? undefined : tostring(res),
 			);
+			diagnostics.finish(probe, outcome);
 			if (ok) {
 				g = res;
 				spawned = res;

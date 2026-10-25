@@ -19,6 +19,7 @@
 -- (campaign vs skirmish) via campaign_mode.lua.
 */
 
+import * as lifecycle from "./aircraft_lifecycle";
 import * as mode from "./campaign_mode";
 import * as cs from "./campaign_state";
 import * as config from "./config";
@@ -368,6 +369,22 @@ function buildStrikePackage(
 	);
 
 	if (escorts > 0 && supply.consume_base(baseName, "escort", escorts)) {
+		// A SECOND aircraft request inside the same builder call, with its own `escort` debit —
+		// a different (base, role, count) tuple from the strike package's, so it gets its own
+		// allocation nested inside the strike's still-open scope rather than riding on it
+		// (epic #17 P4). track() below binds to the innermost open scope; commit/abort pop it.
+		//
+		// NO keysite slot is reserved here, deliberately and unchanged: whether an inline escort
+		// should consume a launch slot is an open EECH question (sprint 04, "deferred
+		// asymmetries") and P4 does not settle it.
+		const allocation = lifecycle.begin_allocation({
+			task_type: "strike_escort",
+			side,
+			base: baseName,
+			role: "escort",
+			count: escorts,
+			log_fn: logFn,
+		});
 		const eid = cs.next_id();
 		const escortName = string.format("Escort-%d", eid);
 		const escortUnits: UnitData[] = [];
@@ -408,7 +425,9 @@ function buildStrikePackage(
 				},
 			}),
 		);
+		if (ok) lifecycle.track(escort);
 		if (ok && escort !== undefined) {
+			lifecycle.commit_allocation(allocation, escortName);
 			logFn(
 				string.format(
 					"Escort %d: %s %dx%s from %s for Strike-%d",
@@ -428,7 +447,13 @@ function buildStrikePackage(
 				sid,
 			);
 		} else {
-			supply.recycle_base(baseName, "escort", escorts);
+			// The allocation owns the debit, so it does the refund — never both.
+			lifecycle.abort_allocation(
+				allocation,
+				ok
+					? "addGroup returned nothing"
+					: `addGroup error: ${tostring(escort)}`,
+			);
 			cs.dbg(
 				"strike",
 				"%s Escort for Strike-%d FAILED (pcall_ok=%s) -> refunded",

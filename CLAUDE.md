@@ -44,10 +44,18 @@ https://github.com/flying-dice/eech_source_code — local mirror `E:\eech_source
 
 ## Tooling reality
 
-There is **no standalone `lua-cargo` CLI on PATH**. Build, static analysis, and live
-injection are all tools exposed by the **DCS Studio MCP server**
-(`http://127.0.0.1:25570/mcp`, see `.mcp.json`). The DCS Studio app must be running for
-these tools to exist in a session.
+There is **no standalone `lua-cargo` CLI on PATH**. Build runs from npm; live
+interaction with a running mission goes through the **in-DCS JSON-RPC bridge** at
+`http://127.0.0.1:25570/rpc` (`dcs-studio-mission`, `x-dcs-env: mission`). DCS must be
+running a loaded mission for that bridge to answer.
+
+**Corrected 2026-09-22 (measured):** the old `http://127.0.0.1:25570/mcp` URL and its
+`.mcp.json` entry were wrong and have been deleted. `/rpc` exposes `eval`, `console_read`,
+`repl_*`, `debug_*`, `dump_globals` and `ping` — call it with plain HTTP POST
+(note: JSON-RPC `id` must be a **string**). It does **not** expose a static-analysis
+`check` tool, nor `dcs_eval`; those belong to the DCS Studio desktop app's own MCP server,
+which is a separate thing and may simply not be present in a session. If a gate's tool is
+absent, record it **unrun** — never report it passed.
 
 - **Build** — `npm run build --workspace ee-mission` (typescript-to-lua) → bundles
   `packages/ee-mission/src/index.ts` and its module tree into `dist/ee-dcs.lua`.
@@ -60,10 +68,12 @@ these tools to exist in a session.
   recorded from the Lua baseline before it was deleted
   (`packages/ee-mission/test/golden/`). Must be **green**; a diff here means the port
   has drifted from the baseline. Re-record only deliberately.
-- **Static analysis** — `check` (DCS Studio MCP) — must report **no findings**.
-- **Live injection** — `dcs_eval` runs
-  `net.dostring_in('server', 'dofile("...dist/ee-dcs.lua")')` in the running
-  mission. Re-injection is safe (generation guard, below).
+- **Static analysis** — `check` (DCS Studio desktop MCP, when present) — must report
+  **no findings**. Not available on the `/rpc` mission bridge; substitute Biome
+  (`npx biome check packages/ee-mission/src`) and record `check` as unrun.
+- **Live injection / inspection** — POST to the `/rpc` bridge above. `eval` runs a Lua
+  chunk directly in the mission state (no `net.dostring_in` wrapper needed, and `net.*`
+  stays forbidden in committed code). Re-injection is safe (generation guard, below).
 
 Run build + check after every change; do not commit with warnings or findings.
 

@@ -1,0 +1,4 @@
+- [Epic #17 aircraft lifecycle](project_epic17_aircraft_lifecycle.md) — P0–P4 done 2026-09-23; P5 live witness pending, epic stays open.
+- [EECH Prime Directive](feedback_eech_prime_directive.md) — complaints mean the port diverged from the C source; never invent a tuned fix.
+- [DCS live bridge](project_dcs_bridge.md) — `/rpc` on 25570, string ids, no `check` tool; record absent gates as unrun.
+- [Probe before designing](feedback_live_evidence.md) — measure live DCS behaviour first; code inspection missed three real defects.

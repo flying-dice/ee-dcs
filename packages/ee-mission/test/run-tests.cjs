@@ -368,6 +368,7 @@ if (process.argv[2] === "--record-clearance") {
 
 run("core-parity.lua", []);
 run("spawn-diagnostics.lua", []);
+run("aircraft-lifecycle.lua", []);
 
 if (!luaTreePresent) {
 	console.log(

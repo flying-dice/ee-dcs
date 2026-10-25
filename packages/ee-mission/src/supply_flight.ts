@@ -48,6 +48,7 @@
 --     economy this whole feature exists to create.
 */
 
+import * as lifecycle from "./aircraft_lifecycle";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
@@ -130,35 +131,26 @@ export function count_queued(side: Side, commodity: Commodity): number {
 	return count;
 }
 
-function recycleSupplyOnce(
-	groupName: string,
-	launchBase: string,
-	group: Group | undefined,
-): void {
-	if (S._recycled[groupName]) return;
-	S._recycled[groupName] = true;
-	let survivorCount = 0;
-	if (group !== undefined && group.isExist()) {
-		const [ok, units] = pcall(() => group.getUnits());
-		if (ok && units !== undefined) {
-			for (const unit of units) {
-				if (unit !== undefined && unit.isExist()) survivorCount++;
-			}
-		}
-	}
-	if (survivorCount > 0)
-		supply.recycle_base(launchBase, "transport", survivorCount);
-}
-
 function distance(left: WorldPoint, right: WorldPoint): number {
 	const dx = left.x - right.x;
 	const dz = left.z - right.z;
 	return math.sqrt(dx * dx + dz * dz);
 }
 
+/**
+ * The route backstop: a supply flight that neither delivers nor comes home must not hold its
+ * transport, its launch slot and its stand for ever.
+ *
+ * This is a VIRTUAL RETIREMENT (epic #17 P4), not an arrival: no LAND event was seen and no
+ * landing site was read. It used to force-recycle the `transport` ledger here by GROUP name
+ * while `aircraft_lifecycle` credited the same airframe by UNIT name on recovery — two
+ * independent owners of one credit, and the exact double-credit ADR 0010 recorded: a flight that
+ * landed home ~30 s before its backstop fired was counted back into stock twice. It now settles
+ * through the one per-airframe path, under that path's budget and per-unit guard, so the second
+ * owner no longer exists. Task-record cleanup stays here because this module registered it.
+ */
 function scheduleBackstop(
 	groupName: string,
-	launchBase: string,
 	group: Group,
 	airbasePos: Vec3,
 	producerPos: WorldPoint,
@@ -175,9 +167,19 @@ function scheduleBackstop(
 	timer.scheduleFunction(
 		(_argument: undefined, _time: number) => {
 			if (_DMT_GEN !== generation) return undefined;
-			recycleSupplyOnce(groupName, launchBase, group);
-			keysite.release_slot(groupName);
-			if (group.isExist()) group.destroy();
+			// The fallback branch covers a group aircraft_lifecycle holds no record of (its
+			// allocation was reversed before the spawn reached DCS, or it belongs to a previous
+			// generation). Exactly one of the two branches ever runs.
+			if (
+				!lifecycle.retire_sortie(
+					groupName,
+					"supply flight overdue on its route backstop",
+					"recycled",
+				)
+			) {
+				keysite.release_slot(groupName);
+				if (group.isExist()) group.destroy();
+			}
 			cs.clear_task(groupName);
 			return undefined;
 		},
@@ -418,7 +420,26 @@ function buildSupplyFlight(
 	};
 	if (airbase !== undefined) {
 		if (useHelicopter) {
-			farpParking.configureDeparture(launch, airbase, groupData, depart);
+			// Stand selection can REFUSE (epic #17 P2) when the launch helipad has real terminal
+			// data and no free pad. task_board's pcall would reverse the allocation, but NOT the
+			// crate this builder already took with deliver_crate above — so the refusal is routed
+			// into this function's own existing spawn-failure path (refund_crate + return
+			// undefined), refunding the crate exactly once and spawning nothing.
+			const [seated, refusal] = pcall(() =>
+				farpParking.configureDeparture(launch, airbase, groupData, depart),
+			);
+			if (!seated) {
+				supply.refund_crate(side, commodity);
+				cs.dbg(
+					"supply",
+					"%s supply build ABORT at %s: no parking stand for %s -> crate refunded (%s)",
+					cs.SIDE_NAME[side],
+					launch,
+					groupName,
+					tostring(refusal),
+				);
+				return undefined;
+			}
 			farpParking.configureLanding(launch, airbase, returnToBase);
 		} else groupData.airdromeId = airbaseId;
 	}
@@ -426,6 +447,10 @@ function buildSupplyFlight(
 	const [spawned, group] = pcall(() =>
 		coalition.addGroup(country, category, groupData),
 	);
+	// Links the deferred spawn to the task_board allocation that already debited the transport
+	// (epic #17 P4). Without it commit_allocation saw no attempt, so a drain-time failure neither
+	// refunded nor re-listed, and the recovery record was left to supply.classify_role's prefix.
+	if (spawned) lifecycle.track(group);
 	if (spawned && group !== undefined) {
 		supply.release_earmark(side, commodity);
 		cs.register_task(groupName, {
@@ -444,14 +469,7 @@ function buildSupplyFlight(
 			if (loaded && escort !== undefined)
 				pcall(() => escort.spawn_escort(side, consumerPos, logFn));
 		}
-		scheduleBackstop(
-			groupName,
-			launch,
-			group,
-			airbasePos,
-			producer.pos,
-			consumerPos,
-		);
+		scheduleBackstop(groupName, group, airbasePos, producer.pos, consumerPos);
 		logFn(
 			string.format(
 				"%s SUPPLY flight #%d: %s crate %s → %s (via producer %s, %s)",

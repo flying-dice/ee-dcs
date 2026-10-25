@@ -31,6 +31,7 @@
 --   REGEN_HELICOPTER  → "heli"    (group name prefix "Heli-", "BDA-")
 */
 
+import * as aircraft from "./aircraft_lifecycle";
 import * as cs from "./campaign_state";
 import type { RegenEntry, Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
@@ -233,6 +234,26 @@ export function make_dead_handler(
 			const [groupRead, group] = pcall(() => object.getGroup?.());
 			if (!groupRead || group === undefined) return;
 
+			const [deadNameRead, deadUnitName] = pcall(() => object.getName());
+			// An airframe the recovery settlement already retired left the world because THIS
+			// campaign took it out after a completed recovery — its replacement is already sitting
+			// in the reserve ledger. Queueing a regen for it would manufacture a second aircraft
+			// from one loss that never happened. EECH draws the same line inside the aircraft
+			// destructor: hc_dstry.c:343-346 / fw_dstry.c:332-335 return before touching force
+			// info at all once the entity is no longer INT_TYPE_ALIVE.
+			if (
+				deadNameRead &&
+				deadUnitName !== undefined &&
+				aircraft.is_retired_unit(deadUnitName)
+			) {
+				cs.dbg(
+					"regen",
+					"dead unit %s was retired by the recovery settlement - not a combat loss, no regen",
+					deadUnitName,
+				);
+				return;
+			}
+
 			const [playerRead, playerName] = pcall(() => object.getPlayerName?.());
 			if (playerRead && playerName !== undefined) {
 				cs.dbg(
@@ -241,6 +262,12 @@ export function make_dead_handler(
 					playerName,
 				);
 				return;
+			}
+			// A genuine loss: the airframe can never be credited back to the reserve, whatever
+			// event order follows.
+			if (deadNameRead && deadUnitName !== undefined) {
+				const [ownerRead, ownerName] = pcall(() => group.getName());
+				aircraft.note_loss(deadUnitName, ownerRead ? ownerName : undefined);
 			}
 
 			const [nameRead, readName] = pcall(() => group.getName());
@@ -339,8 +366,8 @@ function spawnRegen(
 ): boolean {
 	const baseName = entry.base_name;
 	const aircraftType = entry.aircraft_type;
-	const aircraft = AC[side];
-	if (aircraft === undefined) return false;
+	const sideTypes = AC[side];
+	if (sideTypes === undefined) return false;
 	const health = S.base_health[baseName] ?? 0;
 	if (health < cs.HEALTH_NEUTRALISED) {
 		logFn(
@@ -470,13 +497,62 @@ function spawnRegen(
 		],
 		route: { points: [depart] },
 	};
+	// The ALLOCATION owns the debit taken by supply.consume above (epic #17 P4), and it is opened
+	// BEFORE stand selection so the parking lease it takes is owned too and rolls back with it.
+	//
+	// `recovery: false`: a regen airframe is NOT a sortie. It is the debit made physical — parked
+	// idle stock with no route past its departure waypoint — so no recovery record is opened for
+	// it and nothing can credit it back. That is exactly today's behaviour; whether the permanent
+	// debit is itself correct is a deferred question with no EECH citation yet (sprint 04), and
+	// P4 deliberately does not answer it.
+	const allocation = aircraft.begin_allocation({
+		task_type: "regen",
+		side,
+		base: baseName,
+		role,
+		count: 1,
+		log_fn: logFn,
+		recovery: false,
+	});
 	if (airbase !== undefined) {
-		if (role === "heli")
-			farpParking.configureDeparture(baseName, airbase, groupData, depart);
-		else groupData.airdromeId = airbaseId;
+		if (role === "heli") {
+			// Stand selection can REFUSE (epic #17 P2) when the base is a helipad with real
+			// terminal data and no free pad. processQueue runs off the regen timer and leaves the
+			// entry queued on a false return, so an uncaught refusal would be re-raised every tick.
+			// Route it into this function's existing spawn-failure path (log + return false, entry
+			// stays queued for the next tick); the reversal is now the allocation's, which gives
+			// back the debit — and any stand it claimed — exactly once, from one owner.
+			const [seated, refusal] = pcall(() =>
+				farpParking.configureDeparture(baseName, airbase, groupData, depart),
+			);
+			if (!seated) {
+				logFn(
+					string.format(
+						"regen: no parking stand at %s for %s — regen delayed",
+						baseName,
+						groupName,
+					),
+				);
+				cs.dbg(
+					"regen",
+					"spawn REFUSED: %s (%s) at %s has no free parking stand (%s) — reserve returned, entry stays queued",
+					groupName,
+					aircraftType,
+					baseName,
+					tostring(refusal),
+				);
+				aircraft.abort_allocation(
+					allocation,
+					`no parking stand (${tostring(refusal)})`,
+				);
+				return false;
+			}
+		} else groupData.airdromeId = airbaseId;
 	}
-	const group = coalition.addGroup(aircraft.country, category, groupData);
+	const group = coalition.addGroup(sideTypes.country, category, groupData);
+	aircraft.track(group);
 	if (group !== undefined) {
+		aircraft.commit_allocation(allocation, groupName);
 		logFn(
 			string.format(
 				"regen: spawned %s %s at %s",
@@ -494,6 +570,7 @@ function spawnRegen(
 		);
 		return true;
 	}
+	aircraft.abort_allocation(allocation, "addGroup returned nothing");
 	cs.dbg(
 		"regen",
 		"spawn FAILED: %s (%s) at %s (addGroup returned nil)",

@@ -433,10 +433,26 @@ if mode=='typescript' then
     assert(queued.data.x==12345 and queued.data.y==67890,'authored FARP static was not placed at the zone centre')
 
     -- DCS MissionEditor/modules/me_exportToMiz.lua:895-944: stock FARPs use
-    -- helipadId/linkUnit and distinct parking names 1..4, never airdromeId.
+    -- helipadId/linkUnit and per-aircraft parking values, never airdromeId.
+    -- The parking VALUE is the runtime `Term_Index`, which is 0-BASED
+    -- (docs/bots/LIVE-PROBE-2026-09-22.md finding 3: all four authored FARPs
+    -- report Term_Index 0,1,2,3 with Term_Type=40 and a per-terminal TO_AC).
+    -- The exporter's "1 through 4" is 1-based EDITOR naming, not the index.
     local farp_airbase=object(farp_name,12345,67890,coalition.side.BLUE,'FARP')
     farp_airbase.id=7654
     function farp_airbase:getDesc() return {category=Airbase.Category.HELIPAD} end
+    -- Measured live shape of a stock four-pad FARP. `available` is ignored on
+    -- purpose: getParking(true) was measured NOT to reflect occupancy (finding
+    -- 2), so the adapter must read the full set and take occupancy from TO_AC.
+    function farp_airbase:getParking(available)
+        local spots={}
+        for index=0,3 do
+            spots[#spots+1]={Term_Type=40,Term_Index=index,TO_AC=false,Term_Index_0=-1,
+                             fDistToRW=0,
+                             vTerminalPos={x=self.x+index*20,y=20,z=self.z+index*20}}
+        end
+        return spots
+    end
     bases[#bases+1]=farp_airbase
     local farp_group=mission_require('heli_war').build_attack_heli(
         coalition.side.BLUE,farp_name,{x=22345,z=67890},'anti_armour',function() end)
@@ -453,10 +469,15 @@ if mode=='typescript' then
     assert(farp_spec.x==12345 and farp_spec.y==67890 and farp_depart.x==12345 and farp_depart.y==67890,'FARP group and departure were not moved to the heliport origin')
     assert(#farp_spec.units==2,'FARP regression did not exercise a helicopter section')
     for index,unit in ipairs(farp_spec.units) do
-        assert(unit.parking==tostring(index) and unit.parking_id==tostring(index),'FARP helicopters did not receive distinct stock parking slots')
+        -- 0-based Term_Index: the first section takes pads 0 and 1, not 1 and 2.
+        assert(unit.parking==tostring(index-1) and unit.parking_id==tostring(index-1),'FARP helicopters did not receive distinct live 0-based Term_Index stands')
         assert(unit.x==12345 and unit.y==67890,'FARP helicopter retained an incompatible formation offset')
         assert(index<=4,'FARP group exceeded the stock four-slot capacity')
     end
+    -- Proves this went through the LIVE terminal/lease path and not the
+    -- unknown-capacity fallback rotation, which takes no lease at all.
+    local leased=mission_require('aircraft_lifecycle').leased_stands(farp_name)
+    assert(#leased==2 and leased[1]==0 and leased[2]==1,'FARP section did not lease the live stands it was given')
     local second_farp_group=mission_require('heli_war').build_attack_heli(
         coalition.side.BLUE,farp_name,{x=22345,z=68890},'anti_armour',function() end)
     assert(second_farp_group~=nil,'second FARP section did not spawn')
@@ -466,11 +487,38 @@ if mode=='typescript' then
     end
     assert(second_farp_spec~=nil,'second FARP section was not queued')
     assert(second_farp_spec.route.points[1].type=='TakeOffParkingHot','second FARP section lost its hot start')
-    assert(second_farp_spec.units[1].parking=='3' and second_farp_spec.units[2].parking=='4','successive FARP sections did not rotate onto the remaining parking slots')
+    -- The first section still holds pads 0 and 1 (its lease is NOT released by a
+    -- departure, finding 4), so the second section must take the remaining 2 and 3.
+    assert(second_farp_spec.units[1].parking=='2' and second_farp_spec.units[2].parking=='3','successive FARP sections did not take the remaining live stands')
+    local leased_after=mission_require('aircraft_lifecycle').leased_stands(farp_name)
+    assert(#leased_after==4,'second FARP section did not lease the remaining live stands')
     table.remove(state.spawn_queue,second_farp_queue_index)
     mission_require('map_overlay').remove_task_arrow(second_farp_group:getName())
     table.remove(state.spawn_queue,farp_queue_index)
     mission_require('map_overlay').remove_task_arrow(farp_group:getName())
+    -- The two sections above hold all four of this FARP's pads. Their spawns have just been
+    -- pulled out of the queue, so nothing will ever materialise them and nothing will ever
+    -- settle them -- the leases would otherwise persist to the end of the run and silently
+    -- refuse any spawn a later block adds at this base (epic #17 P4, item 6). Scope them to
+    -- the block that took them.
+    local farp_lifecycle=mission_require('aircraft_lifecycle')
+    farp_lifecycle.release_stands_for_group(farp_group:getName(),'FARP regression block finished')
+    farp_lifecycle.release_stands_for_group(second_farp_group:getName(),'FARP regression block finished')
+    assert(#farp_lifecycle.leased_stands(farp_name)==0,'FARP regression block leaked its stand leases past the block')
+    -- ...and the base is usable again, which is the property the leak would have destroyed.
+    local reuse_group=mission_require('heli_war').build_attack_heli(
+        coalition.side.BLUE,farp_name,{x=22345,z=69890},'anti_armour',function() end)
+    assert(reuse_group~=nil,'FARP refused a spawn after its block released the stands')
+    local reuse_spec,reuse_queue_index
+    for index,item in ipairs(state.spawn_queue) do
+        if item.kind=='group' and item.name==reuse_group:getName() then reuse_spec=item.data; reuse_queue_index=index; break end
+    end
+    assert(reuse_spec~=nil,'FARP reuse group was not queued')
+    assert(reuse_spec.units[1].parking=='0' and reuse_spec.units[2].parking=='1','released pads were not handed back out from the bottom')
+    table.remove(state.spawn_queue,reuse_queue_index)
+    mission_require('map_overlay').remove_task_arrow(reuse_group:getName())
+    farp_lifecycle.release_stands_for_group(reuse_group:getName(),'FARP regression block finished')
+    assert(#farp_lifecycle.leased_stands(farp_name)==0,'FARP reuse probe leaked its own stand leases')
 
     local runway_group=mission_require('heli_war').build_attack_heli(
         coalition.side.BLUE,'Blue Rear',{x=-80000,z=0},'anti_armour',function() end)
@@ -490,6 +538,10 @@ if mode=='typescript' then
     -- Mission-loaded FARPs must be reused before any spawn queue drain occurs.
     -- Keep this separate from the missing-object fallback and hot-start probes above.
     local authored_name='FARP-Mission-Loaded-Regression'
+    -- DELIBERATELY BARE: no getParking at all. This fixture is the UNKNOWN-capacity
+    -- coverage — DCS will not describe the terminal set, so the adapter must fall
+    -- back to the legacy 1-based rotation and take NO stand lease, rather than
+    -- treating unknown as zero (blocking every departure) or as unlimited.
     local authored_airbase=object(authored_name,-25000,12000,coalition.side.BLUE,'FARP')
     authored_airbase.id=8765
     function authored_airbase:getDesc() return {category=Airbase.Category.HELIPAD} end
@@ -523,6 +575,8 @@ if mode=='typescript' then
     assert(authored_depart.type=='TakeOffParkingHot' and authored_depart.action=='From Parking Area Hot','mission-loaded FARP helicopter lost its hot start')
     assert(authored_depart.helipadId==authored_airbase:getID() and authored_depart.linkUnit==authored_airbase:getID(),'mission-loaded FARP helicopter did not link to the existing object')
     assert(authored_depart.airdromeId==nil and authored_spec.airdromeId==nil,'mission-loaded FARP helicopter incorrectly used airdromeId')
+    assert(authored_spec.units[1].parking=='1' and authored_spec.units[2].parking=='2','unknown-capacity FARP lost the fallback rotation')
+    assert(#mission_require('aircraft_lifecycle').leased_stands(authored_name)==0,'unknown-capacity FARP leased a stand it could not read')
     table.remove(state.spawn_queue,authored_queue_index)
     mission_require('map_overlay').remove_task_arrow(authored_group:getName())
     table.remove(bases)

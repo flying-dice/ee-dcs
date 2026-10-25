@@ -19,6 +19,7 @@
 -- from the side's "recon" reserve pool, RTBs, and is recycled on landing (supply.make_land_handler).
 */
 
+import * as aircraft from "./aircraft_lifecycle";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
 import * as config from "./config";
@@ -53,7 +54,9 @@ const RECON_ALT = 8000; // m AMSL — high overflight
 const RECON_SPEED = 300; // m/s ≈ 580 kt — fast dash in/out
 
 // Builder contract: the task board has already consumed one recon aircraft from baseName.
-// It refunds the inventory when this returns undefined.
+// It refunds the inventory when this returns undefined, and — because the returned handle is a
+// spawn_queue proxy rather than a live group — aircraft_lifecycle refunds it later if the real
+// coalition.addGroup is PROVEN to have created nothing at drain time.
 function buildRecon(
 	side: Side,
 	baseName: string,
@@ -155,6 +158,10 @@ function buildRecon(
 	});
 
 	if (group !== undefined) {
+		// coalition.addGroup is intercepted and deferred, so `group` is a proxy, not proof of a
+		// live aircraft. Link the deferred request to the allocation the board just debited, so
+		// drain can report the real outcome back instead of only logging it.
+		aircraft.track(group);
 		cs.register_task(groupName, {
 			task_type: "recon",
 			side,

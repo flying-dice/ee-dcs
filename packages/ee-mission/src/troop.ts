@@ -42,6 +42,7 @@
 */
 
 import * as clearance from "./airbase_clearance";
+import * as lifecycle from "./aircraft_lifecycle";
 import * as mode from "./campaign_mode";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
@@ -278,6 +279,10 @@ function buildInsert(
 		Group.Category.HELICOPTER,
 		spec,
 	);
+	// Links the deferred spawn to the task_board allocation that already debited `transport`
+	// (epic #17 P4). Without it commit_allocation saw no attempt, so a drain-time failure neither
+	// refunded nor re-listed the task, and the recovery record fell back to a group-name prefix.
+	lifecycle.track(group);
 	if (group === undefined) return undefined;
 	cs.register_task(name, {
 		task_type: "troop_insertion",
@@ -292,7 +297,22 @@ function buildInsert(
 		() => {
 			if (_DMT_GEN === generation && cs.get_task(name) !== undefined) {
 				cs.clear_task(name);
-				keysite.release_slot(name);
+				// VIRTUAL RETIREMENT, outcome `abandoned` (epic #17 P4). This TTL has never
+				// returned the `transport` debit — an insertion that timed out is written off,
+				// not recovered — and `abandoned` preserves exactly that: the record is closed so
+				// nothing can credit it later, but nothing is credited and nothing is destroyed.
+				// Whether the one-way leak is correct is a deferred question with no EECH
+				// citation yet (sprint 04); P4 does not answer it, it only gives it one owner.
+				// The gate above is load-bearing: a transport whose insertion already resolved
+				// via checkArrivals is still flying home and must stay creditable on its RTB.
+				if (
+					!lifecycle.retire_sortie(
+						name,
+						"troop insertion TTL expired with the task still open",
+						"abandoned",
+					)
+				)
+					keysite.release_slot(name);
 			}
 			return undefined;
 		},

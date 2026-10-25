@@ -34,6 +34,7 @@
 -- campaign_state.active_tasks at spawn, so reactions target the RIGHT keysite (H5 fix), not the
 -- base nearest the attacker's launch field.
 */
+import * as aircraft from "./aircraft_lifecycle";
 import * as cs from "./campaign_state";
 import type { Side, TaskInfo, WorldPoint } from "./campaign_types";
 import * as config from "./config";
@@ -43,7 +44,6 @@ import * as imap from "./imap";
 import * as installations from "./installations";
 import * as keysite from "./keysite";
 import { BLUE, RED } from "./sides";
-import type { Role } from "./supply";
 import * as supply from "./supply";
 
 const S = cs.S;
@@ -210,14 +210,6 @@ function efficiency(base: string): number {
 		1
 	);
 }
-function recycleOnce(name: string, side: Side, role: Role, group: Group): void {
-	if (S._recycled[name]) return;
-	S._recycled[name] = true;
-	let count = 0;
-	if (group.isExist())
-		for (const unit of group.getUnits() ?? []) if (unit.isExist()) count += 1;
-	if (count > 0) supply.recycle_side(side, role, count);
-}
 function capRoute(
 	base: Airbase,
 	pos: Vec3,
@@ -287,19 +279,28 @@ function capRoute(
 		],
 	};
 }
-function expireCap(
-	group: Group,
-	name: string,
-	side: Side,
-	duration: number,
-): void {
+/**
+ * CAP station time is up. This is a VIRTUAL RETIREMENT, not an RTB: no LAND event was seen and
+ * no landing site was read, so it is settled through aircraft_lifecycle rather than here
+ * (epic #17 P4). That module is the single owner of the reserve credit, the keysite launch slot
+ * and the stand leases, which is what stops a CAP being credited twice if it ever does land.
+ * Task-record cleanup stays here because reaction registered the task in the first place.
+ *
+ * The fallback branch is for a group aircraft_lifecycle holds no record of — an allocation that
+ * was reversed before the spawn reached DCS, or a record from a previous generation. Nothing to
+ * settle, but the slot and the airframe are still ours; exactly one of the two branches runs.
+ */
+function expireCap(group: Group, name: string, duration: number): void {
 	const generation = _DMT_GEN;
 	timer.scheduleFunction(
 		() => {
 			if (_DMT_GEN !== generation) return undefined;
-			recycleOnce(name, side, "escort", group);
-			keysite.release_slot(name);
-			if (group.isExist()) group.destroy();
+			if (
+				!aircraft.retire_sortie(name, "CAP station time expired", "recycled")
+			) {
+				keysite.release_slot(name);
+				if (group.isExist()) group.destroy();
+			}
 			cs.clear_task(name);
 			return undefined;
 		},
@@ -320,6 +321,17 @@ function spawnCap(
 		supply.recycle_base(baseName, "escort", 1);
 		return false;
 	}
+	// From here the ALLOCATION owns the debit (epic #17 P4). reaction dispatches directly rather
+	// than through task_board (reaction.c has no board pass), so it opens its own allocation; the
+	// rollback contract is identical either way and nothing else may refund this debit.
+	const allocation = aircraft.begin_allocation({
+		task_type: orbit === undefined ? "cap" : "barcap",
+		side,
+		base: baseName,
+		role: "escort",
+		count: 1,
+		log_fn: logFn,
+	});
 	const cfg = AC[side],
 		pos = base.getPosition().p,
 		id = cs.next_id(),
@@ -351,10 +363,14 @@ function spawnCap(
 		],
 		route: capRoute(base, pos, orbit?.x ?? pos.x, orbit?.z ?? pos.z),
 	});
+	aircraft.track(group);
 	if (group === undefined) {
-		supply.recycle_base(baseName, "escort", 1);
+		aircraft.abort_allocation(allocation, "addGroup returned nothing");
 		return false;
 	}
+	// reserve_slot is a no-op when the name already holds one, so record ownership only when
+	// THIS call actually took the slot — the same rule task_board.try_assign applies.
+	const slotOwned = S.group_launch_base[name] === undefined ? name : undefined;
 	keysite.reserve_slot(baseName, name);
 	cs.register_task(name, {
 		task_type: orbit === undefined ? "cap" : "barcap",
@@ -363,7 +379,8 @@ function spawnCap(
 		target_pos: S.base_pos[baseName],
 		born_time: timer.getTime(),
 	});
-	expireCap(group, name, side, duration);
+	aircraft.commit_allocation(allocation, name, slotOwned, name);
+	expireCap(group, name, duration);
 	logFn(
 		string.format(
 			"reaction %s #%d defending %s (dur=%ds)",
@@ -619,16 +636,51 @@ export function spawn_bda(
 			],
 		},
 	};
-	farpParking.configureDeparture(homeName, home, groupData, departure);
+	// The ALLOCATION owns the "heli" debit from here (epic #17 P4), and it is opened BEFORE stand
+	// selection so the parking lease it takes is owned too and comes back with the debit on any
+	// rollback. reaction dispatches directly rather than through task_board, so it opens its own.
+	const allocation = aircraft.begin_allocation({
+		task_type: "bda",
+		side,
+		base: homeName,
+		role: "heli",
+		count: 1,
+		log_fn: logFn,
+	});
+	// Stand selection can REFUSE (epic #17 P2): a helipad with real terminal data and no free
+	// pad raises rather than stacking aircraft. spawn_bda runs straight off a reaction tick with
+	// no pcall of its own, so an uncaught refusal here would kill that timer chain. Route it into
+	// this function's existing spawn-failure path, which is now the allocation's own reversal —
+	// so the "heli" consume_base debit above is unwound exactly once, by exactly one owner.
+	const [seated, refusal] = pcall(() =>
+		farpParking.configureDeparture(homeName, home, groupData, departure),
+	);
+	if (!seated) {
+		logFn(
+			string.format(
+				"reaction: BDA %s not launched from %s — no parking stand (%s)",
+				name,
+				homeName,
+				tostring(refusal),
+			),
+		);
+		aircraft.abort_allocation(
+			allocation,
+			`no parking stand (${tostring(refusal)})`,
+		);
+		return;
+	}
 	const group = coalition.addGroup(
 		cfg.country,
 		Group.Category.HELICOPTER,
 		groupData,
 	);
+	aircraft.track(group);
 	if (group === undefined) {
-		supply.recycle_base(homeName, "heli", 1);
+		aircraft.abort_allocation(allocation, "addGroup returned nothing");
 		return;
 	}
+	const slotOwned = S.group_launch_base[name] === undefined ? name : undefined;
 	keysite.reserve_slot(homeName, name);
 	cs.register_task(name, {
 		task_type: "bda",
@@ -638,14 +690,18 @@ export function spawn_bda(
 		objective: { kind: "keysite", base: targetBase },
 		born_time: timer.getTime(),
 	});
+	aircraft.commit_allocation(allocation, name, slotOwned, name);
 	const generation = _DMT_GEN;
 	timer.scheduleFunction(
 		() => {
 			if (_DMT_GEN !== generation) return undefined;
 			reactReconKeysite(side, targetBase, logFn);
-			recycleOnce(name, side, "heli", group);
-			keysite.release_slot(name);
-			if (group.isExist()) group.destroy();
+			// VIRTUAL RETIREMENT, same shape as expireCap: the dwell timer, not the aircraft,
+			// ends this sortie, so aircraft_lifecycle settles the credit / slot / stands once.
+			if (!aircraft.retire_sortie(name, "BDA loiter complete", "recycled")) {
+				keysite.release_slot(name);
+				if (group.isExist()) group.destroy();
+			}
 			cs.clear_task(name);
 			return undefined;
 		},
@@ -743,6 +799,12 @@ export function make_event_handler(
 				if (unit === undefined || group === undefined) return;
 				const name = group.getName(),
 					task = cs.get_task(name);
+				// The MISSION result below is once-only per group and is cleared with the task.
+				// AIRCRAFT-RESOURCE settlement is a separate concern with a different lifetime
+				// (per airframe, and it outlives the task), so hand the lifecycle the facts it
+				// needs to judge a recovery BEFORE cs.clear_task() drops them at the end of this
+				// branch — whichever order DCS happens to dispatch the two handlers in.
+				aircraft.note_task(name, task);
 				if (task === undefined || S._completed[name]) return;
 				S._completed[name] = true;
 				if (
@@ -765,6 +827,18 @@ export function make_event_handler(
 					pilotsCall((p) => p.on_debrief(unit, task, { result, rating }));
 				cs.clear_task(name);
 			} else if (event.id === world.event.S_EVENT_DEAD) {
+				// An airframe THIS campaign retired after a completed recovery is not a combat
+				// loss and must not terminate its task or score against the side. EECH makes the
+				// same distinction in the aircraft destructor itself: hc_dstry.c:343-346 /
+				// fw_dstry.c:332-335 return before any force-info or loss bookkeeping when the
+				// entity is no longer INT_TYPE_ALIVE.
+				const [retiredOk, retiredName] = pcall(() => unit?.getName());
+				if (
+					retiredOk &&
+					retiredName !== undefined &&
+					aircraft.is_retired_unit(retiredName)
+				)
+					return;
 				pilotsCall((p) => p.on_death(event));
 				const group = eventGroup(unit);
 				if (group === undefined) return;

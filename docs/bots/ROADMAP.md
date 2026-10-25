@@ -6,7 +6,15 @@
    live-validation half of this gate was **waived by the Lead** and replaced with an offline
    regression net: golden fixtures recorded from the baseline pre-deletion, asserted on every
    test run (`packages/ee-mission/test/golden/`). See sprint 02 for the waiver and residual risk.
-4. Outstanding: DCS Studio static analysis + live in-mission validation. Still required before an
+4. In progress: DCS Studio static analysis + live in-mission validation.
+   **Aircraft lifecycle (epic #17) P0-P4 landed 2026-09-22/23** — see sprint 04. The live probe
+   corrected three assumptions this roadmap item rested on: FARP stands are 0-based `Term_Index`
+   (we emitted an invalid "4"), `getParking(true)` does not report occupancy, and a departed
+   aircraft keeps its stand. `S_EVENT_LAND` carries a real site identity, so the "nearest
+   friendly base" proxy is gone. **P5 (live witness on a freshly generated mission) is pending
+   and #17 remains open.** Static analysis remains UNRUN: the `/rpc` mission bridge exposes no
+   `check` tool.
+5. Outstanding: DCS Studio static analysis + live in-mission validation (original item). Still required before an
    MP playout — and now more so: sprint 02 found the SEAD and BAI generators were silently dead in
    the TypeScript port, and reactivating them is a real behavioural change no offline test can
    fully validate.

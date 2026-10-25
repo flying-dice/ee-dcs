@@ -15,6 +15,7 @@
 --   3. Attack-heli escort   — escorts transport/BDA/troop-insertion helis into hostile airspace
 -- All draw from the per-side "heli" reserve (finite; recycled on RTB by supply.make_land_handler).
 */
+import * as aircraft from "./aircraft_lifecycle";
 import * as cs from "./campaign_state";
 import type { WorldPoint } from "./campaign_types";
 import * as config from "./config";
@@ -84,6 +85,9 @@ function launchPosition(baseName: string): LaunchPosition {
 }
 
 // BUILDER (task-board contract): the board already consumed SECTION_SIZE "heli" from baseName.
+// The returned handle is a spawn_queue proxy, not a live group, so this builder also links the
+// deferred request to that allocation (aircraft_lifecycle.track) — a drain-time spawn failure
+// that is PROVEN to have created nothing then gives the two "heli" back and re-lists the task.
 export function build_attack_heli(
 	side: Side,
 	baseName: string,
@@ -250,6 +254,7 @@ export function build_attack_heli(
 		coalition.addGroup(cfg.country, Group.Category.HELICOPTER, spec),
 	);
 	if (ok && group !== undefined) {
+		aircraft.track(group);
 		ov.add_task_arrow(gname, abPos, targetPos, side);
 		logFn(
 			string.format(

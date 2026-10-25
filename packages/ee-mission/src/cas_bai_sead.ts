@@ -64,6 +64,7 @@
 --   MAX_ARTILLERY_STRIKE_COUNT  = 5 (line 2836)
 */
 
+import * as lifecycle from "./aircraft_lifecycle";
 import * as mode from "./campaign_mode";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
@@ -293,6 +294,22 @@ function spawnSeadEscort(
 		);
 		return;
 	}
+	// The escort is a SECOND aircraft request inside the strike's builder call, with its own
+	// `escort` debit at its own base — a different (base, role, count) tuple from the strike's, so
+	// it gets its own allocation nested inside the strike's open scope rather than riding on it
+	// (epic #17 P4). Nesting is what aircraft_lifecycle's scope stack is for: track() below binds
+	// to the innermost open scope, and commit/abort pop it, leaving the strike's untouched.
+	//
+	// NO keysite slot is reserved here, deliberately and unchanged: whether an inline escort
+	// should consume a launch slot the way reaction's CAP does is an open EECH question
+	// (sprint 04, "deferred asymmetries"), and P4 does not settle it.
+	const allocation = lifecycle.begin_allocation({
+		task_type: "sead_escort",
+		side,
+		base: baseName,
+		role: "escort",
+		count,
+	});
 	const cfg = AC[side],
 		[bx, by] = cs.wp_xy(basePos),
 		[tx, ty] = cs.wp_xy(target);
@@ -399,7 +416,9 @@ function spawnSeadEscort(
 			},
 		}),
 	);
+	if (ok) lifecycle.track(group);
 	if (ok && group !== undefined) {
+		lifecycle.commit_allocation(allocation, name);
 		cs.dbg(
 			"sead",
 			"%s SEAD escort #%d (%dx%s) spawned from %s",
@@ -410,7 +429,11 @@ function spawnSeadEscort(
 			baseName,
 		);
 	} else {
-		supply.recycle_base(baseName, "escort", count);
+		// The allocation owns the debit, so it does the refund — never both.
+		lifecycle.abort_allocation(
+			allocation,
+			ok ? "addGroup returned nothing" : `addGroup error: ${tostring(group)}`,
+		);
 		cs.dbg(
 			"sead",
 			"%s SEAD escort #%d FAILED (pcall_ok=%s) -> refunded",

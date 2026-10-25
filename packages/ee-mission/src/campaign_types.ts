@@ -538,6 +538,13 @@ export interface BoardTask {
 	base?: string;
 	player?: boolean;
 	_dbg_logged?: boolean;
+	/**
+	 * `aircraft_lifecycle` attempt id for the physical spawn this task launched, when the
+	 * builder opted into submission tracking. Task state and physical-attempt state are
+	 * deliberately separate: an ASSIGNED task may own an attempt whose outcome is still
+	 * unknown, which is NOT a claim that the aircraft exists.
+	 */
+	attempt_id?: number;
 }
 
 export type SpawnItem =
@@ -550,6 +557,21 @@ export type SpawnItem =
 			seq: number;
 			deferred_setTask?: DcsTask;
 			deferred_pushTask?: DcsTask;
+			/**
+			 * `aircraft_lifecycle` attempt this deferred request belongs to, set by an
+			 * aircraft builder that opted into submission tracking. Absent for every other
+			 * caller, which keeps the generic group/static queue behaviour unchanged.
+			 */
+			attempt_id?: number;
+			/**
+			 * Set when the caller destroyed its handle before the queued spawn drained, for ANY
+			 * caller (epic #17 P4). `drain` skips a cancelled item, so "destroy it before it
+			 * exists" means the group is never created rather than appearing minutes later with
+			 * nobody holding it. Aircraft callers ALSO reverse their allocation, via
+			 * `aircraft_lifecycle.cancel_item`; this flag is what makes the ground/static queue
+			 * honour the same intent without needing one.
+			 */
+			cancelled?: boolean;
 	  }
 	| {
 			kind: "static";
@@ -559,6 +581,9 @@ export type SpawnItem =
 			seq: number;
 			deferred_setTask?: DcsTask;
 			deferred_pushTask?: DcsTask;
+			attempt_id?: number;
+			/** See the group variant: a handle destroyed before its queued spawn drained. */
+			cancelled?: boolean;
 	  };
 
 export interface PilotRecord {

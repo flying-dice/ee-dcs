@@ -34,6 +34,14 @@
 --     ledger, task STAYS UNASSIGNED for retry until expiry (refund discipline).
 --   * UNASSIGNED past its unassigned-expiry (ts_updt.c:99-124) → FAILED, removed — the real
 --     task-failure path that the fresh-spawn port never had.
+--   * The spawn itself is DEFERRED by spawn_queue, so "the builder returned a group" is not proof
+--     that DCS created one. Each assignment opens an aircraft_lifecycle allocation recording the
+--     debit facts; when a launch attempt is PROVEN never to have happened the allocation is
+--     reversed (exact refund, slot released, task record cleared) and unassign() re-lists the task
+--     — the port's analogue of relinking to LIST_TYPE_UNASSIGNED_TASK (ts_msgs.c:128-152). Retry
+--     then rides the existing tick()/expiry machinery, matching assign.c:259-295 where a failed
+--     assign_primary_task_to_group commits nothing and is simply retried next pass. An UNPROVEN
+--     outcome is never reversed and never retried.
 --
 -- Dedup: while a task is UNASSIGNED the board keeps a synthetic marker in S.active_tasks (keyed
 -- "board:<id>", shaped {task_type,target_base,side}) so the existing cs.has_task_against() /
@@ -45,6 +53,7 @@
 -- created at assignment), and completion is RTB (S_EVENT_LAND) — exactly what reaction.lua already
 -- keys off (ENTITY_MESSAGE_TASK_ASSIGNED / TASK_COMPLETED). The board owns create→assign→expire.
 */
+import * as aircraft from "./aircraft_lifecycle";
 import * as cs from "./campaign_state";
 import type { Side, WorldPoint } from "./campaign_types";
 import * as ks from "./keysite";
@@ -245,8 +254,56 @@ export function create_task(spec: BoardTaskSpec): BoardTask {
 	return task;
 }
 
+/**
+ * Puts a task back on the board after its physical spawn was PROVEN never to have happened.
+ *
+ * This is the port's analogue of EECH re-linking a task to LIST_TYPE_UNASSIGNED_TASK, which is
+ * what restores TASK_STATE_UNASSIGNED there (ts_msgs.c:128-152). No new retry timer and no new
+ * cadence: the task simply becomes eligible again for the existing tick()/ASSIGN_CADENCE pass and
+ * dies on its existing expiry (ts_updt.c:99-124), exactly as a task whose assignment attempt
+ * returned FALSE does in assign.c:259-295.
+ */
+function unassign(task: BoardTask, reason: string): void {
+	if (task.state !== "ASSIGNED" || task.player === true) return;
+	const previousGroup = task.assigned_group;
+	task.state = "UNASSIGNED";
+	task.assigned_group = undefined;
+	task.base = undefined;
+	task.role = undefined;
+	task.attempt_id = undefined;
+	task._dbg_logged = false;
+	// Restore the queued-task dedup marker the assignment dropped, so has_task_against() keeps
+	// seeing this target as taken for the whole retry window instead of briefly going blind.
+	S.active_tasks[task.dedup_key] = {
+		task_type: task.type,
+		target_base: task.target.base,
+		side: task.side,
+	};
+	let onBoard = false;
+	for (const queued of S.board_tasks) {
+		if (queued === task) {
+			onBoard = true;
+			break;
+		}
+	}
+	if (!onBoard) S.board_tasks.push(task);
+	cs.dbg(
+		"board",
+		"#%d %s vs %s back to UNASSIGNED after %s never spawned (%s); retry until expiry in %.0fmin",
+		task.id,
+		task.type,
+		task.target.base ?? "field",
+		tostring(previousGroup),
+		reason,
+		(task.expiry_t - timer.getTime()) / SECONDS_PER_MINUTE,
+	);
+}
+
 export function try_assign(task: BoardTask): boolean {
 	if (task.state !== "UNASSIGNED") return false;
+	// A task whose previous physical attempt has not been settled must never be assigned again:
+	// the aircraft may well exist. Task state and attempt state are separate on purpose.
+	if (aircraft.attempt_unresolved(task.attempt_id)) return false;
 	const suitability = SUIT[task.type];
 	if (suitability === undefined) return false;
 	const targetPos = task.target.pos;
@@ -305,14 +362,36 @@ export function try_assign(task: BoardTask): boolean {
 			bestBase !== undefined &&
 			supply.consume_base(bestBase, entry.role, task.count)
 		) {
+			// The allocation owns the debit from here: it records side/base/role/count/task so a
+			// proven spawn failure gives back exactly that and nothing else.
+			const allocation = aircraft.begin_allocation({
+				task_id: task.id,
+				task_type: task.type,
+				side: task.side,
+				base: bestBase,
+				role: entry.role,
+				count: task.count,
+				log_fn: task.log_fn,
+				on_reverted: (reason) => unassign(task, reason),
+			});
 			const [ok, group] = pcall(() => task.builder(bestBase));
+			// Nothing past this line spawns, so shut the attachment window immediately: if any of
+			// the bookkeeping below raised, no later spawn could attach to this dead allocation.
+			aircraft.close_scope(allocation);
 			if (ok && group !== undefined) {
 				task.state = "ASSIGNED";
 				task.role = entry.role;
 				task.base = bestBase;
 				const [nameOk, name] = pcall(() => group.getName());
 				task.assigned_group = nameOk ? name : undefined;
+				let slotOwned: string | undefined;
 				if (task.assigned_group !== undefined) {
+					// reserve_slot is a no-op when the name already holds a slot, so record
+					// ownership only when THIS assignment actually took one.
+					slotOwned =
+						S.group_launch_base[task.assigned_group] === undefined
+							? task.assigned_group
+							: undefined;
 					ks.reserve_slot(bestBase, task.assigned_group);
 					// Some specialised builders register themselves because they carry extra
 					// lifecycle data. Generic CAS/BAI/heli builders do not, so preserve the
@@ -340,6 +419,19 @@ export function try_assign(task: BoardTask): boolean {
 				}
 				assignCount[bestBase] = (assignCount[bestBase] ?? 0) + 1;
 				delete S.active_tasks[task.dedup_key];
+				// ASSIGNED means "this task now owns a launch attempt", not "the aircraft exists".
+				// The attempt (if the builder opted in) resolves at drain; until then the task is
+				// off the board and cannot be re-assigned.
+				task.attempt_id = allocation.attempts[0]?.id;
+				aircraft.commit_allocation(
+					allocation,
+					task.assigned_group,
+					slotOwned,
+					task.assigned_group !== undefined &&
+						cs.get_task(task.assigned_group) !== undefined
+						? task.assigned_group
+						: undefined,
+				);
 				cs.dbg(
 					"board",
 					"#%d %s vs %s ASSIGNED base=%s role=%s group=%s (waited %.0fs)",
@@ -353,17 +445,31 @@ export function try_assign(task: BoardTask): boolean {
 				);
 				return true;
 			}
-			supply.recycle_base(bestBase, entry.role, task.count);
+			// Synchronous builder failure. The allocation owns the debit, so it performs the
+			// refund (and cancels anything the builder had already queued, so no orphan group
+			// drains into the world later). It declines only when a tracked attempt already
+			// proved an aircraft exists, in which case the debit is correctly kept.
+			const reversed = aircraft.abort_allocation(
+				allocation,
+				ok ? "builder returned nothing" : `builder error: ${tostring(group)}`,
+			);
 			if (!ok) task.log_fn(`task_board builder error: ${tostring(group)}`);
 			cs.dbg(
 				"board",
-				"#%d %s vs %s builder FAILED at base=%s role=%s ok=%s -> refunded, retry",
+				// abort_allocation returns FALSE when it deliberately declines to refund — a
+				// tracked attempt already proved an aircraft exists, so the debit is correctly
+				// kept and the task is NOT re-listed. Report what happened, not what usually
+				// happens (epic #17 P4; the log used to claim "refunded, retry" either way).
+				"#%d %s vs %s builder FAILED at base=%s role=%s ok=%s -> %s",
 				task.id,
 				task.type,
 				task.target.base ?? "field",
 				bestBase,
 				entry.role,
 				tostring(ok),
+				reversed
+					? "refunded, retry"
+					: "debit KEPT (aircraft may exist), no retry",
 			);
 			return false;
 		}
@@ -499,6 +605,20 @@ export function tick(logFn: LogFn = () => undefined): void {
 	const live: BoardTask[] = [];
 	for (const task of S.board_tasks) {
 		if (task.state !== "UNASSIGNED") continue;
+		if (aircraft.attempt_unresolved(task.attempt_id)) {
+			// Its previous launch attempt has not been settled, so whether an aircraft exists is
+			// unknown. Neither assign it again nor fail it on the unknown: leave it on the board
+			// untouched this pass.
+			cs.dbg(
+				"board",
+				"#%d %s vs %s held: launch attempt %d still unresolved",
+				task.id,
+				task.type,
+				task.target.base ?? "field",
+				task.attempt_id ?? -1,
+			);
+			continue;
+		}
 		if (now > task.expiry_t) {
 			task.state = "FAILED";
 			delete S.active_tasks[task.dedup_key];

@@ -24,6 +24,17 @@
 -- task expiry (reaction.lua) as a reconstruction of the DESIGN intent (force conservation with
 -- location: survivors become idle inventory at the base they landed at, transferable thereafter).
 --
+-- EPIC #17 P3 — that proxy is now PER AIRFRAME and EVIDENCE-GATED, not per group. The proxy's
+-- scope is unchanged (a landing still credits the reserve, which EECH itself never does); what
+-- changed is that it now matches the GRANULARITY of the C it reconstructs. Every one of
+-- add_to_force_info (force.c:211-243), remove_from_force_info (force.c:249-271) and
+-- replace_into_force_info (force.c:278-300) takes a single `entity *` and moves exactly one
+-- airframe, and hc_dstry.c:343-346 / fw_dstry.c:332-335 decline to charge a loss for removing an
+-- entity that is no longer INT_TYPE_ALIVE. Settling a whole DCS group on one member's landing had
+-- no counterpart in that code and measurably credited a crashed airframe as a recovery
+-- (docs/bots/LIVE-PROBE-2026-09-22.md finding 7). The decision and the per-airframe ledger are in
+-- aircraft_lifecycle.ts; make_land_handler below is only the DCS evidence adapter.
+--
 -- PRODUCTION (this cluster) — the OTHER caller of the replacement mechanism: production keysites
 -- (factory/refinery/port, KEYSITE-F1/F5) accumulate ammo/fuel as cargo crates while alive+owned;
 -- crates restock consumer keysites (KEYSITE-F6/F7/F8, in keysite_repair.lua) and SURPLUS crates
@@ -43,10 +54,10 @@
 -- convert_reserves also replenishes the vehicle/troop pools, so factory loss starves the ground war.
 */
 
+import * as aircraft from "./aircraft_lifecycle";
 import * as cs from "./campaign_state";
 import type { InventoryLedger, Side } from "./campaign_types";
 import * as config from "./config";
-import * as keysite from "./keysite";
 import { matches } from "./lua_interop";
 import { BLUE, RED } from "./sides";
 
@@ -527,75 +538,111 @@ export function produce(name: string, role: Role, count = 1): void {
 	recycle_base(name, role, count);
 }
 
+/**
+ * The recovery / loss settlement handler.
+ *
+ * WHAT CHANGED IN EPIC #17 P3, and why. This used to credit `group.getUnits().length` airframes
+ * on the FIRST member's S_EVENT_LAND, pick the recovery base by "nearest friendly base anywhere
+ * on the map", and schedule `group.destroy()` for the whole group. The live probe
+ * (docs/bots/LIVE-PROBE-2026-09-22.md findings 6-7) measured that to be wrong twice over:
+ *
+ *   * `S_EVENT_LAND` carries a real `place` (name / id / category) at both airdromes and authored
+ *     FARPs, so the site is READ, not guessed. The positional proxy is retired.
+ *   * A two-ship can lose one member and recover the other two seconds apart
+ *     (`t=1954 CRASH Heli-CAS-1-2055-1`, `t=1956 LAND Heli-CAS-1-2055-2`), so whole-group
+ *     settlement credited a crashed airframe as a recovery and despawned live aircraft.
+ *
+ * EECH accounts for hardware one `entity *` at a time (force.c:211-243 / :249-271 / :278-300), so
+ * per-airframe settlement is also the faithful shape, not merely the safe one. The decision and
+ * the bookkeeping live in `aircraft_lifecycle`, which holds the ALLOCATION's role and expected
+ * unit names; this handler is the DCS adapter that hands it evidence.
+ *
+ * It observes S_EVENT_CRASH as well as S_EVENT_LAND. A crash is the only loss signal a DCS
+ * aircraft reliably produces (the captured probe log shows every airframe loss as id=5 CRASH,
+ * never id=8 DEAD), and marking the airframe lost is what stops a later event crediting it.
+ * That is done here rather than in a sixth `world.addEventHandler` on purpose: the campaign's
+ * registered-handler set is a fixed, asserted part of its shape.
+ */
 export function make_land_handler(
 	logFn: LogFunction = () => undefined,
 ): DcsEventHandler {
 	return {
 		onEvent(event: DcsEvent): void {
+			const crashEvent = world.event.S_EVENT_CRASH;
+			const isCrash = crashEvent !== undefined && event.id === crashEvent;
 			if (
-				event.id !== world.event.S_EVENT_LAND ||
+				(!isCrash && event.id !== world.event.S_EVENT_LAND) ||
 				event.initiator === undefined
 			)
 				return;
 			const unit = event.initiator;
 			if (unit.getGroup === undefined) return;
+			const [nameOk, unitName] = pcall(() => unit.getName());
+			if (!nameOk || unitName === undefined) return;
 			const [ok, group] = pcall(() => unit.getGroup?.());
-			if (!ok || group === undefined || !group.isExist()) return;
-			const groupName = group.getName();
-			keysite.release_slot(groupName);
-			const role = classify_role(groupName);
-			if (
-				role === undefined ||
-				unit.getPlayerName?.() !== undefined ||
-				S._recycled[groupName]
-			)
-				return;
-			S._recycled[groupName] = true;
+			const groupName =
+				ok && group !== undefined
+					? ((): string | undefined => {
+							const [read, name] = pcall(() => group.getName());
+							return read ? name : undefined;
+						})()
+					: undefined;
 
+			if (isCrash) {
+				// A loss has no site (probe: every CRASH carries place=nil) and never credits.
+				aircraft.note_loss(unitName, groupName);
+				return;
+			}
+			if (!ok || group === undefined || !group.isExist()) return;
+			if (groupName === undefined) return;
+
+			const [playerRead, playerName] = pcall(() => unit.getPlayerName?.());
+			const isPlayer = playerRead && playerName !== undefined;
 			const [sideRead, coalitionSide] = pcall(() => unit.getCoalition?.());
 			if (!sideRead || (coalitionSide !== BLUE && coalitionSide !== RED))
 				return;
 			const side = coalitionSide === BLUE ? BLUE : RED;
-			const survivors = group.getUnits();
-			const survivorCount = survivors?.length ?? 1;
-			const landingPos = unit.getPosition().p;
-			let landingBase: string | undefined;
-			let bestDistanceSquared = math.huge;
-			for (const [baseName, baseOwner] of pairs(S.base_owner)) {
-				const basePos = S.base_pos[baseName];
-				if (baseOwner === side && basePos !== undefined) {
-					const dx = landingPos.x - basePos.x;
-					const dz = landingPos.z - basePos.z;
-					const distanceSquared = dx * dx + dz * dz;
-					if (distanceSquared < bestDistanceSquared) {
-						bestDistanceSquared = distanceSquared;
-						landingBase = baseName;
-					}
+
+			const memberNames: string[] = [];
+			const [unitsRead, units] = pcall(() => group.getUnits());
+			if (unitsRead && units !== undefined) {
+				for (const member of units) {
+					const [read, name] = pcall(() => member.getName());
+					if (read && name !== undefined) memberNames.push(name);
 				}
 			}
-			if (landingBase !== undefined)
-				recycle_base(landingBase, role, survivorCount);
-			else recycle_side(side, role, survivorCount);
+
+			const result = aircraft.settle_landing({
+				group_name: groupName,
+				unit_name: unitName,
+				side,
+				place: event.place,
+				player: isPlayer,
+				member_names: memberNames,
+				cleanup_delay: LANDED_GROUP_CLEANUP_DELAY_SECONDS,
+			});
+			if (result.verdict !== "recovered") {
+				cs.dbg(
+					"supply",
+					"%s landing by %s not settled as a recovery: %s (site=%s)",
+					groupName,
+					unitName,
+					result.verdict,
+					tostring(result.site),
+				);
+				return;
+			}
+			const role = result.role;
 			logFn(
 				string.format(
-					"supply: %s (%s) RTB @ %s → +%d %s (base now %d / side %d)",
-					groupName,
+					"supply: %s (%s) recovered @ %s → +1 %s pending retirement (base now %d / side %d)",
+					unitName,
 					cs.SIDE_NAME[side],
-					landingBase ?? "?",
-					survivorCount,
-					role,
-					ledger(landingBase, role),
-					reserve_side(side, role),
+					result.site ?? "?",
+					role ?? "unclassified",
+					role !== undefined ? ledger(result.site, role) : 0,
+					role !== undefined ? reserve_side(side, role) : 0,
 				),
-			);
-
-			timer.scheduleFunction(
-				(_argument: undefined, _time: number) => {
-					if (group.isExist()) group.destroy();
-					return undefined;
-				},
-				undefined,
-				timer.getTime() + LANDED_GROUP_CLEANUP_DELAY_SECONDS,
 			);
 		},
 	};
